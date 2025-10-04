@@ -43,7 +43,7 @@ export function ShareBadgeDialog({ open, onOpenChange, badgeName }: ShareBadgeDi
             Share "{badgeName}"
           </DialogTitle>
           <DialogDescription>
-            Share these unique, one-time use links to invite others to join your badge.
+            Share these unique, one-time use links to invite others to claim ownership of this badge.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -62,7 +62,7 @@ export function ShareBadgeDialog({ open, onOpenChange, badgeName }: ShareBadgeDi
                   />
                 )}
                 <div className="flex-grow">
-                    <p className="text-sm font-medium">Join Link</p>
+                    <p className="text-sm font-medium">Ownership Link</p>
                     <div className="flex items-center gap-2">
                         <Input readOnly value={link.url} className="bg-muted" />
                         <Button variant="ghost" size="icon" onClick={() => copyToClipboard(link.url)}>

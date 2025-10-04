@@ -16,8 +16,8 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
     toast({
-      title: 'Successfully Joined!',
-      description: "You are now a follower of the 'Cosmic Explorers' badge.",
+      title: 'Badge Claimed!',
+      description: "You are now an owner of the 'Cosmic Explorers' badge.",
     });
     router.push('/dashboard');
   };
@@ -29,9 +29,9 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
           <div className="mb-4 flex justify-center">
             <div className="text-6xl">🚀✨🪐</div>
           </div>
-          <CardTitle className="text-2xl font-headline">Join 'Cosmic Explorers'</CardTitle>
+          <CardTitle className="text-2xl font-headline">Claim 'Cosmic Explorers'</CardTitle>
           <CardDescription>
-            You've been invited! Enter the secret code to join.
+            You've been invited to own this badge! Enter the secret code to claim it.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -46,7 +46,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
               />
             </div>
             <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-              Join Badge
+              Claim Badge
             </Button>
           </form>
            <div className="mt-4 text-center text-sm">

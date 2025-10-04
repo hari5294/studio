@@ -9,7 +9,8 @@ export type Badge = {
   name: string;
   emojis: string;
   tokens: number;
-  ownerId: string;
+  ownerId: string; // The original creator
+  owners: string[]; // Array of user ids who own a copy
   followers: string[]; // array of user ids
 };
 
@@ -28,7 +29,8 @@ export const badges: Badge[] = [
     emojis: '🚀✨🪐',
     tokens: 1000,
     ownerId: 'user-1',
-    followers: ['user-2', 'user-3'],
+    owners: ['user-1', 'user-2'], // Alex and Maria own this
+    followers: ['user-3'],
   },
   {
     id: 'badge-2',
@@ -36,7 +38,8 @@ export const badges: Badge[] = [
     emojis: '🌊🐢🐠',
     tokens: 500,
     ownerId: 'user-2',
-    followers: ['user-1', 'user-4', 'user-5'],
+    owners: ['user-2', 'user-4', 'user-5'],
+    followers: ['user-1'],
   },
   {
     id: 'badge-3',
@@ -44,6 +47,7 @@ export const badges: Badge[] = [
     emojis: '👾🎮🕹️',
     tokens: 750,
     ownerId: 'user-1',
+    owners: ['user-1'],
     followers: ['user-5'],
   },
   {
@@ -52,7 +56,8 @@ export const badges: Badge[] = [
     emojis: '🌲🦊🦉',
     tokens: 1200,
     ownerId: 'user-4',
-    followers: ['user-1', 'user-2', 'user-3', 'user-5'],
+    owners: ['user-4', 'user-1', 'user-3'],
+    followers: ['user-2', 'user-5'],
   },
   {
     id: 'badge-5',
@@ -60,6 +65,7 @@ export const badges: Badge[] = [
     emojis: '👨‍🍳🥐🍰',
     tokens: 800,
     ownerId: 'user-3',
+    owners: ['user-3'],
     followers: [],
   },
    {
@@ -68,10 +74,11 @@ export const badges: Badge[] = [
     emojis: '🎸🎹🎤',
     tokens: 2500,
     ownerId: 'user-5',
+    owners: ['user-5'],
     followers: ['user-1', 'user-2', 'user-3', 'user-4'],
   },
 ];
 
 export const getBadgeById = (id: string) => badges.find((b) => b.id === id);
 export const getUserById = (id: string) => users.find((u) => u.id === id);
-export const getBadgesByOwner = (ownerId: string) => badges.filter((b) => b.ownerId === ownerId);
+export const getBadgesByOwner = (ownerId: string) => badges.filter((b) => b.owners.includes(ownerId));
