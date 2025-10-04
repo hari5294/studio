@@ -125,6 +125,18 @@ export function AppSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
+                asChild
+                isActive={isActive('/dashboard/profile')}
+                tooltip="My Profile"
+            >
+                <Link href="/dashboard/profile">
+                    <User />
+                    <span>My Profile</span>
+                </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
               asChild
               isActive={isActive('/dashboard/create')}
               tooltip="Create Badge"
