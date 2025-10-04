@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { useRouter, notFound } from 'next/navigation';
-import { getShareLink, useShareLink, claimBadge, getBadgeById, type Badge } from '@/lib/data';
+import { useRouter } from 'next/navigation';
+import { getShareLink, claimBadge, getBadgeById, type Badge, type ShareLink } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
+
 
 export default function JoinPage({ params }: { params: { linkId: string } }) {
   const router = useRouter();
@@ -17,6 +19,9 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
   const [badge, setBadge] = useState<Badge | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isShareOpen, setShareOpen] = useState(false);
+  const [newShareLinks, setNewShareLinks] = useState<ShareLink[]>([]);
+  const currentUserId = 'user-1'; // Hardcoded user for now
 
   useEffect(() => {
     const link = getShareLink(params.linkId);
@@ -39,7 +44,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
         return;
     }
     
-    if(linkedBadge.owners.includes('user-1')) {
+    if(linkedBadge.owners.includes(currentUserId)) {
         setError("You already own this badge.");
         setIsLoading(false);
         return;
@@ -54,13 +59,21 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
     if (!badge) return;
 
     try {
-        useShareLink(params.linkId);
-        claimBadge(badge.id, 'user-1'); // Hardcoded user for now
+        const { newLinks } = claimBadge(badge.id, currentUserId, params.linkId);
+        
         toast({
             title: 'Badge Claimed!',
             description: `You are now an owner of the "${badge.name}" badge.`,
         });
-        router.push(`/dashboard/badge/${badge.id}`);
+
+        if (newLinks.length > 0) {
+            setNewShareLinks(newLinks);
+            setShareOpen(true); // Open the dialog to show the new links
+        } else {
+             // If no new links, just go to the badge page
+            router.push(`/dashboard/badge/${badge.id}`);
+        }
+        
     } catch(err: any) {
          toast({
             title: 'Failed to Claim Badge',
@@ -70,6 +83,14 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
         setError(err.message);
     }
   };
+
+  const handleShareDialogClose = () => {
+    setShareOpen(false);
+    // After closing the share dialog, navigate to the badge page
+    if (badge) {
+        router.push(`/dashboard/badge/${badge.id}`);
+    }
+  }
 
   const renderContent = () => {
     if (isLoading) {
@@ -133,6 +154,14 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
             </div>
          </CardContent>
       </Card>
+      {badge && (
+          <ShareBadgeDialog 
+            open={isShareOpen} 
+            onOpenChange={handleShareDialogClose} 
+            badge={badge}
+            initialLinks={newShareLinks}
+          />
+      )}
     </div>
   );
 }

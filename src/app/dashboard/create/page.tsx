@@ -31,12 +31,13 @@ export default function CreateBadgePage() {
         return;
     }
 
-    const newBadge = createBadge({ name: badgeName, emojis, tokens }, 'user-1');
+    const { newBadge } = createBadge({ name: badgeName, emojis, tokens }, 'user-1');
 
     toast({
       title: 'Badge Created!',
       description: `Your badge "${badgeName}" has been successfully created.`,
     });
+    // Redirect to the badge page and trigger the share dialog
     router.push(`/dashboard/badge/${newBadge.id}?showShare=true`);
   };
 

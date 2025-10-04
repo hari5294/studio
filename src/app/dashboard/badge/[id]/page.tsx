@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useReducer, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getBadgeById, getUserById, User, followBadge } from '@/lib/data';
+import { getBadgeById, getUserById, User, followBadge, ShareLink } from '@/lib/data';
 import { Header } from '@/components/layout/header';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -25,7 +25,6 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  // use a reducer to force re-renders when data changes
   const [_, forceUpdate] = useReducer((x) => x + 1, 0);
 
   const badge = getBadgeById(params.id);
@@ -35,7 +34,6 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   const [isCreator, setIsCreator] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
-  const [hasChecked, setHasChecked] = useState(false);
   const [isClient, setIsClient] = useState(false);
   
   const currentUserId = 'user-1';
@@ -46,11 +44,9 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
       setIsCreator(badge.ownerId === currentUserId);
       setIsOwner(badge.owners.includes(currentUserId));
       setIsFollowing(badge.followers.includes(currentUserId));
-      setHasChecked(true);
 
       if (searchParams.get('showShare') === 'true') {
         setShareOpen(true);
-        // Clean up the URL
         router.replace(`/dashboard/badge/${params.id}`, { scroll: false });
       }
     }
@@ -115,7 +111,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                 <div className="flex flex-wrap gap-2">
                     <Button 
                         onClick={() => setShareOpen(true)} 
-                        className={cn("bg-accent text-accent-foreground hover:bg-accent/90", { 'hidden': !hasChecked || !isOwner })}
+                        className={cn({ 'invisible': !isClient || !isOwner })}
                         disabled={!isOwner || badgesLeft <= 0}
                     >
                         <Share2 className="mr-2 h-4 w-4" />
@@ -124,13 +120,17 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                   <Button 
                     variant="outline" 
                     onClick={() => setTransferOpen(true)}
-                    className={cn({ 'hidden': !hasChecked || !isCreator })}
+                    className={cn({ 'invisible': !isClient || !isCreator })}
                     disabled={!isCreator}
                   >
                       <ArrowRightLeft className="mr-2 h-4 w-4" />
                       Transfer
                   </Button>
-                   <Button variant={isFollowing ? 'secondary' : 'outline'} onClick={handleFollow}>
+                   <Button 
+                     variant={isFollowing ? 'secondary' : 'outline'} 
+                     onClick={handleFollow}
+                     className={cn({ 'invisible': !isClient })}
+                    >
                       {isFollowing ? 'Unfollow' : 'Follow'}
                    </Button>
                 </div>

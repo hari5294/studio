@@ -15,7 +15,19 @@ export type Badge = {
   followers: string[]; // array of user ids
 };
 
-export const users: User[] = [
+export type ShareLink = {
+    linkId: string;
+    badgeId: string;
+    ownerId: string; // The user who generated this link
+    expires: number;
+    used: boolean;
+    claimedBy: string | null; // which user used this link
+};
+
+
+// --- IN-MEMORY DATABASE ---
+
+let users: User[] = [
   { id: 'user-1', name: 'Alex', avatarUrl: 'https://picsum.photos/seed/avatar1/100/100' },
   { id: 'user-2', name: 'Maria', avatarUrl: 'https://picsum.photos/seed/avatar2/100/100' },
   { id: 'user-3', name: 'David', avatarUrl: 'https://picsum.photos/seed/avatar3/100/100' },
@@ -23,7 +35,7 @@ export const users: User[] = [
   { id: 'user-5', name: 'Ken', avatarUrl: 'https://picsum.photos/seed/avatar5/100/100' },
 ];
 
-export const badges: Badge[] = [
+let badges: Badge[] = [
   {
     id: 'badge-1',
     name: 'Cosmic Explorers',
@@ -80,6 +92,8 @@ export const badges: Badge[] = [
   },
 ];
 
+let shareLinks: ShareLink[] = [];
+
 
 // --- Data Access Functions ---
 
@@ -92,7 +106,7 @@ export const getAllUsers = () => users;
 
 // --- Data Mutation Functions ---
 
-export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'followers'>, creatorId: string): Badge => {
+export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'followers'>, creatorId: string): {newBadge: Badge, initialLinks: ShareLink[]} => {
   const newId = `badge-${badges.length + 1}`;
   const newBadge: Badge = {
     ...data,
@@ -102,7 +116,8 @@ export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'fol
     followers: [],
   };
   badges.unshift(newBadge);
-  return newBadge;
+  const initialLinks = createShareLinks(newBadge.id, creatorId, 3);
+  return { newBadge, initialLinks };
 };
 
 export const followBadge = (badgeId: string, userId: string) => {
@@ -119,14 +134,27 @@ export const followBadge = (badgeId: string, userId: string) => {
     return badge;
 }
 
-export const claimBadge = (badgeId: string, userId: string) => {
+export const claimBadge = (badgeId: string, userId: string, linkId: string): { badge: Badge, newLinks: ShareLink[] } => {
     const badge = getBadgeById(badgeId);
     if (!badge) throw new Error('Badge not found');
     if (badge.owners.length >= badge.tokens) throw new Error('No badges left to claim');
     if (badge.owners.includes(userId)) throw new Error('User already owns this badge');
 
+    const link = getShareLink(linkId);
+    if (!link || link.used) throw new Error('This invitation link is invalid or has already been used.');
+
+    // Claim the badge
     badge.owners.push(userId);
-    return badge;
+    // Mark the link as used
+    useShareLink(linkId, userId);
+
+    // Generate new links for the new owner, if tokens are available
+    let newLinks: ShareLink[] = [];
+    if (badge.owners.length < badge.tokens) {
+        newLinks = createShareLinks(badgeId, userId, 3);
+    }
+    
+    return { badge, newLinks };
 }
 
 export const transferBadgeOwnership = (badgeId: string, newOwnerId: string) => {
@@ -144,23 +172,24 @@ export const transferBadgeOwnership = (badgeId: string, newOwnerId: string) => {
 }
 
 // --- Share Link Simulation ---
-type ShareLink = {
-    linkId: string;
-    badgeId: string;
-    expires: number;
-    used: boolean;
-};
 
-let shareLinks: ShareLink[] = [];
+export const createShareLinks = (badgeId: string, ownerId: string, count: number): ShareLink[] => {
+    const badge = getBadgeById(badgeId);
+    if (!badge) throw new Error("Badge not found");
 
-export const createShareLinks = (badgeId: string, count: number): ShareLink[] => {
+    const availableTokens = badge.tokens - badge.owners.length;
+    const linksToCreate = Math.min(count, availableTokens);
+    if (linksToCreate <= 0) return [];
+    
     const newLinks: ShareLink[] = [];
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < linksToCreate; i++) {
         const newLink: ShareLink = {
             linkId: Math.random().toString(36).substring(2, 10),
             badgeId: badgeId,
+            ownerId: ownerId,
             expires: Date.now() + 1000 * 60 * 60 * 24, // 24 hours
             used: false,
+            claimedBy: null,
         };
         newLinks.push(newLink);
     }
@@ -172,10 +201,12 @@ export const getShareLink = (linkId: string): ShareLink | undefined => {
     return shareLinks.find(l => l.linkId === linkId);
 }
 
-export const useShareLink = (linkId: string): ShareLink | undefined => {
+export const useShareLink = (linkId: string, userId: string): ShareLink | undefined => {
     const link = getShareLink(linkId);
     if (link) {
+        if (link.used) throw new Error("Link has already been used.");
         link.used = true;
+        link.claimedBy = userId;
     }
     return link;
 }
