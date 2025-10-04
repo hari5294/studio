@@ -173,7 +173,7 @@ export default function UserProfilePage({ params }: { params: { id:string } }) {
     notFound();
   }
   
-  const isCurrentUserProfile = user.id === currentUserMock?.uid;
+  const isCurrentUserProfile = user.id === currentUserMock?.id;
 
   return (
     <>
