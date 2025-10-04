@@ -113,7 +113,7 @@ export default function InboxPage() {
   return (
     <>
       <Header title="Inbox" />
-      <div className="flex-1 p-4 md:p-8">
+      <div className="flex-1 p-4 md:p-6">
         {isClient && notifications.length > 0 ? (
             <Tabs defaultValue="requests" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">

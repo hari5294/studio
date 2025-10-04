@@ -89,7 +89,7 @@ export default function RedeemCodePage() {
   return (
     <>
       <Header title="Redeem a Badge Code" />
-      <div className="flex-1 p-4 md:p-8">
+      <div className="flex-1 p-4 md:p-6">
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">

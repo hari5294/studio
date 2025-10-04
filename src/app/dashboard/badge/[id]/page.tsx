@@ -109,20 +109,20 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   return (
     <>
       <Header title="Badge Details" />
-      <div className="flex-1 space-y-8 p-4 md:p-8">
-        <Button variant="ghost" onClick={() => router.push('/dashboard')} className="mb-4">
+      <div className="flex-1 space-y-6 p-4 md:p-6">
+        <Button variant="ghost" onClick={() => router.push('/dashboard')} className="mb-2">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
         </Button>
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-8">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-4">
                   <div>
-                    <div className="text-6xl mb-4">{badge.emojis}</div>
-                    <CardTitle className="font-headline text-3xl">{badge.name}</CardTitle>
+                    <div className="text-5xl md:text-6xl mb-4">{badge.emojis}</div>
+                    <CardTitle className="font-headline text-2xl md:text-3xl">{badge.name}</CardTitle>
                     <CardDescription className="flex items-center gap-2 pt-2">
                        Created by
                       <Avatar className="h-6 w-6">
@@ -132,7 +132,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                       {creator?.name}
                     </CardDescription>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex-shrink-0">
                     {isClient && (
                       <>
                         <p className="text-3xl font-bold text-primary">{badgesLeft.toLocaleString()}</p>
@@ -175,7 +175,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                      disabled={isOwner}
                     >
                       <Send className="mr-2 h-4 w-4" />
-                      Request a Code
+                      Request Code
                    </Button>
                 </div>
               </CardContent>
@@ -209,7 +209,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
 
           </div>
 
-          <div className="lg:col-span-1 space-y-8">
+          <div className="lg:col-span-1 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">

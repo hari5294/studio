@@ -21,7 +21,7 @@ function SearchResults() {
   const userResults: User[] = query ? searchUsers(query) : [];
 
   return (
-    <div className="flex-1 space-y-8 p-4 md:p-8">
+    <div className="flex-1 space-y-6 p-4 md:p-6">
       {!query && (
         <div className="flex flex-col items-center justify-center text-center py-12">
             <SearchIcon className="h-16 w-16 text-muted-foreground" />
@@ -40,7 +40,7 @@ function SearchResults() {
               Badges ({badgeResults.length})
             </h2>
             {badgeResults.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {badgeResults.map((badge) => {
                    const followersData = badge.followers.map((id) => getUserById(id)).filter(Boolean) as User[];
                    return <BadgeCard key={badge.id} badge={badge} followersData={followersData} />;
@@ -59,7 +59,7 @@ function SearchResults() {
               Users ({userResults.length})
             </h2>
             {userResults.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {userResults.map((user) => (
                   <Link href={`/dashboard/profile/${user.id}`} key={user.id}>
                     <Card className="hover:shadow-md transition-shadow">

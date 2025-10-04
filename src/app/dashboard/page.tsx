@@ -24,14 +24,14 @@ export default function DashboardPage() {
   return (
     <>
       <Header title="Dashboard" />
-      <div className="flex-1 space-y-8 p-4 md:p-8">
+      <div className="flex-1 space-y-6 p-4 md:p-6">
         <div>
           <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
             <Badge className="h-6 w-6" />
             My Badges
           </h2>
           {isClient && myBadges.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {myBadges.map((badge) => {
                 const followersData =
                   badge.followers

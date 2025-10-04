@@ -55,7 +55,7 @@ export default function CreateBadgePage() {
   return (
     <>
       <Header title="Create a New Badge" />
-      <div className="flex-1 p-4 md:p-8">
+      <div className="flex-1 p-4 md:p-6">
         <Button variant="ghost" onClick={() => router.back()} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back

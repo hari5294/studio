@@ -61,9 +61,9 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
   return (
     <>
       <Header title="User Profile" />
-      <div className="flex-1 space-y-8 p-4 md:p-8">
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-8">
+      <div className="flex-1 space-y-6 p-4 md:p-6">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardContent className="pt-6 flex flex-col items-center text-center gap-4">
                 <Avatar className="h-24 w-24 border-4 border-primary">
@@ -105,7 +105,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                 )}
             </div>
           </div>
-          <div className="lg:col-span-1 space-y-8">
+          <div className="lg:col-span-1 space-y-6">
              <Card>
               <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
