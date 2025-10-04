@@ -29,7 +29,6 @@ import {
   Settings,
   User,
   MoreHorizontal,
-  LogOut,
   Search,
   Gift,
   Inbox
@@ -89,10 +88,6 @@ function OwnedBadges() {
 function UserMenu() {
     const router = useRouter();
 
-    const handleLogout = async () => {
-        router.push('/login');
-    }
-
     if (!mockUser) return null;
 
     return (
@@ -132,11 +127,6 @@ function UserMenu() {
             <DropdownMenuItem disabled>
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

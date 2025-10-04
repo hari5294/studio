@@ -55,11 +55,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!badge) return;
-    if (!user) {
-        router.push(`/login?redirect=/join/${params.linkId}`);
-        return
-    };
+    if (!badge || !user) return;
 
     setIsClaiming(true);
 
@@ -137,13 +133,13 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
                 </div>
                 <CardTitle className="text-2xl font-headline">Claim '{badge.name}'</CardTitle>
                 <CardDescription>
-                    {user ? "You've been invited to own this badge! Click below to claim it." : "Log in or sign up to claim this badge."}
+                    You've been invited to own this badge! Click below to claim it.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <form onSubmit={handleJoin} className="grid gap-4">
                     <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isClaiming}>
-                     {isClaiming ? "Claiming..." : (user ? "Claim Badge" : "Login to Claim")}
+                     {isClaiming ? "Claiming..." : "Claim Badge"}
                     </Button>
                 </form>
             </CardContent>
