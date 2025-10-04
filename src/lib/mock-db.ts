@@ -1,5 +1,4 @@
 
-
 export type User = {
   id: string;
   name: string;
@@ -127,7 +126,7 @@ export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'fol
     createdAt: Date.now(),
   };
   badges.unshift(newBadge);
-  const initialLinks = createShareLinks(newBadge.id, creatorId, 3);
+  const initialLinks = createShareLinks(newBadge.id, creatorId, 5);
   return { newBadge, initialLinks };
 };
 
