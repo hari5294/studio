@@ -14,7 +14,6 @@ import {
   Users,
   Share2,
   ArrowRightLeft,
-  Vote,
   Crown
 } from 'lucide-react';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
@@ -163,21 +162,6 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
                     <p className="text-sm text-muted-foreground text-center py-4">No followers yet.</p>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-
-             <Card>
-              <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2">
-                  <Vote className="h-6 w-6" />
-                  Token Increase Vote
-                </CardTitle>
-                <CardDescription>
-                    This feature is now disabled.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                 <p className="text-sm text-muted-foreground">The token system has been updated to represent badge ownership count and can no longer be increased by voting.</p>
               </CardContent>
             </Card>
           </div>
