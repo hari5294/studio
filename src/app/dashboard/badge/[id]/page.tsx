@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { TransferBadgeDialog } from '@/components/badges/transfer-badge-dialog';
+import { cn } from '@/lib/utils';
 
 export default function BadgeDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -27,12 +29,14 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
   const [isTransferOpen, setTransferOpen] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
     if (badge) {
       const currentUserId = 'user-1';
       setIsCreator(badge.ownerId === currentUserId);
       setIsOwner(badge.owners.includes(currentUserId));
+      setHasChecked(true);
     }
   }, [badge]);
 
@@ -79,18 +83,23 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                    {isOwner && (
-                        <Button onClick={() => setShareOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
-                            <Share2 className="mr-2 h-4 w-4" />
-                            Share
-                        </Button>
-                    )}
-                  {isCreator && (
-                    <Button variant="outline" onClick={() => setTransferOpen(true)}>
+                    <Button 
+                        onClick={() => setShareOpen(true)} 
+                        className={cn("bg-accent text-accent-foreground hover:bg-accent/90", { 'hidden': !hasChecked || !isOwner })}
+                        disabled={!isOwner}
+                    >
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Share
+                    </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setTransferOpen(true)}
+                    className={cn({ 'hidden': !hasChecked || !isCreator })}
+                    disabled={!isCreator}
+                  >
                       <ArrowRightLeft className="mr-2 h-4 w-4" />
                       Transfer
-                    </Button>
-                  )}
+                  </Button>
                    <Button variant="secondary">
                       Follow
                    </Button>
