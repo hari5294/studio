@@ -33,6 +33,7 @@ import {
   MoreHorizontal,
   LogOut,
   Search,
+  Gift,
 } from 'lucide-react';
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn, getFirstEmoji } from '@/lib/utils';
@@ -89,6 +90,18 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+           <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={isActive('/dashboard/redeem')}
+              tooltip="Redeem Code"
+            >
+              <Link href="/dashboard/redeem">
+                <Gift />
+                <span>Redeem Code</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
@@ -105,7 +118,7 @@ export function AppSidebar() {
 
         <div className="mt-4 flex flex-col gap-2 p-2 pt-0">
           <p className="px-2 text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
-            My Badges
+            Owned Badges
           </p>
           <SidebarMenu>
             {myBadges.map((badge) => (
