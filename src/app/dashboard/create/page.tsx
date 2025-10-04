@@ -24,7 +24,9 @@ export default function CreateBadgePage() {
 
   const handleEmojiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    if (value === '' || isOnlyEmojis(value)) {
+    // Use spread syntax on the string to correctly count emojis, including multi-character ones
+    const emojiArray = [...value];
+    if (value === '' || (isOnlyEmojis(value) && emojiArray.length <= 3)) {
       setEmojis(value);
     }
   };
@@ -41,6 +43,17 @@ export default function CreateBadgePage() {
     const badgeName = formData.get('badgeName') as string;
     const submittedEmojis = formData.get('emojis') as string;
     const tokens = Number(formData.get('tokens'));
+    
+    const emojiCount = [...submittedEmojis].length;
+    if (emojiCount === 0 || emojiCount > 3) {
+        toast({
+            title: 'Invalid Emoji Count',
+            description: 'Please use between 1 and 3 emojis.',
+            variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+    }
 
     if (!badgeName || !submittedEmojis || !tokens) {
         toast({
@@ -149,7 +162,7 @@ export default function CreateBadgePage() {
                   disabled={isLoading}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Choose up to 3 emojis that represent your badge. Only emojis are allowed.
+                  Choose 1 to 3 emojis that represent your badge. Only emojis are allowed.
                 </p>
               </div>
               <div className="space-y-2">
