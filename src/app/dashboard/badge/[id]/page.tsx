@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useReducer, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getBadgeById, getUserById, User, followBadge, ShareLink, getShareLinksForUser } from '@/lib/data';
+import { getBadgeById, getUserById, User, followBadge, ShareLink, getShareLinksForUser, requestBadgeCode } from '@/lib/data';
 import { Header } from '@/components/layout/header';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -91,10 +91,19 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   }
 
   const handleRequestCode = () => {
-    toast({
-        title: 'Request Sent!',
-        description: `Your request for a code for "${badge.name}" has been sent to the owners.`,
-    });
+    try {
+        requestBadgeCode(badge.id, currentUserId);
+        toast({
+            title: 'Request Sent!',
+            description: `Your request for a code for "${badge.name}" has been sent to the owners.`,
+        });
+    } catch (e: any) {
+         toast({
+            title: 'Request Failed',
+            description: e.message,
+            variant: 'destructive'
+        });
+    }
   }
   
   return (

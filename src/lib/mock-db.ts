@@ -1,4 +1,5 @@
 
+
 export type User = {
   id: string;
   name: string;
@@ -23,6 +24,16 @@ export type ShareLink = {
     ownerId: string; // The user who generated this link
     used: boolean;
     claimedBy: string | null; // which user used this link
+};
+
+export type Notification = {
+    id: string;
+    userId: string; // User who this notification is for
+    type: 'BADGE_REQUEST' | 'BADGE_RECEIVED';
+    fromUserId: string; // User who triggered the notification
+    badgeId: string;
+    createdAt: number;
+    read: boolean;
 };
 
 
@@ -101,6 +112,13 @@ let badges: Badge[] = [
 
 let shareLinks: ShareLink[] = [];
 
+let notifications: Notification[] = [
+    // Mock notification for initial state
+    { id: 'notif-1', userId: 'user-1', type: 'BADGE_REQUEST', fromUserId: 'user-3', badgeId: 'badge-1', createdAt: Date.now() - 100000, read: false },
+    { id: 'notif-2', userId: 'user-2', type: 'BADGE_REQUEST', fromUserId: 'user-3', badgeId: 'badge-1', createdAt: Date.now() - 100000, read: true },
+    { id: 'notif-3', userId: 'user-4', type: 'BADGE_RECEIVED', fromUserId: 'user-2', badgeId: 'badge-2', createdAt: Date.now() - 200000, read: false },
+];
+
 
 // --- Data Access Functions ---
 
@@ -172,11 +190,21 @@ export const claimBadge = (badgeId: string, userId: string, linkId: string): { b
 
     const link = getShareLink(linkId);
     if (!link || link.used) throw new Error('This invitation code is invalid or has already been used.');
+    if (link.ownerId === userId) throw new Error("You cannot use a code you generated yourself.");
 
     // Claim the badge
     badge.owners.push(userId);
     // Mark the link as used
     useShareLink(linkId, userId);
+    
+    // Notify the user they received a badge
+    createNotification({
+        userId: userId,
+        type: 'BADGE_RECEIVED',
+        fromUserId: link.ownerId,
+        badgeId: badgeId,
+    });
+
 
     // Generate a new link for the new owner, if tokens are available
     const newLinks = createShareLinks(badgeId, userId, 3);
@@ -250,4 +278,56 @@ export const useShareLink = (linkId: string, userId: string): ShareLink | undefi
         link.claimedBy = userId;
     }
     return link;
+}
+
+
+// --- Notification System ---
+
+export const getNotificationsForUser = (userId: string): Notification[] => {
+    return notifications
+        .filter(n => n.userId === userId)
+        .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export const getUnreadNotificationCount = (userId: string): number => {
+    return notifications.filter(n => n.userId === userId && !n.read).length;
+}
+
+export const markNotificationAsRead = (notificationId: string, userId: string) => {
+    const notification = notifications.find(n => n.id === notificationId && n.userId === userId);
+    if (notification) {
+        notification.read = true;
+    }
+    return notification;
+}
+
+export const createNotification = (data: Omit<Notification, 'id' | 'createdAt' | 'read'>) => {
+    const newNotif: Notification = {
+        ...data,
+        id: `notif-${notifications.length + 1}`,
+        createdAt: Date.now(),
+        read: false,
+    };
+    notifications.unshift(newNotif);
+    return newNotif;
+}
+
+export const requestBadgeCode = (badgeId: string, fromUserId: string) => {
+    const badge = getBadgeById(badgeId);
+    if (!badge) throw new Error("Badge not found.");
+
+    // Create a notification for each owner of the badge
+    badge.owners.forEach(ownerId => {
+        // Don't notify the person who made the request
+        if (ownerId === fromUserId) return;
+
+        createNotification({
+            userId: ownerId,
+            type: 'BADGE_REQUEST',
+            fromUserId: fromUserId,
+            badgeId: badgeId,
+        });
+    });
+
+    return { success: true };
 }

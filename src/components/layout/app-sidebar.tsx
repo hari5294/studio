@@ -34,10 +34,11 @@ import {
   LogOut,
   Search,
   Gift,
+  Inbox
 } from 'lucide-react';
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn, getFirstEmoji } from '@/lib/utils';
-import { getBadgesByOwner } from '@/lib/data';
+import { getBadgesByOwner, getUnreadNotificationCount } from '@/lib/data';
 import { useSidebar } from '@/components/ui/sidebar';
 import React, { useEffect, useState } from 'react';
 import type { Badge } from '@/lib/data';
@@ -47,10 +48,13 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
   const [myBadges, setMyBadges] = useState<Badge[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const currentUserId = 'user-1';
 
   useEffect(() => {
-    // This effect will re-run on navigation, ensuring the badge list is fresh.
-    setMyBadges(getBadgesByOwner('user-1'));
+    // This effect will re-run on navigation, ensuring the badge list and unread count is fresh.
+    setMyBadges(getBadgesByOwner(currentUserId));
+    setUnreadCount(getUnreadNotificationCount(currentUserId));
   }, [pathname]);
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
@@ -99,6 +103,23 @@ export function AppSidebar() {
               <Link href="/dashboard/redeem">
                 <Gift />
                 <span>Redeem Code</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={isActive('/dashboard/inbox')}
+              tooltip="Inbox"
+            >
+              <Link href="/dashboard/inbox" className="relative">
+                <Inbox />
+                <span>Inbox</span>
+                {unreadCount > 0 && (
+                  <span className="absolute right-2 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:top-0">
+                    {unreadCount}
+                  </span>
+                )}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
