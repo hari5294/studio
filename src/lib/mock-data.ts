@@ -24,7 +24,8 @@ export type ShareLink = {
     badgeId: string; 
     ownerId: string; 
     used: boolean; 
-    claimedBy: string | null; 
+    claimedBy: string | null;
+    createdAt: number;
 };
 
 export type Notification = { 
@@ -53,14 +54,14 @@ const initialBadges: Record<string, Badge> = {
 };
 
 const initialShareLinks: Record<string, ShareLink> = {
-    'link1': { linkId: 'link1', badgeId: 'badge1', ownerId: 'user1', used: false, claimedBy: null },
-    'link2': { linkId: 'link2', badgeId: 'badge2', ownerId: 'user2', used: false, claimedBy: null },
-    'usedlink': { linkId: 'usedlink', badgeId: 'badge1', ownerId: 'user1', used: true, claimedBy: 'user2' },
+    'link1': { linkId: 'link1', badgeId: 'badge1', ownerId: 'user1', used: false, claimedBy: null, createdAt: Date.now() },
+    'link2': { linkId: 'link2', badgeId: 'badge2', ownerId: 'user2', used: false, claimedBy: null, createdAt: Date.now() - 86400000 * 2 }, // Expired
+    'usedlink': { linkId: 'usedlink', badgeId: 'badge1', ownerId: 'user1', used: true, claimedBy: 'user2', createdAt: Date.now() },
 };
 
 const initialNotifications: Record<string, Notification> = {
-    'n1': { id: 'n1', type: 'BADGE_REQUEST', userId: 'user1', fromUserId: 'user2', badgeId: 'badge1', createdAt: new Date(Date.now() - 1000 * 60 * 5).getTime(), read: false },
-    'n2': { id: 'n2', type: 'BADGE_RECEIVED', userId: 'user1', fromUserId: 'user2', badgeId: 'badge2', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).getTime(), read: false },
+    'n1': { id: 'n1', type: 'BADGE_REQUEST', userId: 'user1', fromUserId: 'user2', badgeId: 'badge1', createdAt: new Date(Date.now() - 1000 * 60 * 5).getTime(), read: true },
+    'n2': { id: 'n2', type: 'BADGE_RECEIVED', userId: 'user1', fromUserId: 'user2', badgeId: 'badge2', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).getTime(), read: true },
     'n3': { id: 'n3', type: 'BADGE_REQUEST', userId: 'user1', fromUserId: 'user3', badgeId: 'badge1', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).getTime(), read: true },
 };
 

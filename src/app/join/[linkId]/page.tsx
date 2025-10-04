@@ -12,6 +12,8 @@ import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { useAtom } from 'jotai';
 import { shareLinksAtom, badgesAtom, currentUserIdAtom, ShareLink, Badge } from '@/lib/mock-data';
 
+const EXPIRY_HOURS = 24;
+
 export default function JoinPage({ params }: { params: { linkId: string } }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -32,8 +34,17 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
   useEffect(() => {
     const initialize = () => {
         const link = shareLinks[linkId];
+        const now = Date.now();
+        const expiryTime = (link?.createdAt || 0) + (EXPIRY_HOURS * 60 * 60 * 1000);
+
         if (!link || link.used) {
             setError("This invitation code is invalid or has already been used.");
+            setIsLoading(false);
+            return;
+        }
+
+        if (now > expiryTime) {
+            setError(`This code has expired. Codes are valid for ${EXPIRY_HOURS} hours.`);
             setIsLoading(false);
             return;
         }
@@ -93,7 +104,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
               const newLinksToAdd: Record<string, ShareLink> = {};
               for (let i = 0; i < 3; i++) {
                 const newLinkId = crypto.randomUUID();
-                const newLink: ShareLink = { linkId: newLinkId, badgeId: badge.id, ownerId: currentUserId, used: false, claimedBy: null };
+                const newLink: ShareLink = { linkId: newLinkId, badgeId: badge.id, ownerId: currentUserId, used: false, claimedBy: null, createdAt: Date.now() };
                 newLinksToAdd[newLinkId] = newLink;
                 generatedLinks.push(newLink);
               }

@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 
 type EnrichedNotification = Notification & { fromUser?: User; badge?: Badge };
 
-function NotificationItem({ notification }: { notification: EnrichedNotification }) {
+function NotificationItem({ notification, onUpdate }: { notification: EnrichedNotification, onUpdate: () => void }) {
     const { toast } = useToast();
     const [, setNotifications] = useAtom(notificationsAtom);
     const [, setShareLinks] = useAtom(shareLinksAtom);
@@ -36,7 +36,8 @@ function NotificationItem({ notification }: { notification: EnrichedNotification
                     badgeId: notification.badgeId,
                     ownerId: currentUserId,
                     used: false,
-                    claimedBy: null
+                    claimedBy: null,
+                    createdAt: Date.now()
                 }
             }));
 
@@ -64,10 +65,11 @@ function NotificationItem({ notification }: { notification: EnrichedNotification
         if (!notification.read) {
             const timer = setTimeout(() => {
                 setNotifications(prev => ({ ...prev, [notification.id]: { ...prev[notification.id], read: true }}));
+                onUpdate();
             }, 2000);
             return () => clearTimeout(timer);
         }
-    }, [notification.id, notification.read, setNotifications]);
+    }, [notification.id, notification.read, setNotifications, onUpdate]);
     
     if (!notification.fromUser || !notification.badge) {
         return (
@@ -159,13 +161,13 @@ function NotificationList({ notifications, onNotificationUpdate }: { notificatio
 
     return (
         <div className="space-y-2">
-            {notifications.sort((a,b) => b.createdAt - a.createdAt).map(n => <NotificationItem key={n.id} notification={n} />)}
+            {notifications.sort((a,b) => b.createdAt - a.createdAt).map(n => <NotificationItem key={n.id} notification={n} onUpdate={onNotificationUpdate} />)}
         </div>
     )
 }
 
 export default function InboxPage() {
-  const [allNotifications, setAllNotifications] = useAtom(notificationsAtom);
+  const [allNotifications] = useAtom(notificationsAtom);
   const [users] = useAtom(usersAtom);
   const [badges] = useAtom(badgesAtom);
   const [currentUserId] = useAtom(currentUserIdAtom);

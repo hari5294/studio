@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Gift } from 'lucide-react';
 import { badgesAtom, currentUserIdAtom, shareLinksAtom, ShareLink } from '@/lib/mock-data';
 
+const EXPIRY_HOURS = 24;
+
 export default function RedeemCodePage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -42,9 +44,14 @@ export default function RedeemCodePage() {
     setTimeout(() => {
         try {
             const link = shareLinks[code];
+            const now = Date.now();
+            const expiryTime = (link?.createdAt || 0) + (EXPIRY_HOURS * 60 * 60 * 1000);
 
             if (!link || link.used) {
                 throw new Error("This code is invalid or has already been used.");
+            }
+             if (now > expiryTime) {
+                throw new Error(`This code has expired. Codes are valid for ${EXPIRY_HOURS} hours.`);
             }
             
             const badgeToClaim = badges[link.badgeId];
@@ -73,7 +80,7 @@ export default function RedeemCodePage() {
               const newLinksToAdd: Record<string, ShareLink> = {};
               for (let i = 0; i < 3; i++) {
                 const newLinkId = crypto.randomUUID();
-                const newLink: ShareLink = { linkId: newLinkId, badgeId: link.badgeId, ownerId: currentUserId, used: false, claimedBy: null };
+                const newLink: ShareLink = { linkId: newLinkId, badgeId: link.badgeId, ownerId: currentUserId, used: false, claimedBy: null, createdAt: Date.now() };
                 newLinksToAdd[newLinkId] = newLink;
               }
               return { ...prev, ...newLinksToAdd };

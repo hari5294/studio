@@ -106,6 +106,7 @@ export default function CreateBadgePage() {
                   ownerId: currentUserId,
                   used: false,
                   claimedBy: null,
+                  createdAt: Date.now(),
                 };
               }
               return { ...prev, ...newLinks };
@@ -162,7 +163,7 @@ export default function CreateBadgePage() {
                   disabled={isLoading}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Choose exactly 3 emojis that represent your badge. Only emojis are allowed.
+                  Choose exactly 3 emojis that represent your badge.
                 </p>
               </div>
               <div className="space-y-2">
