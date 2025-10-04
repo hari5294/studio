@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useReducer } from 'react';
+import { useState } from 'react';
 import { notFound } from 'next/navigation';
 import { Header } from '@/components/layout/header';
-import { toggleFollowUser, type User as UserData, type Badge as BadgeType } from '@/lib/firestore-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { BadgeCard } from '@/components/badges/badge-card';
@@ -12,41 +11,30 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { EditProfileDialog } from '@/components/profile/edit-profile-dialog';
-import { useUser, useDoc, useCollection } from '@/firebase';
-import { useFirestore } from '@/firebase';
-import { collection, query, where, doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CombinedUser } from '@/firebase/auth/use-user';
 
+// Mock Data
+const mockUsers = {
+    '123': { id: '123', name: 'John Doe', email: 'john.doe@example.com', avatarUrl: 'https://picsum.photos/seed/123/100/100', emojiAvatar: '😀', following: ['456'] },
+    '456': { id: '456', name: 'Jane Smith', email: 'jane.smith@example.com', avatarUrl: 'https://picsum.photos/seed/456/100/100', emojiAvatar: '👩‍💻', following: [] },
+};
+const mockBadges = [
+  { id: '1', name: 'Cosmic Explorer', emojis: '🚀✨', tokens: 1000, owners: ['123'], followers: ['123', '456'], createdAt: Date.now(), ownerId: '123' },
+  { id: '2', name: 'Ocean Diver', emojis: '🌊🐠', tokens: 500, owners: ['123'], followers: ['456'], createdAt: Date.now(), ownerId: '456' },
+];
+const currentUserMock = mockUsers['123'];
 
-function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: CombinedUser, isCurrentUserProfile: boolean }) {
-    const { user: currentUser } = useUser();
+function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: any, isCurrentUserProfile: boolean }) {
     const { toast } = useToast();
-    const [_, forceUpdate] = useReducer((x) => x + 1, 0);
+    const [isFollowing, setIsFollowing] = useState(currentUserMock.following.includes(user.id));
     const [isEditProfileOpen, setEditProfileOpen] = useState(false);
-
-    const isFollowing = currentUser?.following?.includes(user.id) ?? false;
     
-    const handleProfileUpdate = () => {
-        forceUpdate();
-    }
-
     const handleFollowToggle = async () => {
-        if (!currentUser) return;
-        try {
-            await toggleFollowUser(currentUser.uid, user.id);
-            const nowFollowing = !isFollowing;
-            toast({
-                title: nowFollowing ? 'Followed!' : 'Unfollowed.',
-                description: `You are now ${nowFollowing ? 'following' : 'no longer following'} ${user.name}.`
-            });
-        } catch(e: any) {
-            toast({
-                title: 'Error',
-                description: e.message,
-                variant: 'destructive',
-            });
-        }
+        setIsFollowing(!isFollowing);
+        toast({
+            title: !isFollowing ? 'Followed!' : 'Unfollowed.',
+            description: `You are now ${!isFollowing ? 'following' : 'no longer following'} ${user.name}.`
+        });
     }
 
     return (
@@ -78,7 +66,7 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: CombinedUser,
                   <h1 className="text-2xl font-bold font-headline">{user.name}</h1>
                   <p className="text-muted-foreground">Member</p>
                 </div>
-                 {!isCurrentUserProfile && currentUser && (
+                 {!isCurrentUserProfile && (
                     <Button variant={isFollowing ? 'secondary' : 'outline'} onClick={handleFollowToggle}>
                         <UserIcon className="mr-2 h-4 w-4" />
                         {isFollowing ? 'Unfollow' : 'Follow'}
@@ -91,7 +79,7 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: CombinedUser,
                     open={isEditProfileOpen} 
                     onOpenChange={setEditProfileOpen} 
                     user={user}
-                    onUpdate={handleProfileUpdate}
+                    onUpdate={() => {}}
                 />
              )}
         </>
@@ -99,9 +87,8 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: CombinedUser,
 }
 
 function OwnedBadges({ userId }: { userId: string}) {
-    const firestore = useFirestore();
-    const badgesQuery = query(collection(firestore, 'badges'), where('owners', 'array-contains', userId));
-    const { data: ownedBadges, loading } = useCollection<BadgeType>(badgesQuery);
+    const ownedBadges = mockBadges.filter(b => b.owners.includes(userId));
+    const loading = false;
 
     if (loading) {
         return <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -117,7 +104,7 @@ function OwnedBadges({ userId }: { userId: string}) {
             </h2>
             {ownedBadges && ownedBadges.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {ownedBadges.map((badge) => <BadgeCard key={badge.id} badge={badge} />)}
+                {ownedBadges.map((badge) => <BadgeCard key={badge.id} badge={badge as any} />)}
                 </div>
             ) : (
                 <div className="text-center py-12 border-2 border-dashed rounded-lg">
@@ -128,15 +115,9 @@ function OwnedBadges({ userId }: { userId: string}) {
     )
 }
 
-function FollowingList({ user }: { user: CombinedUser }) {
-    const firestore = useFirestore();
-    
-    // Create a query if the user is following anyone
-    const followingQuery = user.following?.length > 0 
-        ? query(collection(firestore, 'users'), where('id', 'in', user.following))
-        : null;
-
-    const { data: followingUsers, loading } = useCollection<UserData>(followingQuery);
+function FollowingList({ user }: { user: any }) {
+    const followingUsers = user.following.map((id: string) => mockUsers[id as keyof typeof mockUsers]).filter(Boolean);
+    const loading = false;
 
     return (
         <Card>
@@ -150,7 +131,7 @@ function FollowingList({ user }: { user: CombinedUser }) {
             <div className="space-y-4">
                 {loading && user.following?.length > 0 && <p>Loading...</p>}
 
-                {!loading && followingUsers && followingUsers.map((followedUser) => (
+                {!loading && followingUsers && followingUsers.map((followedUser: any) => (
                 <Link href={`/dashboard/profile/${followedUser.id}`} key={followedUser.id}>
                     <div className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
                     <Avatar>
@@ -176,13 +157,10 @@ function FollowingList({ user }: { user: CombinedUser }) {
 
 
 export default function UserProfilePage({ params }: { params: { id:string } }) {
-  const { user: currentUser, loading: userLoading } = useUser();
-  const firestore = useFirestore();
-  
-  const userDocRef = doc(firestore, 'users', params.id);
-  const { data: user, loading: profileUserLoading } = useDoc<CombinedUser>(userDocRef);
+  const user = mockUsers[params.id as keyof typeof mockUsers];
+  const loading = false;
 
-  if (userLoading || profileUserLoading) {
+  if (loading) {
       return (
           <div className="flex-1 space-y-6 p-4 md:p-6">
               <Skeleton className="h-48 w-full" />
@@ -195,7 +173,7 @@ export default function UserProfilePage({ params }: { params: { id:string } }) {
     notFound();
   }
   
-  const isCurrentUserProfile = user.id === currentUser?.uid;
+  const isCurrentUserProfile = user.id === currentUserMock?.uid;
 
   return (
     <>

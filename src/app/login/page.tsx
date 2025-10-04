@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,14 +15,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EmojiBadgeLogo } from '@/components/icons';
-import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { GoogleSignInButton } from '@/components/auth/google-signin-button';
 
 export default function LoginPage() {
   const router = useRouter();
-  const auth = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,41 +31,35 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
 
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      if (!userCredential.user.emailVerified) {
+    // Mock login logic
+    setTimeout(() => {
+      if (email === 'test@example.com' && password === 'password') {
         toast({
-          title: 'Email Not Verified',
-          description: "Please check your inbox and verify your email address before logging in.",
+          title: 'Login Successful!',
+          description: 'Welcome back!',
+        });
+        router.push('/dashboard');
+      } else {
+        setError('Invalid email or password.');
+        toast({
+          title: 'Login Failed',
+          description: 'Please check your email and password.',
           variant: 'destructive',
         });
-        await auth.signOut(); // Sign out the user until they verify
-        setIsLoading(false);
-        return;
       }
-
-      toast({
-        title: 'Login Successful!',
-        description: 'Welcome back!',
-      });
-      router.push('/dashboard');
-    } catch (error: any) {
-      setError(error.message);
-      toast({
-        title: 'Login Failed',
-        description: 'Please check your email and password.',
-        variant: 'destructive',
-      });
       setIsLoading(false);
-    }
+    }, 1000);
   };
   
-  const handleGoogleSignInSuccess = () => {
-    router.push('/dashboard');
-    toast({
-        title: 'Signed in successfully!',
-    });
+  const handleGoogleSignIn = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+        router.push('/dashboard');
+        toast({
+            title: 'Signed in successfully!',
+        });
+        setIsLoading(false);
+    }, 1000);
   }
 
   return (
@@ -128,7 +118,9 @@ export default function LoginPage() {
             <span className="absolute left-1/2 -translate-x-1/2 top-[-10px] bg-card px-2 text-xs text-muted-foreground">OR</span>
           </div>
 
-          <GoogleSignInButton onSuccess={handleGoogleSignInSuccess} />
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+            {isLoading ? 'Signing in...' : 'Sign in with Google'}
+          </Button>
 
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}

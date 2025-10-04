@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useReducer, Suspense, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { followBadge, requestBadgeCode, createShareLinks, getShareLinksForUser, type User, type ShareLink, type Badge } from '@/lib/firestore-data';
 import { Header } from '@/components/layout/header';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,18 +12,26 @@ import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { TransferBadgeDialog } from '@/components/badges/transfer-badge-dialog';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useDoc, useCollection, useFirestore } from '@/firebase';
-import { doc, collection, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 
-function BadgeOwners({ badge }: { badge: Badge }) {
-    const firestore = useFirestore();
-    const ownersQuery = badge.owners.length > 0
-        ? query(collection(firestore, 'users'), where('id', 'in', badge.owners))
-        : null;
+// Mock Data
+type User = { id: string; name: string; email: string; avatarUrl: string; emojiAvatar?: string; following: string[]; };
+type Badge = { id: string; name: string; emojis: string; tokens: number; ownerId: string; owners: string[]; followers: string[]; createdAt: number; };
 
-    const { data: owners, loading } = useCollection<User>(ownersQuery);
+const mockUsers: Record<string, User> = {
+    '123': { id: '123', name: 'John Doe', email: 'john.doe@example.com', avatarUrl: 'https://picsum.photos/seed/123/100/100', emojiAvatar: '😀', following: ['456'] },
+    '456': { id: '456', name: 'Jane Smith', email: 'jane.smith@example.com', avatarUrl: 'https://picsum.photos/seed/456/100/100', emojiAvatar: '👩‍💻', following: [] },
+};
+const mockBadges: Record<string, Badge> = {
+  '1': { id: '1', name: 'Cosmic Explorer', emojis: '🚀✨', tokens: 1000, ownerId: '123', owners: ['123', '456'], followers: ['123', '456'], createdAt: Date.now() },
+  '2': { id: '2', name: 'Ocean Diver', emojis: '🌊🐠', tokens: 500, ownerId: '456', owners: ['456'], followers: ['123'], createdAt: Date.now() },
+};
+const currentUserMock = mockUsers['123'];
+
+function BadgeOwners({ badge }: { badge: Badge }) {
+    const owners = badge.owners.map(id => mockUsers[id]).filter(Boolean);
+    const loading = false;
 
     if (loading) {
         return <Skeleton className="h-32 w-full" />
@@ -64,11 +71,8 @@ function BadgeOwners({ badge }: { badge: Badge }) {
 }
 
 function BadgeFollowers({ badge }: { badge: Badge }) {
-    const firestore = useFirestore();
-    const followersQuery = badge.followers.length > 0
-        ? query(collection(firestore, 'users'), where('id', 'in', badge.followers))
-        : null;
-    const { data: followers, loading } = useCollection<User>(followersQuery);
+    const followers = badge.followers.map(id => mockUsers[id]).filter(Boolean);
+    const loading = false;
 
      if (loading) {
         return <Skeleton className="h-48 w-full" />
@@ -111,53 +115,17 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const firestore = useFirestore();
-  const { user: currentUser, loading: userLoading } = useUser();
-  const [_, forceUpdate] = useReducer((x) => x + 1, 0);
 
-  const badgeDocRef = doc(firestore, 'badges', params.id);
-  const { data: badge, loading: badgeLoading } = useDoc<Badge>(badgeDocRef);
-  
-  const creatorDocRef = badge ? doc(firestore, 'users', badge.ownerId) : null;
-  const { data: creator, loading: creatorLoading } = useDoc<User>(creatorDocRef);
+  const badge = mockBadges[params.id];
+  const creator = badge ? mockUsers[badge.ownerId] : null;
 
-  const [isShareOpen, setShareOpen] = useState(false);
+  const [isShareOpen, setShareOpen] = useState(searchParams.get('showShare') === 'true');
   const [isTransferOpen, setTransferOpen] = useState(false);
-  const [shareLinks, setShareLinks] = useState<ShareLink[]>([]);
-  const [shareLinksLoading, setShareLinksLoading] = useState(false);
-  
-  const isCreator = currentUser && badge && badge.ownerId === currentUser.uid;
-  const isOwner = currentUser && badge && badge.owners.includes(currentUser.uid);
-  const isFollowing = currentUser && badge && badge.followers.includes(currentUser.uid);
+  const [isFollowing, setIsFollowing] = useState(badge?.followers.includes(currentUserMock.id));
 
-  const fetchShareLinks = async () => {
-    if (!badge || !currentUser) return;
-    setShareLinksLoading(true);
-    let userLinks = await getShareLinksForUser(badge.id, currentUser.uid);
-    // If user is an owner but has no links, try to create some
-    if (userLinks.length === 0 && isOwner) {
-        userLinks = await createShareLinks(badge.id, currentUser.uid, 3);
-    }
-    setShareLinks(userLinks);
-    setShareLinksLoading(false);
-  };
+  const isCreator = currentUserMock && badge && badge.ownerId === currentUserMock.id;
+  const isOwner = currentUserMock && badge && badge.owners.includes(currentUserMock.id);
   
-  useEffect(() => {
-    const showShare = searchParams.get('showShare') === 'true';
-    if (showShare) {
-        setShareOpen(true);
-        router.replace(`/dashboard/badge/${params.id}`, { scroll: false });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isShareOpen) fetchShareLinks();
-  }, [isShareOpen]);
-  
-  if (userLoading || badgeLoading || creatorLoading) {
-    return <div className="p-4 md:p-6"><Skeleton className="h-screen w-full" /></div>;
-  }
-
   if (!badge) {
     notFound();
   }
@@ -165,8 +133,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   const badgesLeft = badge.tokens - badge.owners.length;
 
   const handleFollow = async () => {
-    if (!currentUser) return;
-    await followBadge(badge.id, currentUser.uid);
+    setIsFollowing(!isFollowing);
     toast({
         title: !isFollowing ? 'Followed!' : 'Unfollowed.',
         description: `You are now ${!isFollowing ? 'following' : 'no longer following'} "${badge.name}".`
@@ -174,25 +141,10 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   }
 
   const handleRequestCode = async () => {
-    if (!currentUser) return;
-    try {
-        await requestBadgeCode(badge.id, currentUser.uid);
-        toast({
-            title: 'Request Sent!',
-            description: `Your request for a code for "${badge.name}" has been sent to the owners.`,
-        });
-    } catch (e: any) {
-         toast({
-            title: 'Request Failed',
-            description: e.message,
-            variant: 'destructive'
-        });
-    }
-  }
-
-  const handleShareClick = () => {
-    fetchShareLinks();
-    setShareOpen(true);
+    toast({
+        title: 'Request Sent!',
+        description: `Your request for a code for "${badge.name}" has been sent to the owners.`,
+    });
   }
   
   return (
@@ -238,7 +190,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                     <Button 
-                        onClick={handleShareClick} 
+                        onClick={() => setShareOpen(true)} 
                         className={cn({ 'invisible': !isOwner })}
                         disabled={!isOwner}
                     >
@@ -257,14 +209,14 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                    <Button 
                      variant={isFollowing ? 'secondary' : 'outline'} 
                      onClick={handleFollow}
-                     className={cn({ 'invisible': !currentUser })}
+                     className={cn({ 'invisible': !currentUserMock })}
                     >
                       {isFollowing ? 'Unfollow' : 'Follow'}
                    </Button>
                    <Button 
                      variant='outline'
                      onClick={handleRequestCode}
-                     className={cn({ 'invisible': !currentUser || !!isOwner })}
+                     className={cn({ 'invisible': !currentUserMock || !!isOwner })}
                      disabled={!!isOwner}
                     >
                       <Send className="mr-2 h-4 w-4" />
@@ -286,15 +238,15 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
         open={isShareOpen} 
         onOpenChange={setShareOpen} 
         badge={badge} 
-        links={shareLinks}
-        isLoading={shareLinksLoading}
+        links={[{linkId: 'mock-link-1', badgeId: badge.id, ownerId: '123', used: false, claimedBy: null}]}
+        isLoading={false}
       />
-      {currentUser && isCreator && (
+      {currentUserMock && isCreator && (
         <TransferBadgeDialog 
             open={isTransferOpen} 
             onOpenChange={setTransferOpen} 
             badge={badge} 
-            onTransfer={forceUpdate} 
+            onTransfer={() => {}} 
         />
       )}
     </>
@@ -303,8 +255,6 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
 
 export default function BadgeDetailPage({ params }: { params: { id: string } }) {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
       <BadgeDetailContent params={params} />
-    </Suspense>
   );
 }

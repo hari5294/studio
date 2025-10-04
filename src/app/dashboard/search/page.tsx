@@ -4,22 +4,30 @@ import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
-import { type Badge, type User } from '@/lib/firestore-data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge as BadgeIcon, Users, Search as SearchIcon } from 'lucide-react';
 import { BadgeCard } from '@/components/badges/badge-card';
-import { useFirestore } from '@/firebase';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// Mock Data
+const mockBadges = [
+  { id: '1', name: 'Cosmic Explorer', emojis: '🚀✨', tokens: 1000, owners: ['1', '2', '3'], followers: ['1', '2', '3', '4', '5'], createdAt: Date.now(), ownerId: '1' },
+  { id: '4', name: 'Synthwave Rider', emojis: '🌆🎶', tokens: 1984, owners: ['4'], followers: ['1', '4'], createdAt: Date.now(), ownerId: '4' },
+];
+
+const mockUsers = [
+  { id: '123', name: 'John Doe', avatarUrl: 'https://picsum.photos/seed/123/100/100', emojiAvatar: '😀' },
+  { id: '456', name: 'Jane Smith', avatarUrl: 'https://picsum.photos/seed/456/100/100', emojiAvatar: '👩‍💻' },
+  { id: '789', name: 'Alex Ray', avatarUrl: 'https://picsum.photos/seed/789/100/100' },
+];
 
 function SearchResults() {
   const searchParams = useSearchParams();
   const queryParam = searchParams.get('q') || '';
-  const firestore = useFirestore();
 
-  const [badgeResults, setBadgeResults] = useState<Badge[]>([]);
-  const [userResults, setUserResults] = useState<User[]>([]);
+  const [badgeResults, setBadgeResults] = useState<any[]>([]);
+  const [userResults, setUserResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -31,32 +39,17 @@ function SearchResults() {
         }
         setLoading(true);
 
-        // Search badges
-        const badgeQuery = query(
-            collection(firestore, 'badges'),
-            where('name', '>=', queryParam),
-            where('name', '<=', queryParam + '\uf8ff'),
-            limit(20)
-        );
-        const badgeSnapshot = await getDocs(badgeQuery);
-        const badges = badgeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Badge));
-        setBadgeResults(badges);
-
-        // Search users
-        const userQuery = query(
-            collection(firestore, 'users'),
-             where('name', '>=', queryParam),
-             where('name', '<=', queryParam + '\uf8ff'),
-            limit(20)
-        );
-        const userSnapshot = await getDocs(userQuery);
-        const users = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-        setUserResults(users);
-        
-        setLoading(false);
+        // Mock search
+        setTimeout(() => {
+            const badges = mockBadges.filter(b => b.name.toLowerCase().includes(queryParam.toLowerCase()));
+            const users = mockUsers.filter(u => u.name.toLowerCase().includes(queryParam.toLowerCase()));
+            setBadgeResults(badges);
+            setUserResults(users);
+            setLoading(false);
+        }, 500);
     }
     performSearch();
-  }, [queryParam, firestore]);
+  }, [queryParam]);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">

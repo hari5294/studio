@@ -7,103 +7,89 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getShareLink, claimBadge, getBadgeById, type Badge, type ShareLink } from '@/lib/firestore-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
-import { useUser } from '@/firebase';
+
+// Mock Data
+const mockBadges = {
+    'b1': { id: 'b1', name: 'Cosmic Explorer', emojis: '🚀✨', tokens: 1000 },
+};
+const mockLinks = {
+    'link123': { linkId: 'link123', badgeId: 'b1', ownerId: 'user456', used: false },
+    'usedlink': { linkId: 'usedlink', badgeId: 'b1', ownerId: 'user456', used: true },
+};
 
 export default function JoinPage({ params }: { params: { linkId: string } }) {
   const router = useRouter();
-  const { user, loading: userLoading } = useUser();
   const { toast } = useToast();
-  const [badge, setBadge] = useState<Badge | null>(null);
+  const [badge, setBadge] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClaiming, setIsClaiming] = useState(false);
   const [isShareOpen, setShareOpen] = useState(false);
-  const [newShareLinks, setNewShareLinks] = useState<ShareLink[]>([]);
-  
-  useEffect(() => {
-    if (userLoading) return; // Wait for user state to be resolved
+  const [newShareLinks, setNewShareLinks] = useState<any[]>([]);
+  const [user, setUser] = useState<{uid: string} | null>({uid: 'user123'}); // Mocked user
 
-    const initialize = async () => {
-        const link = await getShareLink(params.linkId);
+  useEffect(() => {
+    const initialize = () => {
+        const link = mockLinks[params.linkId as keyof typeof mockLinks];
         if (!link || link.used) {
             setError("This invitation code is invalid or has already been used.");
             setIsLoading(false);
             return;
         }
 
-        const linkedBadge = await getBadgeById(link.badgeId);
+        const linkedBadge = mockBadges[link.badgeId as keyof typeof mockBadges];
         if (!linkedBadge) {
             setError("The badge associated with this code could not be found.");
             setIsLoading(false);
             return;
         }
-
-        if (user) {
-            if (link.ownerId === user.uid) {
-                setError("You cannot claim a badge using a code you generated yourself.");
-                setIsLoading(false);
-                return;
-            }
-            if(linkedBadge.owners.includes(user.uid)) {
-                toast({
-                    title: 'Already an Owner',
-                    description: `You already own the "${linkedBadge.name}" badge.`,
-                });
-                router.replace(`/dashboard/badge/${linkedBadge.id}`);
-                return;
-            }
-        }
         
-        if(linkedBadge.owners.length >= linkedBadge.tokens) {
-            setError("All available badges have been claimed.");
-            setIsLoading(false);
-            return;
-        }
-
         setBadge(linkedBadge);
         setIsLoading(false);
     }
-    initialize();
+    setTimeout(initialize, 500);
 
-  }, [params.linkId, router, toast, user, userLoading]);
+  }, [params.linkId]);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!badge || !user) {
-        if (!user) router.push(`/login?redirect=/join/${params.linkId}`);
+    if (!badge) return;
+    if (!user) {
+        router.push(`/login?redirect=/join/${params.linkId}`);
         return
     };
 
     setIsClaiming(true);
 
-    try {
-        const { newLinks } = await claimBadge(badge.id, user.uid, params.linkId);
-        
-        toast({
-            title: 'Badge Claimed!',
-            description: `You are now an owner of the "${badge.name}" badge.`,
-        });
+    setTimeout(() => {
+        try {
+            toast({
+                title: 'Badge Claimed!',
+                description: `You are now an owner of the "${badge.name}" badge.`,
+            });
 
-        if (newLinks.length > 0) {
-            setNewShareLinks(newLinks);
-            setShareOpen(true);
-        } else {
-            router.push(`/dashboard/badge/${badge.id}`);
+            // Mock creating new links
+            const newLinks = [{ linkId: 'new-mock-link', badgeId: badge.id, ownerId: user.uid, used: false }];
+            if (newLinks.length > 0) {
+                setNewShareLinks(newLinks);
+                setShareOpen(true);
+            } else {
+                router.push(`/dashboard/badge/${badge.id}`);
+            }
+            
+        } catch(err: any) {
+             toast({
+                title: 'Failed to Claim Badge',
+                description: err.message,
+                variant: 'destructive',
+            });
+            setError(err.message);
+        } finally {
+            setIsClaiming(false);
         }
-        
-    } catch(err: any) {
-         toast({
-            title: 'Failed to Claim Badge',
-            description: err.message,
-            variant: 'destructive',
-        });
-        setError(err.message);
-    } finally {
-        setIsClaiming(false);
-    }
+    }, 1000);
   };
 
   const handleShareDialogClose = () => {
@@ -114,7 +100,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
   }
 
   const renderContent = () => {
-    if (isLoading || userLoading) {
+    if (isLoading) {
       return (
         <div className="text-center space-y-4 pt-6">
             <div className="mb-4 flex justify-center">

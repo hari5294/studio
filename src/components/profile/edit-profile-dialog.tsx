@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -15,14 +14,17 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Smile } from 'lucide-react';
 import React, { useState } from 'react';
-import { updateUserAvatar } from '@/lib/firestore-data';
 import { getFirstEmoji, isOnlyEmojis } from '@/lib/utils';
-import { CombinedUser } from '@/firebase/auth/use-user';
+
+type User = {
+    uid: string;
+    emojiAvatar?: string;
+}
 
 type EditProfileDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: CombinedUser;
+  user: User;
   onUpdate: () => void;
 };
 
@@ -35,33 +37,35 @@ export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditPr
         e.preventDefault();
         setIsLoading(true);
         
-        try {
-            if (!isOnlyEmojis(emoji)) {
-                 toast({
-                    title: 'Invalid Input',
-                    description: 'Please enter only an emoji to use as your avatar.',
-                    variant: 'destructive',
+        // Mock API call
+        setTimeout(() => {
+            try {
+                if (!isOnlyEmojis(emoji)) {
+                     toast({
+                        title: 'Invalid Input',
+                        description: 'Please enter only an emoji to use as your avatar.',
+                        variant: 'destructive',
+                    });
+                    return;
+                }
+                const cleanEmoji = getFirstEmoji(emoji);
+                
+                toast({
+                    title: "Avatar Updated!",
+                    description: `Your profile picture is now ${cleanEmoji}.`,
                 });
-                return;
+                onUpdate();
+                onOpenChange(false);
+            } catch (error: any) {
+                 toast({
+                    title: "Update Failed",
+                    description: error.message,
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
             }
-            const cleanEmoji = getFirstEmoji(emoji);
-            await updateUserAvatar(user.uid, cleanEmoji);
-            
-            toast({
-                title: "Avatar Updated!",
-                description: `Your profile picture is now ${cleanEmoji}.`,
-            });
-            onUpdate();
-            onOpenChange(false);
-        } catch (error: any) {
-             toast({
-                title: "Update Failed",
-                description: error.message,
-                variant: "destructive",
-            });
-        } finally {
-            setIsLoading(false);
-        }
+        }, 1000);
     }
 
   return (

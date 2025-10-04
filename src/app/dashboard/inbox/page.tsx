@@ -4,26 +4,39 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
-import { markNotificationAsRead, type Notification, type Badge, type User } from '@/lib/firestore-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Mail, Gift, Inbox as InboxIcon } from 'lucide-react';
-import { useUser, useCollection, useFirestore, useDoc } from '@/firebase';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { collection, doc, query, orderBy, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
-type EnrichedNotification = Notification & {
-    fromUser?: User;
-    badge?: Badge;
-}
+// Mock Data
+type User = { id: string; name: string; };
+type Badge = { id: string; name: string; };
+type Notification = { id: string; type: 'BADGE_REQUEST' | 'BADGE_RECEIVED'; fromUserId: string; badgeId: string; createdAt: number; read: boolean; fromUser?: User; badge?: Badge; };
 
-function NotificationItem({ notification }: { notification: EnrichedNotification }) {
+const mockUsers = {
+    '123': { id: '123', name: 'John Doe' },
+    '456': { id: '456', name: 'Jane Smith' },
+    '789': { id: '789', name: 'Alex Ray' },
+};
+
+const mockBadges = {
+    '1': { id: '1', name: 'Cosmic Explorer' },
+    '2': { id: '2', name: 'Ocean Diver' },
+};
+
+const mockNotifications: Notification[] = [
+    { id: 'n1', type: 'BADGE_REQUEST', fromUserId: '456', badgeId: '1', createdAt: new Date(Date.now() - 1000 * 60 * 5).getTime(), read: false },
+    { id: 'n2', type: 'BADGE_RECEIVED', fromUserId: '123', badgeId: '2', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).getTime(), read: false },
+    { id: 'n3', type: 'BADGE_REQUEST', fromUserId: '789', badgeId: '1', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).getTime(), read: true },
+];
+
+function NotificationItem({ notification: initialNotification }: { notification: Notification }) {
     const router = useRouter();
-    const { user } = useUser();
+    const [notification, setNotification] = useState(initialNotification);
     
     const handleSendCode = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -32,6 +45,16 @@ function NotificationItem({ notification }: { notification: EnrichedNotification
             router.push(`/dashboard/badge/${notification.badge.id}?showShare=true`);
         }
     }
+
+    useEffect(() => {
+        // Mark as read when the component mounts
+        if (!notification.read) {
+            const timer = setTimeout(() => {
+                setNotification(prev => ({ ...prev, read: true }));
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [notification.read]);
     
     if (!notification.fromUser || !notification.badge) {
         return (
@@ -83,13 +106,6 @@ function NotificationItem({ notification }: { notification: EnrichedNotification
     
     const { icon, title, action } = itemContent[notification.type];
 
-    // Mark as read when the component mounts
-    useEffect(() => {
-        if (user && !notification.read) {
-            markNotificationAsRead(notification.id, user.uid);
-        }
-    }, [notification, user]);
-
     return (
         <div className={cn(
             "flex items-start gap-4 p-4 rounded-lg transition-colors hover:bg-muted/50",
@@ -107,33 +123,17 @@ function NotificationItem({ notification }: { notification: EnrichedNotification
     )
 }
 
-function NotificationList({ notifications }: { notifications: EnrichedNotification[] }) {
-    const firestore = useFirestore();
-    const [enrichedNotifications, setEnrichedNotifications] = useState<EnrichedNotification[]>(notifications);
-
+function NotificationList({ notifications }: { notifications: Notification[] }) {
+    const [enrichedNotifications, setEnrichedNotifications] = useState<Notification[]>([]);
+    
     useEffect(() => {
-        const enrich = async () => {
-            const enriched = await Promise.all(notifications.map(async (n) => {
-                if (n.fromUser && n.badge) return n; // Already enriched
-
-                const fromUserDoc = doc(firestore, 'users', n.fromUserId);
-                const badgeDoc = doc(firestore, 'badges', n.badgeId);
-
-                const [fromUserSnap, badgeSnap] = await Promise.all([
-                    getDoc(fromUserDoc),
-                    getDoc(badgeDoc)
-                ]);
-
-                return {
-                    ...n,
-                    fromUser: fromUserSnap.exists() ? fromUserSnap.data() as User : undefined,
-                    badge: badgeSnap.exists() ? badgeSnap.data() as Badge : undefined,
-                }
-            }));
-            setEnrichedNotifications(enriched);
-        }
-        enrich();
-    }, [notifications, firestore]);
+        const enriched = notifications.map(n => ({
+            ...n,
+            fromUser: mockUsers[n.fromUserId as keyof typeof mockUsers],
+            badge: mockBadges[n.badgeId as keyof typeof mockBadges],
+        }));
+        setEnrichedNotifications(enriched);
+    }, [notifications]);
     
     if (enrichedNotifications.length === 0) {
          return <p className="text-center text-muted-foreground py-8">No notifications here.</p>
@@ -148,16 +148,15 @@ function NotificationList({ notifications }: { notifications: EnrichedNotificati
 
 
 export default function InboxPage() {
-  const { user, loading: userLoading } = useUser();
-  const firestore = useFirestore();
-  
-  const notificationsQuery = user 
-    ? query(collection(firestore, `users/${user.uid}/notifications`), orderBy('createdAt', 'desc'))
-    : null;
-    
-  const { data: notifications, loading: notificationsLoading } = useCollection<Notification>(notificationsQuery);
-  
-  const loading = userLoading || notificationsLoading;
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+      setTimeout(() => {
+          setNotifications(mockNotifications);
+          setLoading(false);
+      }, 500);
+  }, []);
 
   const requests = notifications?.filter(n => n.type === 'BADGE_REQUEST') ?? [];
   const received = notifications?.filter(n => n.type === 'BADGE_RECEIVED') ?? [];
@@ -165,6 +164,7 @@ export default function InboxPage() {
   if (loading) {
       return (
         <div className="flex-1 p-4 md:p-6">
+            <Header title="Inbox" />
             <Skeleton className="h-10 w-full mb-4" />
             <Skeleton className="h-64 w-full" />
         </div>

@@ -1,18 +1,18 @@
-
-
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { TrendingUp, Flame, Users, Badge } from 'lucide-react';
-import { useCollection, useFirestore, useDoc } from '@/firebase';
-import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
-import type { Badge as BadgeType, User } from '@/lib/firestore-data';
+import { TrendingUp, Flame, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-function TrendingBadgeItem({ badge, index }: { badge: BadgeType, index: number }) {
-    const firestore = useFirestore();
-    const ownerDocRef = firestore ? doc(firestore, 'users', badge.ownerId) : null;
-    const { data: owner, loading } = useDoc<User>(ownerDocRef);
+// Mock Data
+const mockTrendingBadges = [
+  { id: '1', name: 'Cosmic Explorer', emojis: '🚀✨', tokens: 1000, owners: ['1', '2', '3'], followers: ['1', '2', '3', '4', '5'], createdAt: Date.now(), ownerId: '1', ownerName: 'John Doe', ownerAvatar: 'https://picsum.photos/seed/1/32/32', ownerEmoji: '😀' },
+  { id: '4', name: 'Synthwave Rider', emojis: '🌆🎶', tokens: 1984, owners: ['4'], followers: ['1', '4'], createdAt: Date.now(), ownerId: '4', ownerName: 'Alex Ray', ownerAvatar: 'https://picsum.photos/seed/4/32/32' },
+  { id: '5', name: 'Eco Warrior', emojis: '🌳♻️', tokens: 2050, owners: ['5', '1'], followers: ['5'], createdAt: Date.now(), ownerId: '5', ownerName: 'Sara Green' },
+  { id: '2', name: 'Ocean Diver', emojis: '🌊🐠', tokens: 500, owners: ['1'], followers: ['2', '3'], createdAt: Date.now(), ownerId: '2', ownerName: 'Jane Smith', ownerAvatar: 'https://picsum.photos/seed/2/32/32', ownerEmoji: '👩‍💻' },
+  { id: '3', name: 'Pixel Artist', emojis: '🎨👾', tokens: 100, owners: [], followers: [], createdAt: Date.now(), ownerId: '3', ownerName: 'Chris Pixel' },
+];
 
+function TrendingBadgeItem({ badge, index }: { badge: any, index: number }) {
     const badgesLeft = badge.tokens - badge.owners.length;
 
     return (
@@ -25,19 +25,17 @@ function TrendingBadgeItem({ badge, index }: { badge: BadgeType, index: number }
             <div className="text-3xl">{badge.emojis}</div>
             <div className="flex-grow">
                 <p className="font-semibold">{badge.name}</p>
-                {loading ? <Skeleton className="h-5 w-24" /> : (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Avatar className="h-5 w-5">
-                            {owner?.emojiAvatar ? (
-                                <span className="flex h-full w-full items-center justify-center text-sm">{owner.emojiAvatar}</span>
-                            ) : (
-                                <AvatarImage src={owner?.avatarUrl} alt={owner?.name} />
-                            )}
-                            <AvatarFallback>{owner?.name?.charAt(0) ?? '?'}</AvatarFallback>
-                        </Avatar>
-                        <span>{owner?.name}</span>
-                    </div>
-                )}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Avatar className="h-5 w-5">
+                        {badge.ownerEmoji ? (
+                            <span className="flex h-full w-full items-center justify-center text-sm">{badge.ownerEmoji}</span>
+                        ) : (
+                            <AvatarImage src={badge.ownerAvatar} alt={badge.ownerName} />
+                        )}
+                        <AvatarFallback>{badge.ownerName?.charAt(0) ?? '?'}</AvatarFallback>
+                    </Avatar>
+                    <span>{badge.ownerName}</span>
+                </div>
             </div>
             <div className="text-right">
                 <div className="flex items-center justify-end gap-1 font-semibold text-lg">
@@ -53,11 +51,7 @@ function TrendingBadgeItem({ badge, index }: { badge: BadgeType, index: number }
 
 
 export function TrendingBadges() {
-  const firestore = useFirestore();
-  // Note: This is not a true "trending" query. A real implementation would require a more complex
-  // backend mechanism to calculate trending scores. We sort by follower count as a proxy.
-  const trendingQuery = query(collection(firestore, 'badges'), orderBy('followers', 'desc'), limit(5));
-  const { data: trendingBadgesList, loading } = useCollection<BadgeType>(trendingQuery);
+  const loading = false;
 
   if (loading) {
       return (
@@ -80,7 +74,7 @@ export function TrendingBadges() {
         Trending Badges
       </h2>
       <div className="space-y-4">
-        {trendingBadgesList?.map((badge, index) => (
+        {mockTrendingBadges?.map((badge, index) => (
             <TrendingBadgeItem key={badge.id} badge={badge} index={index} />
         ))}
       </div>

@@ -3,8 +3,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -17,15 +15,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EmojiBadgeLogo } from '@/components/icons';
-import { useAuth, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { GoogleSignInButton } from '@/components/auth/google-signin-button';
 
 export default function SignupPage() {
   const router = useRouter();
-  const auth = useAuth();
-  const firestore = useFirestore();
   const { toast } = useToast();
 
   const [firstName, setFirstName] = useState('');
@@ -38,60 +32,37 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setVerificationSent(false);
 
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+    // Mock signup logic
+    setTimeout(() => {
+      if (email === 'test@example.com') {
+        toast({
+          title: 'Sign-up Failed',
+          description: 'This email address is already in use.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
       
-      const fullName = `${firstName} ${lastName}`.trim();
-
-      // Update Firebase Auth profile
-      await updateProfile(user, { displayName: fullName });
-
-      // Create user document in Firestore
-      const userRef = doc(firestore, 'users', user.uid);
-      await setDoc(userRef, {
-        id: user.uid,
-        name: fullName,
-        email: user.email,
-        avatarUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/100/100`,
-        emojiAvatar: '',
-        following: [],
-      });
-
-      // Send verification email
-      await sendEmailVerification(user);
-
       setVerificationSent(true);
       toast({
         title: 'Verification Email Sent!',
         description: 'Please check your inbox to verify your email address.',
       });
-
-      // Sign the user out until they verify
-      await auth.signOut();
-
-    } catch (error: any) {
-      let description = error.message;
-      if (error.code === 'auth/email-already-in-use') {
-        description = 'This email address is already in use. Please log in instead.';
-      }
-      toast({
-        title: 'Sign-up Failed',
-        description: description,
-        variant: 'destructive',
-      });
-    } finally {
       setIsLoading(false);
-    }
+    }, 1000);
   };
   
-  const handleGoogleSignInSuccess = () => {
-    router.push('/dashboard');
-    toast({
-        title: 'Account created successfully!',
-    });
+  const handleGoogleSignIn = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      router.push('/dashboard');
+      toast({
+          title: 'Account created successfully!',
+      });
+      setIsLoading(false);
+    }, 1000);
   }
 
   if (isVerificationSent) {
@@ -116,7 +87,6 @@ export default function SignupPage() {
       </div>
     )
   }
-
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
@@ -189,7 +159,9 @@ export default function SignupPage() {
             <span className="absolute left-1/2 -translate-x-1/2 top-[-10px] bg-card px-2 text-xs text-muted-foreground">OR</span>
           </div>
           
-          <GoogleSignInButton onSuccess={handleGoogleSignInSuccess} />
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+            {isLoading ? 'Signing in...' : 'Sign in with Google'}
+          </Button>
 
           <div className="mt-4 text-center text-sm">
             Already have an account?{' '}

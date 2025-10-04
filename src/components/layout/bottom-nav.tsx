@@ -4,8 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Search, User, Gift, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUser, useFirestore, useCollection } from '@/firebase';
-import { collection, where, query } from 'firebase/firestore';
+
+const mockUser = {
+  uid: '123'
+};
+const unreadCount = 2; // Mock unread count
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Home' },
@@ -17,18 +20,12 @@ const navItems = [
 
 export function BottomNavBar() {
   const pathname = usePathname();
-  const { user } = useUser();
-  const firestore = useFirestore();
-
-  const notificationsQuery = user ? query(collection(firestore, `users/${user.uid}/notifications`), where('read', '==', false)) : null;
-  const { data: unreadNotifications } = useCollection(notificationsQuery);
-  const unreadCount = unreadNotifications?.length ?? 0;
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t bg-card/95 backdrop-blur-sm z-40">
       <nav className="grid h-full grid-cols-5">
         {navItems.map((item) => {
-          const href = item.isProfile ? `/dashboard/profile/${user?.uid}` : item.href;
+          const href = item.isProfile ? `/dashboard/profile/${mockUser?.uid}` : item.href;
           const isActive = item.isProfile ? pathname.startsWith(item.href) : pathname === item.href;
           
           return (

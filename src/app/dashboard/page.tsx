@@ -1,26 +1,24 @@
 'use client';
 
 import { Header } from '@/components/layout/header';
-import { type Badge as BadgeType } from '@/lib/firestore-data';
 import { BadgeCard } from '@/components/badges/badge-card';
 import { TrendingBadges } from '@/components/badges/trending-badges';
 import { Badge } from 'lucide-react';
-import { useCollection } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
-import { useFirestore, useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Mock Data
+const mockBadges = [
+  { id: '1', name: 'Cosmic Explorer', emojis: '🚀✨', tokens: 1000, owners: ['1', '2', '3'], followers: ['1', '2', '3', '4', '5'], createdAt: Date.now(), ownerId: '1' },
+  { id: '2', name: 'Ocean Diver', emojis: '🌊🐠', tokens: 500, owners: ['1'], followers: ['2', '3'], createdAt: Date.now(), ownerId: '2' },
+  { id: '3', name: 'Pixel Artist', emojis: '🎨👾', tokens: 100, owners: [], followers: [], createdAt: Date.now(), ownerId: '3' },
+];
+
+
 function MyBadges() {
-  const { user, loading: userLoading } = useUser();
-  const firestore = useFirestore();
+  const myBadges = mockBadges.slice(0, 2); // Mock: user owns first two badges
+  const loading = false;
 
-  const badgesQuery = user
-    ? query(collection(firestore, 'badges'), where('owners', 'array-contains', user.uid))
-    : null;
-
-  const { data: myBadges, loading: badgesLoading } = useCollection<BadgeType>(badgesQuery);
-
-  if (userLoading || badgesLoading) {
+  if (loading) {
     return (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}

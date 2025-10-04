@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import {
   Card,
@@ -9,8 +8,16 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { Badge } from '@/lib/firestore-data';
 import { ArrowRight, Users } from 'lucide-react';
+
+type Badge = {
+  id: string;
+  name: string;
+  emojis: string;
+  tokens: number;
+  owners: string[]; 
+  followers: string[];
+};
 
 type BadgeCardProps = {
   badge: Badge;

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -10,23 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Gift } from 'lucide-react';
-import { getShareLink, claimBadge, getBadgeById } from '@/lib/firestore-data';
-import { useUser } from '@/firebase';
 
 export default function RedeemCodePage() {
   const router = useRouter();
-  const { user } = useUser();
   const { toast } = useToast();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user) {
-        toast({ title: "Not authenticated", description: "You must be logged in to redeem a code.", variant: "destructive" });
-        return;
-    }
-
     if (!code.trim()) {
       toast({
         title: 'Missing Code',
@@ -38,57 +29,34 @@ export default function RedeemCodePage() {
 
     setIsLoading(true);
 
-    try {
-      const link = await getShareLink(code);
-      if (!link || link.used) {
-        throw new Error("This code is invalid or has already been used.");
-      }
+    // Mock API call
+    setTimeout(() => {
+        try {
+            if (code === 'invalid-code') {
+                throw new Error("This code is invalid or has already been used.");
+            }
 
-      const badge = await getBadgeById(link.badgeId);
-      if (!badge) {
-        throw new Error("The badge associated with this code could not be found.");
-      }
-      
-      if (link.ownerId === user.uid) {
-        throw new Error("You cannot redeem a code that you generated yourself.");
-      }
+            const badgeId = 'mock-badge-id';
+            const badgeName = 'Mock Badge';
+            
+            toast({
+                title: 'Badge Claimed!',
+                description: `You are now an owner of the "${badgeName}" badge.`,
+            });
 
-      if (badge.owners.length >= badge.tokens) {
-        throw new Error("All available badges have been claimed.");
-      }
+            router.push(`/dashboard/badge/${badgeId}?showShare=true`);
 
-      if (badge.owners.includes(user.uid)) {
-        toast({
-            title: 'Already an Owner',
-            description: `You already own the "${badge.name}" badge.`,
-            variant: 'default',
-        });
-        router.push(`/dashboard/badge/${badge.id}`);
-        return;
-      }
-
-      const { newLinks } = await claimBadge(badge.id, user.uid, code);
-
-      toast({
-        title: 'Badge Claimed!',
-        description: `You are now an owner of the "${badge.name}" badge.`,
-      });
-
-      const url = newLinks.length > 0
-        ? `/dashboard/badge/${badge.id}?showShare=true`
-        : `/dashboard/badge/${badge.id}`;
-      router.push(url);
-
-    } catch (error: any) {
-      toast({
-        title: 'Redemption Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-      setCode('');
-    }
+        } catch (error: any) {
+            toast({
+                title: 'Redemption Failed',
+                description: error.message,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLoading(false);
+            setCode('');
+        }
+    }, 1000);
   };
 
   return (

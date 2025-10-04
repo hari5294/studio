@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -55,12 +54,7 @@ const getSidebarStateFromCookie = () => {
         .find(row => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`));
     if (!cookie) return true;
     const value = cookie.split('=')[1];
-    try {
-        const parsed = JSON.parse(value);
-        return typeof parsed === 'boolean' ? parsed : true;
-    } catch (e) {
-        return true;
-    }
+    return value === 'true';
 }
 
 const SidebarProvider = React.forwardRef<
@@ -114,9 +108,9 @@ const SidebarProvider = React.forwardRef<
         } else {
           _setOpen(openState)
         }
-
-        // This sets the cookie to keep the sidebar state.
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${JSON.stringify(openState)}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        if (typeof document !== 'undefined') {
+            document.cookie = `${SIDEBAR_COOKIE_NAME}=${String(openState)}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        }
       },
       [setOpenProp, open]
     )

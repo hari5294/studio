@@ -38,37 +38,28 @@ import { EmojiBadgeLogo } from '@/components/icons';
 import { cn, getFirstEmoji } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
 import React from 'react';
-import type { Badge } from '@/lib/firestore-data';
-import { useAuth, useUser, useFirestore, useCollection } from '@/firebase';
-import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { collection, query, where } from 'firebase/firestore';
 
+// Mock Data
+const mockUser = {
+  uid: '123',
+  name: 'John Doe',
+  email: 'john.doe@example.com',
+  avatarUrl: 'https://picsum.photos/seed/123/100/100',
+  emojiAvatar: '😀'
+};
+
+const mockBadges = [
+  { id: '1', name: 'Cosmic Explorer', emojis: '🚀✨' },
+  { id: '2', name: 'Ocean Diver', emojis: '🌊🐠' },
+  { id: '3', name: 'Pixel Artist', emojis: '🎨👾' },
+];
 
 function OwnedBadges() {
-    const { user } = useUser();
-    const firestore = useFirestore();
     const pathname = usePathname();
-
-    const badgesQuery = user ? query(collection(firestore, 'badges'), where('owners', 'array-contains', user.uid)) : null;
-    const { data: myBadges, loading } = useCollection<Badge>(badgesQuery);
-
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
-    if (loading) {
-        return (
-             <div className="flex flex-col gap-2 p-2 pt-0">
-                <p className="px-2 text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
-                    Owned Badges
-                </p>
-                <SidebarMenu>
-                    {[...Array(3)].map((_, i) => <SidebarMenuItem key={i}><Button variant="ghost" className="w-full justify-start gap-2"><span className="text-lg">...</span><span>Loading...</span></Button></SidebarMenuItem>)}
-                </SidebarMenu>
-            </div>
-        )
-    }
-
-    if (!myBadges || myBadges.length === 0) return null;
+    if (!mockBadges || mockBadges.length === 0) return null;
 
     return (
         <div className="mt-4 flex flex-col gap-2 p-2 pt-0">
@@ -76,7 +67,7 @@ function OwnedBadges() {
                 Owned Badges
             </p>
             <SidebarMenu>
-                {myBadges.map((badge) => (
+                {mockBadges.map((badge) => (
                 <SidebarMenuItem key={badge.id}>
                     <SidebarMenuButton
                     asChild
@@ -96,16 +87,13 @@ function OwnedBadges() {
 }
 
 function UserMenu() {
-    const { user } = useUser();
-    const auth = useAuth();
     const router = useRouter();
 
     const handleLogout = async () => {
-        await signOut(auth);
         router.push('/login');
     }
 
-    if (!user) return null;
+    if (!mockUser) return null;
 
     return (
         <DropdownMenu>
@@ -118,16 +106,16 @@ function UserMenu() {
               )}
             >
               <Avatar className="h-8 w-8">
-                {user.emojiAvatar ? (
-                  <span className="flex h-full w-full items-center justify-center text-xl">{user.emojiAvatar}</span>
+                {mockUser.emojiAvatar ? (
+                  <span className="flex h-full w-full items-center justify-center text-xl">{mockUser.emojiAvatar}</span>
                 ) : (
-                  <AvatarImage src={user.avatarUrl} alt={user.name} />
+                  <AvatarImage src={mockUser.avatarUrl} alt={mockUser.name} />
                 )}
-                <AvatarFallback>{user.name?.charAt(0) ?? '?'}</AvatarFallback>
+                <AvatarFallback>{mockUser.name?.charAt(0) ?? '?'}</AvatarFallback>
               </Avatar>
               <div className="flex-grow truncate group-data-[collapsible=icon]:hidden">
-                <p className="text-sm font-medium">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.email}</p>
+                <p className="text-sm font-medium">{mockUser.name}</p>
+                <p className="text-xs text-muted-foreground">{mockUser.email}</p>
               </div>
               <MoreHorizontal className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:hidden" />
             </Button>
@@ -136,7 +124,7 @@ function UserMenu() {
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href={`/dashboard/profile/${user.uid}`}>
+              <Link href={`/dashboard/profile/${mockUser.uid}`}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </Link>
@@ -157,14 +145,8 @@ function UserMenu() {
 
 
 function InboxMenuLink() {
-    const { user } = useUser();
-    const firestore = useFirestore();
     const pathname = usePathname();
-
-    const notificationsQuery = user ? query(collection(firestore, `users/${user.uid}/notifications`), where('read', '==', false)) : null;
-    const { data: unreadNotifications } = useCollection(notificationsQuery);
-
-    const unreadCount = unreadNotifications?.length ?? 0;
+    const unreadCount = 2; // Mock unread count
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
     return (
@@ -192,7 +174,6 @@ function InboxMenuLink() {
 export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
-  const { user } = useUser();
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -249,10 +230,10 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
                 asChild
-                isActive={isActive(`/dashboard/profile/${user?.uid}`)}
+                isActive={isActive(`/dashboard/profile/${mockUser?.uid}`)}
                 tooltip="My Profile"
             >
-                <Link href={`/dashboard/profile/${user?.uid}`}>
+                <Link href={`/dashboard/profile/${mockUser?.uid}`}>
                     <User />
                     <span>My Profile</span>
                 </Link>

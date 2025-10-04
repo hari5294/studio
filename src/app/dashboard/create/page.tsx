@@ -9,17 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
-import { createBadge } from '@/lib/firestore-data';
 import { isOnlyEmojis } from '@/lib/utils';
-import { useUser } from '@/firebase';
 
 export default function CreateBadgePage() {
   const router = useRouter();
-  const { user } = useUser();
   const { toast } = useToast();
   const [emojis, setEmojis] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
 
   const handleEmojiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -30,11 +26,6 @@ export default function CreateBadgePage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user) {
-        toast({ title: "Not Authenticated", description: "You must be logged in to create a badge.", variant: "destructive" });
-        return;
-    }
-    
     setIsLoading(true);
     const formData = new FormData(event.currentTarget);
     const badgeName = formData.get('badgeName') as string;
@@ -50,26 +41,28 @@ export default function CreateBadgePage() {
         return;
     }
     
-    try {
-        const { newBadge, initialLinks } = await createBadge({ name: badgeName, emojis, tokens }, user.uid);
-
-        toast({
-        title: 'Badge Created!',
-        description: `Your badge "${badgeName}" has been successfully created.`,
-        });
-        
-        const url = initialLinks.length > 0 ? `/dashboard/badge/${newBadge.id}?showShare=true` : `/dashboard/badge/${newBadge.id}`;
-        
-        router.push(url);
-    } catch (error: any) {
-        toast({
-            title: 'Creation Failed',
-            description: error.message,
-            variant: 'destructive',
-        });
-    } finally {
-        setIsLoading(false);
-    }
+    // Mock API call
+    setTimeout(() => {
+        try {
+            toast({
+            title: 'Badge Created!',
+            description: `Your badge "${badgeName}" has been successfully created.`,
+            });
+            
+            const newBadgeId = Math.random().toString(36).substring(7);
+            const url = `/dashboard/badge/${newBadgeId}?showShare=true`;
+            
+            router.push(url);
+        } catch (error: any) {
+            toast({
+                title: 'Creation Failed',
+                description: error.message,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }, 1000);
   };
 
   return (
