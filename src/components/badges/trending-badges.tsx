@@ -1,4 +1,4 @@
-import { badges, getBadgeById, getUserById } from '@/lib/data';
+import { badges, getUserById } from '@/lib/data';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TrendingUp, Flame } from 'lucide-react';
@@ -23,6 +23,7 @@ export function TrendingBadges() {
         {trendingBadgesList.map((badge, index) => {
           if (!badge) return null;
           const owner = getUserById(badge.ownerId);
+          const badgesLeft = badge.tokens - badge.owners.length;
           return (
             <Link href={`/dashboard/badge/${badge.id}`} key={badge.id} className="block">
               <div className="flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-muted/50">
@@ -42,8 +43,8 @@ export function TrendingBadges() {
                   </div>
                 </div>
                 <div className="text-right">
-                   <p className="font-semibold">{badge.followers.length}</p>
-                   <p className="text-sm text-muted-foreground">Followers</p>
+                   <p className="font-semibold">{badgesLeft.toLocaleString()}</p>
+                   <p className="text-sm text-muted-foreground">/ {badge.tokens.toLocaleString()}</p>
                 </div>
               </div>
             </Link>
