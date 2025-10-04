@@ -116,6 +116,11 @@ export const searchUsers = (query: string) => users.filter(u => u.name.toLowerCa
 // --- Data Mutation Functions ---
 
 export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'followers' | 'createdAt'>, creatorId: string): {newBadge: Badge, initialLinks: ShareLink[]} => {
+  const existingBadge = badges.find(b => b.emojis === data.emojis);
+  if (existingBadge) {
+    throw new Error('A badge with these emojis already exists.');
+  }
+  
   const newId = `badge-${badges.length + 1}`;
   const newBadge: Badge = {
     ...data,

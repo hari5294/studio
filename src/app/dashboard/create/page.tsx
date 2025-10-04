@@ -30,18 +30,26 @@ export default function CreateBadgePage() {
         });
         return;
     }
-
-    const { newBadge, initialLinks } = createBadge({ name: badgeName, emojis, tokens }, 'user-1');
-
-    toast({
-      title: 'Badge Created!',
-      description: `Your badge "${badgeName}" has been successfully created.`,
-    });
     
-    const url = initialLinks.length > 0 ? `/dashboard/badge/${newBadge.id}?showShare=true` : `/dashboard/badge/${newBadge.id}`;
-    
-    // Redirect to the badge page and trigger the share dialog
-    router.push(url);
+    try {
+        const { newBadge, initialLinks } = createBadge({ name: badgeName, emojis, tokens }, 'user-1');
+
+        toast({
+        title: 'Badge Created!',
+        description: `Your badge "${badgeName}" has been successfully created.`,
+        });
+        
+        const url = initialLinks.length > 0 ? `/dashboard/badge/${newBadge.id}?showShare=true` : `/dashboard/badge/${newBadge.id}`;
+        
+        // Redirect to the badge page and trigger the share dialog
+        router.push(url);
+    } catch (error: any) {
+        toast({
+            title: 'Creation Failed',
+            description: error.message,
+            variant: 'destructive',
+        });
+    }
   };
 
   return (
