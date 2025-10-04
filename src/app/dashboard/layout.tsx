@@ -1,5 +1,6 @@
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { BottomNavBar } from '@/components/layout/bottom-nav';
+import { AppStateProvider } from '@/components/providers/state-provider';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function DashboardLayout({

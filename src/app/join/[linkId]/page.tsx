@@ -9,41 +9,46 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
-
-// Mock Data
-const mockBadges = {
-    'b1': { id: 'b1', name: 'Cosmic Explorer', emojis: '🚀✨', tokens: 1000 },
-};
-const mockLinks = {
-    'link123': { linkId: 'link123', badgeId: 'b1', ownerId: 'user456', used: false },
-    'usedlink': { linkId: 'usedlink', badgeId: 'b1', ownerId: 'user456', used: true },
-};
+import { useAtom } from 'jotai';
+import { shareLinksAtom, badgesAtom, currentUserIdAtom, ShareLink, Badge } from '@/lib/mock-data';
 
 export default function JoinPage({ params }: { params: { linkId: string } }) {
   const router = useRouter();
   const { toast } = useToast();
-  const [badge, setBadge] = useState<any | null>(null);
+
+  const [shareLinks, setShareLinks] = useAtom(shareLinksAtom);
+  const [badges, setBadges] = useAtom(badgesAtom);
+  const [currentUserId] = useAtom(currentUserIdAtom);
+
+  const [badge, setBadge] = useState<Badge | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClaiming, setIsClaiming] = useState(false);
   const [isShareOpen, setShareOpen] = useState(false);
-  const [newShareLinks, setNewShareLinks] = useState<any[]>([]);
-  const [user, setUser] = useState<{uid: string} | null>({uid: 'user123'}); // Mocked user
+  const [newShareLinks, setNewShareLinks] = useState<ShareLink[]>([]);
+  
+  const linkId = params.linkId;
 
   useEffect(() => {
     const initialize = () => {
-        const link = mockLinks[params.linkId as keyof typeof mockLinks];
+        const link = shareLinks[linkId];
         if (!link || link.used) {
             setError("This invitation code is invalid or has already been used.");
             setIsLoading(false);
             return;
         }
 
-        const linkedBadge = mockBadges[link.badgeId as keyof typeof mockBadges];
+        const linkedBadge = badges[link.badgeId];
         if (!linkedBadge) {
             setError("The badge associated with this code could not be found.");
             setIsLoading(false);
             return;
+        }
+        
+        if (linkedBadge.owners.includes(currentUserId)) {
+             setError(`You already own the "${linkedBadge.name}" badge.`);
+             setIsLoading(false);
+             return;
         }
         
         setBadge(linkedBadge);
@@ -51,29 +56,43 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
     }
     setTimeout(initialize, 500);
 
-  }, [params.linkId]);
+  }, [linkId, shareLinks, badges, currentUserId]);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!badge || !user) return;
+    if (!badge || !currentUserId) return;
 
     setIsClaiming(true);
 
     setTimeout(() => {
         try {
+            // Update link
+            setShareLinks(prev => ({
+                ...prev,
+                [linkId]: { ...prev[linkId], used: true, claimedBy: currentUserId }
+            }));
+
+            // Update badge owners and followers
+            setBadges(prev => ({
+                ...prev,
+                [badge.id]: {
+                    ...prev[badge.id],
+                    owners: [...prev[badge.id].owners, currentUserId],
+                    followers: [...prev[badge.id].followers, currentUserId]
+                }
+            }));
+
             toast({
                 title: 'Badge Claimed!',
                 description: `You are now an owner of the "${badge.name}" badge.`,
             });
-
-            // Mock creating new links
-            const newLinks = [{ linkId: 'new-mock-link', badgeId: badge.id, ownerId: user.uid, used: false }];
-            if (newLinks.length > 0) {
-                setNewShareLinks(newLinks);
-                setShareOpen(true);
-            } else {
-                router.push(`/dashboard/badge/${badge.id}`);
-            }
+            
+            const newLinkId = `link${Date.now()}`;
+            const newLink: ShareLink = { linkId: newLinkId, badgeId: badge.id, ownerId: currentUserId, used: false, claimedBy: null };
+            
+            setShareLinks(prev => ({ ...prev, [newLinkId]: newLink }));
+            setNewShareLinks([newLink]);
+            setShareOpen(true);
             
         } catch(err: any) {
              toast({
@@ -138,7 +157,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
             </CardHeader>
             <CardContent>
                 <form onSubmit={handleJoin} className="grid gap-4">
-                    <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isClaiming}>
+                    <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isClaiming || !currentUserId}>
                      {isClaiming ? "Claiming..." : "Claim Badge"}
                     </Button>
                 </form>

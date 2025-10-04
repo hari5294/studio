@@ -47,15 +47,21 @@ function useSidebar() {
   return context
 }
 
-const getSidebarStateFromCookie = () => {
-    if (typeof document === 'undefined') return true;
+const getSidebarStateFromCookie = (): boolean => {
+    if (typeof document === 'undefined') return true; // Default to open on server
     const cookie = document.cookie
         .split('; ')
         .find(row => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`));
-    if (!cookie) return true;
+    if (!cookie) return true; // Default to open if cookie not set
     const value = cookie.split('=')[1];
-    return value === 'true';
+    return value === 'true'; // Explicitly check for 'true'
 }
+
+const setSidebarCookie = (isOpen: boolean) => {
+    if (typeof document === 'undefined') return;
+    document.cookie = `${SIDEBAR_COOKIE_NAME}=${isOpen}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+}
+
 
 const SidebarProvider = React.forwardRef<
   HTMLDivElement,
@@ -80,7 +86,7 @@ const SidebarProvider = React.forwardRef<
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
 
-    // Set initial state from cookie or prop
+    // Set initial state from cookie or prop only on client
     const [initialOpen, setInitialOpen] = React.useState(true);
 
     React.useEffect(() => {
@@ -108,9 +114,7 @@ const SidebarProvider = React.forwardRef<
         } else {
           _setOpen(openState)
         }
-        if (typeof document !== 'undefined') {
-            document.cookie = `${SIDEBAR_COOKIE_NAME}=${String(openState)}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
-        }
+        setSidebarCookie(openState);
       },
       [setOpenProp, open]
     )

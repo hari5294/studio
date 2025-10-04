@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAtom } from 'jotai';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,12 +11,15 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { isOnlyEmojis } from '@/lib/utils';
+import { badgesAtom, currentUserIdAtom } from '@/lib/mock-data';
 
 export default function CreateBadgePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [emojis, setEmojis] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [currentUserId] = useAtom(currentUserIdAtom);
+  const [, setBadges] = useAtom(badgesAtom);
 
   const handleEmojiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -26,6 +30,11 @@ export default function CreateBadgePage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!currentUserId) {
+        toast({ title: 'Error', description: 'You must be logged in to create a badge.', variant: 'destructive'});
+        return;
+    }
+
     setIsLoading(true);
     const formData = new FormData(event.currentTarget);
     const badgeName = formData.get('badgeName') as string;
@@ -44,15 +53,30 @@ export default function CreateBadgePage() {
     // Mock API call
     setTimeout(() => {
         try {
+            const newBadgeId = `badge${Date.now()}`;
+            
+            setBadges(prev => ({
+                ...prev,
+                [newBadgeId]: {
+                    id: newBadgeId,
+                    name: badgeName,
+                    emojis: emojis,
+                    tokens: tokens,
+                    creatorId: currentUserId,
+                    owners: [currentUserId],
+                    followers: [currentUserId],
+                    createdAt: Date.now(),
+                }
+            }));
+            
             toast({
-            title: 'Badge Created!',
-            description: `Your badge "${badgeName}" has been successfully created.`,
+                title: 'Badge Created!',
+                description: `Your badge "${badgeName}" has been successfully created.`,
             });
             
-            const newBadgeId = Math.random().toString(36).substring(7);
             const url = `/dashboard/badge/${newBadgeId}?showShare=true`;
-            
             router.push(url);
+
         } catch (error: any) {
             toast({
                 title: 'Creation Failed',
@@ -106,7 +130,7 @@ export default function CreateBadgePage() {
                   Initial amount of badges available to claim.
                 </p>
               </div>
-              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !currentUserId}>
                 {isLoading ? 'Creating...' : 'Create Badge'}
               </Button>
             </form>

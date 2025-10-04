@@ -13,19 +13,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Smile } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getFirstEmoji, isOnlyEmojis } from '@/lib/utils';
-
-type User = {
-    uid: string;
-    emojiAvatar?: string;
-}
+import { User } from '@/lib/mock-data';
 
 type EditProfileDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User;
-  onUpdate: () => void;
+  onUpdate: (updatedUser: Partial<User>) => void;
 };
 
 export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditProfileDialogProps) {
@@ -33,28 +29,35 @@ export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditPr
     const [emoji, setEmoji] = useState(user.emojiAvatar || '');
     const [isLoading, setIsLoading] = useState(false);
     
+    useEffect(() => {
+        if(open) {
+            setEmoji(user.emojiAvatar || '');
+        }
+    }, [open, user.emojiAvatar]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         
-        // Mock API call
         setTimeout(() => {
             try {
-                if (!isOnlyEmojis(emoji)) {
+                if (emoji && !isOnlyEmojis(emoji)) {
                      toast({
                         title: 'Invalid Input',
                         description: 'Please enter only an emoji to use as your avatar.',
                         variant: 'destructive',
                     });
+                    setIsLoading(false);
                     return;
                 }
                 const cleanEmoji = getFirstEmoji(emoji);
                 
+                onUpdate({ emojiAvatar: cleanEmoji });
+
                 toast({
                     title: "Avatar Updated!",
                     description: `Your profile picture is now ${cleanEmoji}.`,
                 });
-                onUpdate();
                 onOpenChange(false);
             } catch (error: any) {
                  toast({

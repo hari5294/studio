@@ -13,9 +13,7 @@ import { Copy, QrCode } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Skeleton } from '../ui/skeleton';
-
-type Badge = { id: string; name: string; };
-type ShareLink = { linkId: string; };
+import { Badge, ShareLink } from '@/lib/mock-data';
 
 type ShareBadgeDialogProps = {
   open: boolean;
@@ -27,12 +25,19 @@ type ShareBadgeDialogProps = {
 
 export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], isLoading = false }: ShareBadgeDialogProps) {
     const { toast } = useToast();
+    const [qrError, setQrError] = React.useState(false);
 
     const copyToClipboard = (text: string) => {
         if (typeof window === 'undefined') return;
         const fullUrl = `${window.location.origin}/join/${text}`;
         navigator.clipboard.writeText(fullUrl);
         toast({ title: "Copied link to clipboard!" });
+    }
+
+    const qrCodeUrl = (linkId: string) => {
+        if (typeof window === 'undefined') return '';
+        const data = encodeURIComponent(`${window.location.origin}/join/${linkId}`);
+        return `https://api.qrserver.com/v1/create-qr-code/?size=40x40&data=${data}`;
     }
     
   return (
@@ -60,12 +65,13 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], isLoad
                 {links.map(link => (
                     <div key={link.linkId} className="flex items-center gap-2 w-full">
                        <Image
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=40x40&data=${typeof window !== 'undefined' ? encodeURIComponent(`${window.location.origin}/join/${link.linkId}`) : ''}`}
+                          src={qrCodeUrl(link.linkId)}
                           alt="QR Code"
                           width={40}
                           height={40}
                           className="rounded-md"
                           data-ai-hint="qr code"
+                          unoptimized // for external images
                         />
                       <Input readOnly value={link.linkId} className="bg-muted font-mono text-xs" />
                       <Button variant="ghost" size="icon" onClick={() => copyToClipboard(link.linkId)}>

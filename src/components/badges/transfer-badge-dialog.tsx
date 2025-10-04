@@ -14,45 +14,61 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowRightLeft } from 'lucide-react';
 import React, { useState } from 'react';
 import { Combobox } from '@/components/ui/combobox';
+import { useAtom } from 'jotai';
+import { usersAtom, notificationsAtom, Badge } from '@/lib/mock-data';
 
-type Badge = { id: string; name: string; ownerId: string; owners: string[] };
 
 type TransferBadgeDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   badge: Badge;
-  onTransfer: () => void;
+  onTransfer: (newOwnerId: string) => void;
 };
-
-const mockUsers = [
-    { id: '456', name: 'Jane Smith', email: 'jane.smith@example.com' },
-];
 
 export function TransferBadgeDialog({ open, onOpenChange, badge, onTransfer }: TransferBadgeDialogProps) {
     const { toast } = useToast();
     const [recipientId, setRecipientId] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [users] = useAtom(usersAtom);
+    const [notifications, setNotifications] = useAtom(notificationsAtom);
 
-    const usersOptions = mockUsers.filter(u => badge.owners.includes(u.id) && u.id !== badge.ownerId)
-        .map(u => ({ value: u.id, label: `${u.name} (email: ${u.email})` })) ?? [];
+    const usersOptions = Object.values(users)
+        .filter(u => badge.owners.includes(u.id) && u.id !== badge.creatorId)
+        .map(u => ({ value: u.id, label: `${u.name} (${u.email})` })) ?? [];
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         
-        // Mock API call
         setTimeout(() => {
             try {
-                const newOwner = mockUsers.find(u => u.id === recipientId);
+                const newOwner = users[recipientId];
                 if (!newOwner) throw new Error("Recipient not found or is not an owner of this badge.");
+
+                onTransfer(recipientId);
+
+                const newNotificationId = `n${Object.keys(notifications).length + 1}`;
+                setNotifications(prev => ({
+                    ...prev,
+                    [newNotificationId]: {
+                        id: newNotificationId,
+                        type: 'OWNERSHIP_TRANSFER',
+                        userId: recipientId,
+                        fromUserId: badge.creatorId,
+                        badgeId: badge.id,
+                        createdAt: Date.now(),
+                        read: false,
+                    }
+                }));
 
                 toast({
                     title: "Transfer Complete!",
                     description: `Ownership of "${badge.name}" has been transferred to ${newOwner.name}.`,
                     variant: "default",
                 });
-                onTransfer();
+
                 onOpenChange(false);
+                setRecipientId('');
             } catch (error: any) {
                  toast({
                     title: "Transfer Failed",

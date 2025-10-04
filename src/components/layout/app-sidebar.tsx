@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAtom } from 'jotai';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -36,29 +37,17 @@ import {
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn, getFirstEmoji } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
-import React from 'react';
-import { useRouter } from 'next/navigation';
-
-// Mock Data
-const mockUser = {
-  uid: '123',
-  name: 'John Doe',
-  email: 'john.doe@example.com',
-  avatarUrl: 'https://picsum.photos/seed/123/100/100',
-  emojiAvatar: '😀'
-};
-
-const mockBadges = [
-  { id: '1', name: 'Cosmic Explorer', emojis: '🚀✨' },
-  { id: '2', name: 'Ocean Diver', emojis: '🌊🐠' },
-  { id: '3', name: 'Pixel Artist', emojis: '🎨👾' },
-];
+import { usersAtom, badgesAtom, currentUserIdAtom, notificationsAtom } from '@/lib/mock-data';
 
 function OwnedBadges() {
     const pathname = usePathname();
+    const [currentUserId] = useAtom(currentUserIdAtom);
+    const [allBadges] = useAtom(badgesAtom);
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
-    if (!mockBadges || mockBadges.length === 0) return null;
+    const ownedBadges = Object.values(allBadges).filter(b => b.owners.includes(currentUserId));
+    
+    if (ownedBadges.length === 0) return null;
 
     return (
         <div className="mt-4 flex flex-col gap-2 p-2 pt-0">
@@ -66,7 +55,7 @@ function OwnedBadges() {
                 Owned Badges
             </p>
             <SidebarMenu>
-                {mockBadges.map((badge) => (
+                {ownedBadges.slice(0, 5).map((badge) => ( // Limit to 5 for tidiness
                 <SidebarMenuItem key={badge.id}>
                     <SidebarMenuButton
                     asChild
@@ -86,9 +75,11 @@ function OwnedBadges() {
 }
 
 function UserMenu() {
-    const router = useRouter();
+    const [currentUserId, setCurrentUserId] = useAtom(currentUserIdAtom);
+    const [users] = useAtom(usersAtom);
+    const currentUser = users[currentUserId];
 
-    if (!mockUser) return null;
+    if (!currentUser) return null;
 
     return (
         <DropdownMenu>
@@ -101,16 +92,16 @@ function UserMenu() {
               )}
             >
               <Avatar className="h-8 w-8">
-                {mockUser.emojiAvatar ? (
-                  <span className="flex h-full w-full items-center justify-center text-xl">{mockUser.emojiAvatar}</span>
+                {currentUser.emojiAvatar ? (
+                  <span className="flex h-full w-full items-center justify-center text-xl">{currentUser.emojiAvatar}</span>
                 ) : (
-                  <AvatarImage src={mockUser.avatarUrl} alt={mockUser.name} />
+                  <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
                 )}
-                <AvatarFallback>{mockUser.name?.charAt(0) ?? '?'}</AvatarFallback>
+                <AvatarFallback>{currentUser.name?.charAt(0) ?? '?'}</AvatarFallback>
               </Avatar>
               <div className="flex-grow truncate group-data-[collapsible=icon]:hidden">
-                <p className="text-sm font-medium">{mockUser.name}</p>
-                <p className="text-xs text-muted-foreground">{mockUser.email}</p>
+                <p className="text-sm font-medium">{currentUser.name}</p>
+                <p className="text-xs text-muted-foreground">{currentUser.email}</p>
               </div>
               <MoreHorizontal className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:hidden" />
             </Button>
@@ -119,7 +110,7 @@ function UserMenu() {
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href={`/dashboard/profile/${mockUser.uid}`}>
+              <Link href={`/dashboard/profile/${currentUser.id}`}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </Link>
@@ -133,11 +124,13 @@ function UserMenu() {
     )
 }
 
-
 function InboxMenuLink() {
     const pathname = usePathname();
-    const unreadCount = 2; // Mock unread count
+    const [allNotifications] = useAtom(notificationsAtom);
+    const [currentUserId] = useAtom(currentUserIdAtom);
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
+    
+    const unreadCount = Object.values(allNotifications).filter(n => n.userId === currentUserId && !n.read).length;
 
     return (
         <SidebarMenuItem>
@@ -164,6 +157,7 @@ function InboxMenuLink() {
 export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
+  const [currentUserId] = useAtom(currentUserIdAtom);
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -181,7 +175,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              isActive={isActive('/dashboard')}
+              isActive={pathname === '/dashboard'}
               tooltip="Dashboard"
             >
               <Link href="/dashboard">
@@ -220,10 +214,10 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
                 asChild
-                isActive={isActive(`/dashboard/profile/${mockUser?.uid}`)}
+                isActive={isActive(`/dashboard/profile/${currentUserId}`)}
                 tooltip="My Profile"
             >
-                <Link href={`/dashboard/profile/${mockUser?.uid}`}>
+                <Link href={`/dashboard/profile`}>
                     <User />
                     <span>My Profile</span>
                 </Link>

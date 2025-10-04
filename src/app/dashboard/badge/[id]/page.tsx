@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, notFound } from 'next/navigation';
+import { useAtom } from 'jotai';
 import { Header } from '@/components/layout/header';
-import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,28 +14,16 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { badgesAtom, usersAtom, notificationsAtom, currentUserIdAtom, Badge, ShareLink } from '@/lib/mock-data';
 
-// Mock Data
-type User = { id: string; name: string; email: string; avatarUrl: string; emojiAvatar?: string; following: string[]; };
-type Badge = { id: string; name: string; emojis: string; tokens: number; ownerId: string; owners: string[]; followers: string[]; createdAt: number; };
+function BadgeOwners({ badgeId }: { badgeId: string }) {
+    const [users] = useAtom(usersAtom);
+    const [badges] = useAtom(badgesAtom);
+    const badge = badges[badgeId];
+    
+    if (!badge) return <Skeleton className="h-32 w-full" />;
 
-const mockUsers: Record<string, User> = {
-    '123': { id: '123', name: 'John Doe', email: 'john.doe@example.com', avatarUrl: 'https://picsum.photos/seed/123/100/100', emojiAvatar: '😀', following: ['456'] },
-    '456': { id: '456', name: 'Jane Smith', email: 'jane.smith@example.com', avatarUrl: 'https://picsum.photos/seed/456/100/100', emojiAvatar: '👩‍💻', following: [] },
-};
-const mockBadges: Record<string, Badge> = {
-  '1': { id: '1', name: 'Cosmic Explorer', emojis: '🚀✨', tokens: 1000, ownerId: '123', owners: ['123', '456'], followers: ['123', '456'], createdAt: Date.now() },
-  '2': { id: '2', name: 'Ocean Diver', emojis: '🌊🐠', tokens: 500, ownerId: '456', owners: ['456'], followers: ['123'], createdAt: Date.now() },
-};
-const currentUserMock = mockUsers['123'];
-
-function BadgeOwners({ badge }: { badge: Badge }) {
-    const owners = badge.owners.map(id => mockUsers[id]).filter(Boolean);
-    const loading = false;
-
-    if (loading) {
-        return <Skeleton className="h-32 w-full" />
-    }
+    const owners = badge.owners.map(id => users[id]).filter(Boolean);
 
     return (
         <Card>
@@ -47,7 +35,7 @@ function BadgeOwners({ badge }: { badge: Badge }) {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                {owners && owners.map((user) => (
+                {owners.length > 0 ? owners.map((user) => (
                     <Link href={`/dashboard/profile/${user.id}`} key={user.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
                         <Avatar>
                             {user.emojiAvatar ? (
@@ -57,11 +45,12 @@ function BadgeOwners({ badge }: { badge: Badge }) {
                             )}
                             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <p className="font-medium">{user.name}</p>
-                        {user.id === badge.ownerId && <span className="text-xs text-muted-foreground">(Creator)</span>}
+                        <div>
+                            <p className="font-medium">{user.name}</p>
+                            {user.id === badge.creatorId && <span className="text-xs text-muted-foreground">(Creator)</span>}
+                        </div>
                     </Link>
-                ))}
-                {(!owners || owners.length === 0) && (
+                )) : (
                     <p className="text-sm text-muted-foreground text-center py-4">No one owns this badge yet.</p>
                 )}
                 </div>
@@ -70,13 +59,14 @@ function BadgeOwners({ badge }: { badge: Badge }) {
     )
 }
 
-function BadgeFollowers({ badge }: { badge: Badge }) {
-    const followers = badge.followers.map(id => mockUsers[id]).filter(Boolean);
-    const loading = false;
+function BadgeFollowers({ badgeId }: { badgeId: string }) {
+    const [users] = useAtom(usersAtom);
+    const [badges] = useAtom(badgesAtom);
+    const badge = badges[badgeId];
 
-     if (loading) {
-        return <Skeleton className="h-48 w-full" />
-    }
+    if (!badge) return <Skeleton className="h-48 w-full" />;
+
+    const followers = badge.followers.map(id => users[id]).filter(Boolean);
     
     return (
         <Card>
@@ -88,7 +78,7 @@ function BadgeFollowers({ badge }: { badge: Badge }) {
             </CardHeader>
             <CardContent>
             <div className="space-y-4">
-                {followers && followers.map((user) => (
+                {followers.length > 0 ? followers.map((user) => (
                  <Link href={`/dashboard/profile/${user.id}`} key={user.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
                     <Avatar>
                     {user.emojiAvatar ? (
@@ -100,9 +90,8 @@ function BadgeFollowers({ badge }: { badge: Badge }) {
                     </Avatar>
                     <p className="font-medium">{user.name}</p>
                  </Link>
-                ))}
-                {(!followers || followers.length === 0) && (
-                <p className="text-sm text-muted-foreground text-center py-4">No followers yet.</p>
+                )) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">No followers yet.</p>
                 )}
             </div>
             </CardContent>
@@ -110,42 +99,83 @@ function BadgeFollowers({ badge }: { badge: Badge }) {
     )
 }
 
-
 function BadgeDetailContent({ params }: { params: { id: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const badge = mockBadges[params.id];
-  const creator = badge ? mockUsers[badge.ownerId] : null;
+  const [currentUserId] = useAtom(currentUserIdAtom);
+  const [users] = useAtom(usersAtom);
+  const [badges, setBadges] = useAtom(badgesAtom);
+  const [shareLinks] = useAtom(shareLinksAtom);
+  const [notifications, setNotifications] = useAtom(notificationsAtom);
+  
+  const badge = badges[params.id];
+  const creator = badge ? users[badge.creatorId] : null;
 
   const [isShareOpen, setShareOpen] = useState(searchParams.get('showShare') === 'true');
   const [isTransferOpen, setTransferOpen] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(badge?.followers.includes(currentUserMock.id));
 
-  const isCreator = currentUserMock && badge && badge.ownerId === currentUserMock.id;
-  const isOwner = currentUserMock && badge && badge.owners.includes(currentUserMock.id);
-  
   if (!badge) {
     notFound();
   }
   
+  const currentUser = users[currentUserId];
+  const isCreator = currentUser && badge.creatorId === currentUser.id;
+  const isOwner = currentUser && badge.owners.includes(currentUser.id);
+  const isFollowing = currentUser && badge.followers.includes(currentUser.id);
+
   const badgesLeft = badge.tokens - badge.owners.length;
 
-  const handleFollow = async () => {
-    setIsFollowing(!isFollowing);
+  const handleFollow = () => {
+    if (!currentUser) return;
+    const isNowFollowing = !isFollowing;
+    
+    setBadges(prev => ({
+        ...prev,
+        [badge.id]: {
+            ...prev[badge.id],
+            followers: isNowFollowing
+                ? [...prev[badge.id].followers, currentUser.id]
+                : prev[badge.id].followers.filter(id => id !== currentUser.id),
+        }
+    }));
+
     toast({
-        title: !isFollowing ? 'Followed!' : 'Unfollowed.',
-        description: `You are now ${!isFollowing ? 'following' : 'no longer following'} "${badge.name}".`
+        title: isNowFollowing ? 'Followed!' : 'Unfollowed.',
+        description: `You are now ${isNowFollowing ? 'following' : 'no longer following'} "${badge.name}".`
     });
   }
 
-  const handleRequestCode = async () => {
+  const handleRequestCode = () => {
+     if (!currentUser) return;
+     const newNotificationId = `n${Object.keys(notifications).length + 1}`;
+     setNotifications(prev => ({
+         ...prev,
+         [newNotificationId]: {
+             id: newNotificationId,
+             type: 'BADGE_REQUEST',
+             userId: badge.creatorId,
+             fromUserId: currentUser.id,
+             badgeId: badge.id,
+             createdAt: Date.now(),
+             read: false,
+         }
+     }));
     toast({
         title: 'Request Sent!',
-        description: `Your request for a code for "${badge.name}" has been sent to the owners.`,
+        description: `Your request for a code for "${badge.name}" has been sent to the creator.`,
     });
   }
+
+  const handleTransfer = (newOwnerId: string) => {
+    setBadges(prev => ({
+        ...prev,
+        [badge.id]: { ...prev[badge.id], creatorId: newOwnerId }
+    }));
+  };
+
+  const userShareLinks = Object.values(shareLinks).filter(link => link.badgeId === badge.id && link.ownerId === currentUser?.id && !link.used);
   
   return (
     <>
@@ -209,14 +239,14 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                    <Button 
                      variant={isFollowing ? 'secondary' : 'outline'} 
                      onClick={handleFollow}
-                     className={cn({ 'invisible': !currentUserMock })}
+                     className={cn({ 'invisible': !currentUser })}
                     >
                       {isFollowing ? 'Unfollow' : 'Follow'}
                    </Button>
                    <Button 
                      variant='outline'
                      onClick={handleRequestCode}
-                     className={cn({ 'invisible': !currentUserMock || !!isOwner })}
+                     className={cn({ 'invisible': !currentUser || !!isOwner })}
                      disabled={!!isOwner}
                     >
                       <Send className="mr-2 h-4 w-4" />
@@ -226,27 +256,28 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
               </CardContent>
             </Card>
 
-            <BadgeOwners badge={badge} />
+            <BadgeOwners badgeId={badge.id} />
           </div>
 
           <div className="lg:col-span-1 space-y-6">
-            <BadgeFollowers badge={badge} />
+            <BadgeFollowers badgeId={badge.id} />
           </div>
         </div>
       </div>
-      <ShareBadgeDialog 
-        open={isShareOpen} 
-        onOpenChange={setShareOpen} 
-        badge={badge} 
-        links={[{linkId: 'mock-link-1', badgeId: badge.id, ownerId: '123', used: false, claimedBy: null}]}
-        isLoading={false}
-      />
-      {currentUserMock && isCreator && (
+      {currentUser && (
+        <ShareBadgeDialog 
+          open={isShareOpen} 
+          onOpenChange={setShareOpen} 
+          badge={badge} 
+          links={userShareLinks}
+        />
+      )}
+      {currentUser && isCreator && (
         <TransferBadgeDialog 
             open={isTransferOpen} 
             onOpenChange={setTransferOpen} 
             badge={badge} 
-            onTransfer={() => {}} 
+            onTransfer={handleTransfer}
         />
       )}
     </>

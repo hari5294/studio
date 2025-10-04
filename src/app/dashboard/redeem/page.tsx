@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAtom } from 'jotai';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,15 +10,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Gift } from 'lucide-react';
+import { badgesAtom, currentUserIdAtom, shareLinksAtom } from '@/lib/mock-data';
 
 export default function RedeemCodePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const [currentUserId] = useAtom(currentUserIdAtom);
+  const [shareLinks, setShareLinks] = useAtom(shareLinksAtom);
+  const [badges, setBadges] = useAtom(badgesAtom);
   
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!currentUserId) {
+        toast({ title: 'Error', description: 'You must be logged in to redeem a code.', variant: 'destructive'});
+        return;
+    }
     if (!code.trim()) {
       toast({
         title: 'Missing Code',
@@ -29,22 +39,41 @@ export default function RedeemCodePage() {
 
     setIsLoading(true);
 
-    // Mock API call
     setTimeout(() => {
         try {
-            if (code === 'invalid-code') {
+            const link = shareLinks[code];
+
+            if (!link || link.used) {
                 throw new Error("This code is invalid or has already been used.");
             }
+            
+            const badgeToClaim = badges[link.badgeId];
+            if (!badgeToClaim) {
+                throw new Error("The badge for this code could not be found.");
+            }
+            if(badgeToClaim.owners.includes(currentUserId)){
+                throw new Error(`You already own the "${badgeToClaim.name}" badge.`);
+            }
 
-            const badgeId = 'mock-badge-id';
-            const badgeName = 'Mock Badge';
+            // Mark link as used
+            setShareLinks(prev => ({ ...prev, [code]: { ...prev[code], used: true, claimedBy: currentUserId }}));
+            
+            // Add user to badge owners
+            setBadges(prev => ({
+                ...prev,
+                [link.badgeId]: {
+                    ...prev[link.badgeId],
+                    owners: [...prev[link.badg_id].owners, currentUserId],
+                    followers: [...prev[link.badgeId].followers, currentUserId],
+                }
+            }));
             
             toast({
                 title: 'Badge Claimed!',
-                description: `You are now an owner of the "${badgeName}" badge.`,
+                description: `You are now an owner of the "${badgeToClaim.name}" badge.`,
             });
 
-            router.push(`/dashboard/badge/${badgeId}?showShare=true`);
+            router.push(`/dashboard/badge/${link.badgeId}?showShare=true`);
 
         } catch (error: any) {
             toast({
@@ -88,7 +117,7 @@ export default function RedeemCodePage() {
                   className="font-mono"
                 />
               </div>
-              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !currentUserId}>
                 {isLoading ? 'Redeeming...' : 'Redeem Badge'}
               </Button>
             </form>

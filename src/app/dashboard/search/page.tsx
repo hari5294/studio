@@ -3,31 +3,24 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useAtom } from 'jotai';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge as BadgeIcon, Users, Search as SearchIcon } from 'lucide-react';
 import { BadgeCard } from '@/components/badges/badge-card';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Mock Data
-const mockBadges = [
-  { id: '1', name: 'Cosmic Explorer', emojis: '🚀✨', tokens: 1000, owners: ['1', '2', '3'], followers: ['1', '2', '3', '4', '5'], createdAt: Date.now(), ownerId: '1' },
-  { id: '4', name: 'Synthwave Rider', emojis: '🌆🎶', tokens: 1984, owners: ['4'], followers: ['1', '4'], createdAt: Date.now(), ownerId: '4' },
-];
-
-const mockUsers = [
-  { id: '123', name: 'John Doe', avatarUrl: 'https://picsum.photos/seed/123/100/100', emojiAvatar: '😀' },
-  { id: '456', name: 'Jane Smith', avatarUrl: 'https://picsum.photos/seed/456/100/100', emojiAvatar: '👩‍💻' },
-  { id: '789', name: 'Alex Ray', avatarUrl: 'https://picsum.photos/seed/789/100/100' },
-];
+import { badgesAtom, usersAtom, User, Badge } from '@/lib/mock-data';
 
 function SearchResults() {
   const searchParams = useSearchParams();
   const queryParam = searchParams.get('q') || '';
+  
+  const [allBadges] = useAtom(badgesAtom);
+  const [allUsers] = useAtom(usersAtom);
 
-  const [badgeResults, setBadgeResults] = useState<any[]>([]);
-  const [userResults, setUserResults] = useState<any[]>([]);
+  const [badgeResults, setBadgeResults] = useState<Badge[]>([]);
+  const [userResults, setUserResults] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -41,15 +34,15 @@ function SearchResults() {
 
         // Mock search
         setTimeout(() => {
-            const badges = mockBadges.filter(b => b.name.toLowerCase().includes(queryParam.toLowerCase()));
-            const users = mockUsers.filter(u => u.name.toLowerCase().includes(queryParam.toLowerCase()));
+            const badges = Object.values(allBadges).filter(b => b.name.toLowerCase().includes(queryParam.toLowerCase()));
+            const users = Object.values(allUsers).filter(u => u.name.toLowerCase().includes(queryParam.toLowerCase()));
             setBadgeResults(badges);
             setUserResults(users);
             setLoading(false);
         }, 500);
     }
     performSearch();
-  }, [queryParam]);
+  }, [queryParam, allBadges, allUsers]);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">
@@ -128,7 +121,7 @@ export default function SearchPage() {
   return (
     <>
       <Header title={query ? `Results for "${query}"` : 'Search'} />
-      <Suspense fallback={<div>Loading search results...</div>}>
+      <Suspense fallback={<div className="p-6">Loading search results...</div>}>
         <SearchResults />
       </Suspense>
     </>
