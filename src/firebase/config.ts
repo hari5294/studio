@@ -26,7 +26,7 @@ export const firebaseConfig: FirebaseOptions = {
   apiKey: "AIzaSyBxah2wopRzHoQ0KYPek_Tqo_IsD_vXMqg",
   authDomain: "dark-edge-456612-p2.firebaseapp.com",
   projectId: "dark-edge-456612-p2",
-  storageBucket: "dark-edge-456612-p2.firebasestorage.app",
+  storageBucket: "dark-edge-456612-p2.appspot.com",
   messagingSenderId: "525531950726",
   appId: "1:525531950726:web:11796cbe21204d7010ab07",
   measurementId: "G-N6LK8YSSF5"
