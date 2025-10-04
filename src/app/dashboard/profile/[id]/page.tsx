@@ -8,19 +8,20 @@ import { getUserById, getBadgesByOwner, toggleFollowUser, type User, type Badge 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { BadgeCard } from '@/components/badges/badge-card';
-import { Badge, User as UserIcon, Users } from 'lucide-react';
+import { Badge, User as UserIcon, Users, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useIsClient } from '@/hooks/use-is-client';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import { EditProfileDialog } from '@/components/profile/edit-profile-dialog';
 
-export default function UserProfilePage({ params }: { params: { id: string } }) {
+export default function UserProfilePage({ params }: { params: { id:string } }) {
   const isClient = useIsClient();
   const { toast } = useToast();
   const [_, forceUpdate] = useReducer((x) => x + 1, 0);
 
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isEditProfileOpen, setEditProfileOpen] = useState(false);
   
   const currentUserId = 'user-1';
   const user = getUserById(params.id);
@@ -32,12 +33,20 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
     if (isClient && currentUser && user) {
         setIsFollowing(currentUser.following.includes(user.id));
     }
-  }, [isClient, currentUser, user]);
+  }, [isClient, currentUser, user, _]);
 
 
   if (!user) {
     notFound();
   }
+  
+  const handleProfileUpdate = () => {
+    forceUpdate();
+    // This is a bit of a hack to force the sidebar to re-render as well
+    // In a real app with global state management, this would be cleaner
+    window.dispatchEvent(new Event('profileUpdated'));
+  }
+
 
   const handleFollowToggle = () => {
     try {
@@ -58,6 +67,8 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
     }
   }
 
+  const isCurrentUserProfile = user.id === currentUserId;
+
   return (
     <>
       <Header title="User Profile" />
@@ -66,15 +77,32 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardContent className="pt-6 flex flex-col items-center text-center gap-4">
-                <Avatar className="h-24 w-24 border-4 border-primary">
-                  <AvatarImage src={user.avatarUrl} alt={user.name} />
-                  <AvatarFallback className="text-3xl">{user.name.charAt(0)}</AvatarFallback>
-                </Avatar>
+                 <div className="relative group">
+                    <Avatar className="h-24 w-24 border-4 border-primary">
+                        {user.emojiAvatar ? (
+                            <span className="flex h-full w-full items-center justify-center text-5xl">{user.emojiAvatar}</span>
+                        ) : (
+                            <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        )}
+                        <AvatarFallback className="text-3xl">{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    {isClient && isCurrentUserProfile && (
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="absolute bottom-0 right-0 rounded-full h-8 w-8"
+                            onClick={() => setEditProfileOpen(true)}
+                        >
+                            <Edit className="h-4 w-4"/>
+                        </Button>
+                    )}
+                </div>
+
                 <div className="space-y-1">
                   <h1 className="text-2xl font-bold font-headline">{user.name}</h1>
                   <p className="text-muted-foreground">Member</p>
                 </div>
-                 {isClient && user.id !== currentUserId && (
+                 {isClient && !isCurrentUserProfile && (
                     <Button variant={isFollowing ? 'secondary' : 'outline'} onClick={handleFollowToggle}>
                         <UserIcon className="mr-2 h-4 w-4" />
                         {isFollowing ? 'Unfollow' : 'Follow'}
@@ -119,7 +147,11 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                     <Link href={`/dashboard/profile/${followedUser.id}`} key={followedUser.id}>
                         <div className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
                         <Avatar>
-                            <AvatarImage src={followedUser.avatarUrl} alt={followedUser.name} />
+                            {followedUser.emojiAvatar ? (
+                                <span className="flex h-full w-full items-center justify-center text-2xl">{followedUser.emojiAvatar}</span>
+                            ) : (
+                               <AvatarImage src={followedUser.avatarUrl} alt={followedUser.name} />
+                            )}
                             <AvatarFallback>{followedUser.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <p className="font-medium">{followedUser.name}</p>
@@ -135,6 +167,14 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
           </div>
         </div>
       </div>
+      {isCurrentUserProfile && (
+        <EditProfileDialog 
+            open={isEditProfileOpen} 
+            onOpenChange={setEditProfileOpen} 
+            user={user}
+            onUpdate={handleProfileUpdate}
+        />
+      )}
     </>
   );
 }

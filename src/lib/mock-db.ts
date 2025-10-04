@@ -1,9 +1,9 @@
 
-
 export type User = {
   id: string;
   name: string;
   avatarUrl: string;
+  emojiAvatar?: string;
   following: string[]; // array of user ids
 };
 
@@ -40,11 +40,11 @@ export type Notification = {
 // --- IN-MEMORY DATABASE ---
 
 let users: User[] = [
-  { id: 'user-1', name: 'Alex', avatarUrl: 'https://picsum.photos/seed/avatar1/100/100', following: ['user-2', 'user-4'] },
+  { id: 'user-1', name: 'Alex', avatarUrl: 'https://picsum.photos/seed/avatar1/100/100', emojiAvatar: '🧑‍🚀', following: ['user-2', 'user-4'] },
   { id: 'user-2', name: 'Maria', avatarUrl: 'https://picsum.photos/seed/avatar2/100/100', following: ['user-1'] },
-  { id: 'user-3', name: 'David', avatarUrl: 'https://picsum.photos/seed/avatar3/100/100', following: ['user-1', 'user-5'] },
+  { id: 'user-3', name: 'David', avatarUrl: 'https://picsum.photos/seed/avatar3/100/100', emojiAvatar: '👨‍🍳', following: ['user-1', 'user-5'] },
   { id: 'user-4', name: 'Sarah', avatarUrl: 'https://picsum.photos/seed/avatar4/100/100', following: [] },
-  { id: 'user-5', name: 'Ken', avatarUrl: 'https://picsum.photos/seed/avatar5/100/100', following: ['user-3'] },
+  { id: 'user-5', name: 'Ken', avatarUrl: 'https://picsum.photos/seed/avatar5/100/100', emojiAvatar: '🎸', following: ['user-3'] },
 ];
 
 let badges: Badge[] = [
@@ -230,6 +230,24 @@ export const transferBadgeOwnership = (badgeId: string, newOwnerId: string) => {
     }
     return badge;
 }
+
+export const updateUserAvatar = (userId: string, emoji: string) => {
+    const user = getUserById(userId);
+    if (!user) throw new Error("User not found");
+    
+    // Basic emoji validation
+    const emojiRegex = /\p{Emoji}/u;
+    if (!emojiRegex.test(emoji)) {
+        throw new Error("Invalid emoji provided.");
+    }
+    
+    // Use spread to get the first character, handles complex emojis
+    const firstEmoji = [...emoji][0];
+    
+    user.emojiAvatar = firstEmoji;
+    return user;
+}
+
 
 // --- Share Link Simulation ---
 

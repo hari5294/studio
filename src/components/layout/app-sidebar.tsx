@@ -38,10 +38,10 @@ import {
 } from 'lucide-react';
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn, getFirstEmoji } from '@/lib/utils';
-import { getBadgesByOwner, getUnreadNotificationCount } from '@/lib/data';
+import { getBadgesByOwner, getUnreadNotificationCount, getUserById } from '@/lib/data';
 import { useSidebar } from '@/components/ui/sidebar';
 import React, { useEffect, useState } from 'react';
-import type { Badge } from '@/lib/data';
+import type { Badge, User as UserType } from '@/lib/data';
 
 
 export function AppSidebar() {
@@ -49,12 +49,23 @@ export function AppSidebar() {
   const { isMobile } = useSidebar();
   const [myBadges, setMyBadges] = useState<Badge[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [currentUser, setCurrentUser] = useState<UserType | undefined>(undefined);
   const currentUserId = 'user-1';
 
-  useEffect(() => {
-    // This effect will re-run on navigation, ensuring the badge list and unread count is fresh.
+  const fetchData = () => {
     setMyBadges(getBadgesByOwner(currentUserId));
     setUnreadCount(getUnreadNotificationCount(currentUserId));
+    setCurrentUser(getUserById(currentUserId));
+  }
+
+  useEffect(() => {
+    fetchData();
+    // This effect will re-run on navigation or custom event, ensuring the badge list, user, and unread count is fresh.
+    window.addEventListener('profileUpdated', fetchData);
+    
+    return () => {
+        window.removeEventListener('profileUpdated', fetchData);
+    }
   }, [pathname]);
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
@@ -182,11 +193,15 @@ export function AppSidebar() {
               )}
             >
               <Avatar className="h-8 w-8">
-                <AvatarImage src="https://picsum.photos/seed/avatar1/100/100" alt="Alex" />
-                <AvatarFallback>A</AvatarFallback>
+                {currentUser?.emojiAvatar ? (
+                  <span className="flex h-full w-full items-center justify-center text-xl">{currentUser.emojiAvatar}</span>
+                ) : (
+                  <AvatarImage src={currentUser?.avatarUrl} alt={currentUser?.name} />
+                )}
+                <AvatarFallback>{currentUser?.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex-grow truncate group-data-[collapsible=icon]:hidden">
-                <p className="text-sm font-medium">Alex</p>
+                <p className="text-sm font-medium">{currentUser?.name}</p>
                 <p className="text-xs text-muted-foreground">alex@example.com</p>
               </div>
               <MoreHorizontal className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:hidden" />

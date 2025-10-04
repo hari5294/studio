@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { searchBadges, searchUsers, type Badge, type User } from '@/lib/data';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge as BadgeIcon, Users, Search as SearchIcon } from 'lucide-react';
 import { BadgeCard } from '@/components/badges/badge-card';
@@ -65,7 +65,11 @@ function SearchResults() {
                     <Card className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4 flex items-center gap-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={user.avatarUrl} alt={user.name} />
+                           {user.emojiAvatar ? (
+                                <span className="flex h-full w-full items-center justify-center text-3xl">{user.emojiAvatar}</span>
+                           ) : (
+                                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                           )}
                           <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>

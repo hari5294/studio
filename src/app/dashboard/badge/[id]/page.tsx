@@ -63,7 +63,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
         router.replace(`/dashboard/badge/${params.id}`, { scroll: false });
       }
     }
-  }, [badge, searchParams, params.id, router, isClient]);
+  }, [badge, searchParams, params.id, router, isClient, _]);
 
   useEffect(() => {
     if (isShareOpen) {
@@ -126,7 +126,11 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                     <CardDescription className="flex items-center gap-2 pt-2">
                        Created by
                       <Avatar className="h-6 w-6">
-                        <AvatarImage src={creator?.avatarUrl} alt={creator?.name} />
+                        {creator?.emojiAvatar ? (
+                          <span className="flex h-full w-full items-center justify-center text-lg">{creator.emojiAvatar}</span>
+                        ) : (
+                          <AvatarImage src={creator?.avatarUrl} alt={creator?.name} />
+                        )}
                         <AvatarFallback>{creator?.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       {creator?.name}
@@ -193,7 +197,11 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                     {owners.map((user) => (
                         <div key={user.id} className="flex items-center gap-4">
                         <Avatar>
-                            <AvatarImage src={user.avatarUrl} alt={user.name} />
+                            {user.emojiAvatar ? (
+                                <span className="flex h-full w-full items-center justify-center text-2xl">{user.emojiAvatar}</span>
+                            ) : (
+                                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                            )}
                             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <p className="font-medium">{user.name}</p>
@@ -222,7 +230,11 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                   {followers.map((user) => (
                     <div key={user.id} className="flex items-center gap-4">
                       <Avatar>
-                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        {user.emojiAvatar ? (
+                            <span className="flex h-full w-full items-center justify-center text-2xl">{user.emojiAvatar}</span>
+                        ) : (
+                           <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        )}
                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <p className="font-medium">{user.name}</p>

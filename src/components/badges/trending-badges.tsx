@@ -38,7 +38,11 @@ export function TrendingBadges() {
                   <p className="font-semibold">{badge.name}</p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Avatar className="h-5 w-5">
-                        <AvatarImage src={owner?.avatarUrl} alt={owner?.name} />
+                        {owner?.emojiAvatar ? (
+                            <span className="flex h-full w-full items-center justify-center text-sm">{owner.emojiAvatar}</span>
+                         ) : (
+                            <AvatarImage src={owner?.avatarUrl} alt={owner?.name} />
+                         )}
                         <AvatarFallback>{owner?.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <span>{owner?.name}</span>

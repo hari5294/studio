@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import {
   Card,
@@ -26,7 +27,11 @@ export function BadgeCard({ badge, followersData }: BadgeCardProps) {
           <div className="flex -space-x-2">
             {followersData.slice(0, 3).map((follower, index) => (
               <Avatar key={follower.id} className="h-8 w-8 border-2 border-card">
-                <AvatarImage src={follower.avatarUrl} alt={follower.name} />
+                {follower.emojiAvatar ? (
+                    <span className="flex h-full w-full items-center justify-center text-lg">{follower.emojiAvatar}</span>
+                ) : (
+                    <AvatarImage src={follower.avatarUrl} alt={follower.name} />
+                )}
                 <AvatarFallback>{follower.name.charAt(0)}</AvatarFallback>
               </Avatar>
             ))}
