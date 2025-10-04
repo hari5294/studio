@@ -2,6 +2,7 @@ import { badges, getBadgeById, getUserById } from '@/lib/data';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TrendingUp, Flame } from 'lucide-react';
+import { getFirstEmoji } from '@/lib/utils';
 
 export function TrendingBadges() {
   const trendingBadgesList = badges
@@ -29,7 +30,7 @@ export function TrendingBadges() {
                   <Flame className="h-5 w-5 text-accent" />
                   <span>#{index + 1}</span>
                 </div>
-                <div className="text-3xl">{badge.emojis.charAt(0)}</div>
+                <div className="text-3xl">{getFirstEmoji(badge.emojis)}</div>
                 <div className="flex-grow">
                   <p className="font-semibold">{badge.name}</p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">

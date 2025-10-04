@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -38,7 +39,7 @@ import {
   Badge,
 } from 'lucide-react';
 import { EmojiBadgeLogo } from '@/components/icons';
-import { cn } from '@/lib/utils';
+import { cn, getFirstEmoji } from '@/lib/utils';
 import { getBadgesByOwner } from '@/lib/data';
 import { useSidebar } from '@/components/ui/sidebar';
 
@@ -100,7 +101,7 @@ export function AppSidebar() {
                   tooltip={badge.name}
                 >
                   <Link href={`/dashboard/badge/${badge.id}`}>
-                    <span className="text-lg">{badge.emojis.charAt(0)}</span>
+                    <span className="text-lg">{getFirstEmoji(badge.emojis)}</span>
                     <span>{badge.name}</span>
                   </Link>
                 </SidebarMenuButton>
