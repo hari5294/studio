@@ -134,10 +134,15 @@ export const searchUsers = (query: string) => users.filter(u => u.name.toLowerCa
 // --- Data Mutation Functions ---
 
 export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'followers' | 'createdAt'>, creatorId: string): {newBadge: Badge, initialLinks: ShareLink[]} => {
-  const existingBadge = badges.find(b => b.emojis === data.emojis);
-  if (existingBadge) {
+  const existingEmojiBadge = badges.find(b => b.emojis === data.emojis);
+  if (existingEmojiBadge) {
     throw new Error('A badge with these emojis already exists.');
   }
+
+  const existingNameBadge = badges.find(b => b.name.trim().toLowerCase() === data.name.trim().toLowerCase());
+    if (existingNameBadge) {
+        throw new Error('A badge with this name already exists.');
+    }
   
   const newId = `badge-${badges.length + 1}`;
   const newBadge: Badge = {
