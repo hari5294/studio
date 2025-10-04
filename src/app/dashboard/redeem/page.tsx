@@ -63,8 +63,8 @@ export default function RedeemCodePage() {
                 ...prev,
                 [link.badgeId]: {
                     ...prev[link.badgeId],
-                    owners: [...prev[link.badg_id].owners, currentUserId],
-                    followers: [...prev[link.badgeId].followers, currentUserId],
+                    owners: [...prev[link.badgeId].owners, currentUserId],
+                    followers: [...new Set([...prev[link.badgeId].followers, currentUserId])],
                 }
             }));
             

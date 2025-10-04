@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { isOnlyEmojis } from '@/lib/utils';
-import { badgesAtom, currentUserIdAtom } from '@/lib/mock-data';
+import { badgesAtom, currentUserIdAtom, shareLinksAtom } from '@/lib/mock-data';
 
 export default function CreateBadgePage() {
   const router = useRouter();
@@ -20,6 +20,7 @@ export default function CreateBadgePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserId] = useAtom(currentUserIdAtom);
   const [, setBadges] = useAtom(badgesAtom);
+  const [, setShareLinks] = useAtom(shareLinksAtom);
 
   const handleEmojiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -69,6 +70,19 @@ export default function CreateBadgePage() {
                 }
             }));
             
+            // Create a share link for the creator
+            const newLinkId = `link${Date.now()}`;
+            setShareLinks(prev => ({
+              ...prev,
+              [newLinkId]: {
+                linkId: newLinkId,
+                badgeId: newBadgeId,
+                ownerId: currentUserId,
+                used: false,
+                claimedBy: null,
+              },
+            }));
+
             toast({
                 title: 'Badge Created!',
                 description: `Your badge "${badgeName}" has been successfully created.`,
