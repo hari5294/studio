@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "A user of the application.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The user's name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the user's avatar image."
+        }
+      },
+      "required": ["name", "email"]
+    },
+    "badge": {
+      "title": "Badge",
+      "description": "A badge that can be earned by users.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the badge."
+        },
+        "emojis": {
+          "type": "string",
+          "description": "Emojis representing the badge."
+        },
+        "tokens": {
+          "type": "number",
+          "description": "The total number of tokens for this badge."
+        }
+      },
+      "required": ["name", "emojis", "tokens"]
+    }
+  },
+  "auth": {
+    "providers": ["anonymous", "google.com", "password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/user"
+      },
+      "description": "Stores user profile information."
+    },
+    "/badges/{badgeId}": {
+      "schema": {
+        "$ref": "#/entities/badge"
+      },
+      "description": "Stores information about each badge."
+    }
+  }
+}
