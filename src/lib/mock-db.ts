@@ -1,4 +1,6 @@
 
+import { isOnlyEmojis } from "./utils";
+
 export type User = {
   id: string;
   name: string;
@@ -134,6 +136,10 @@ export const searchUsers = (query: string) => users.filter(u => u.name.toLowerCa
 // --- Data Mutation Functions ---
 
 export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'followers' | 'createdAt'>, creatorId: string): {newBadge: Badge, initialLinks: ShareLink[]} => {
+  if (!isOnlyEmojis(data.emojis)) {
+    throw new Error('Please use only emojis for the badge.');
+  }
+  
   const existingEmojiBadge = badges.find(b => b.emojis === data.emojis);
   if (existingEmojiBadge) {
     throw new Error('A badge with these emojis already exists.');

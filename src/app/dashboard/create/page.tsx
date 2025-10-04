@@ -75,7 +75,7 @@ export default function CreateBadgePage() {
                 <Label htmlFor="emojis">Emojis</Label>
                 <Input id="emojis" name="emojis" placeholder="🚀✨🪐" required />
                 <p className="text-sm text-muted-foreground">
-                  Choose up to 3 emojis that represent your badge.
+                  Choose up to 3 emojis that represent your badge. Only emojis are allowed.
                 </p>
               </div>
               <div className="space-y-2">
