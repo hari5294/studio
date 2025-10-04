@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getBadgeById, getUserById, User } from '@/lib/data';
 import { Header } from '@/components/layout/header';
@@ -13,30 +13,33 @@ import {
   Users,
   Share2,
   ArrowRightLeft,
-  ChevronsUp,
   Vote,
   Crown
 } from 'lucide-react';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { TransferBadgeDialog } from '@/components/badges/transfer-badge-dialog';
-import { useToast } from '@/hooks/use-toast';
 
 export default function BadgeDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const { toast } = useToast();
   const badge = getBadgeById(params.id);
 
   const [isShareOpen, setShareOpen] = useState(false);
   const [isTransferOpen, setTransferOpen] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+
+  useEffect(() => {
+    if (badge) {
+      const currentUserId = 'user-1';
+      setIsCreator(badge.ownerId === currentUserId);
+      setIsOwner(badge.owners.includes(currentUserId));
+    }
+  }, [badge]);
 
   if (!badge) {
     notFound();
   }
   
-  const currentUserId = 'user-1';
-  const isCreator = badge.ownerId === currentUserId;
-  const isOwner = badge.owners.includes(currentUserId);
-
   const creator = getUserById(badge.ownerId);
   const owners = badge.owners.map(id => getUserById(id)).filter(Boolean) as User[];
   const followers = badge.followers.map(id => getUserById(id)).filter(Boolean) as User[];
