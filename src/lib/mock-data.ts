@@ -45,11 +45,11 @@ const initialUsers: Record<string, User> = {
 };
 
 const initialBadges: Record<string, Badge> = {
-  'badge1': { id: 'badge1', name: 'Cosmic Explorer', emojis: '🚀✨', tokens: 1000, creatorId: 'user1', owners: ['user1', 'user2'], followers: ['user1', 'user2'], createdAt: Date.now() - 86400000 * 2 },
-  'badge2': { id: 'badge2', name: 'Ocean Diver', emojis: '🌊🐠', tokens: 500, creatorId: 'user2', owners: ['user2'], followers: ['user1'], createdAt: Date.now() - 86400000 * 5 },
-  'badge3': { id: 'badge3', name: 'Pixel Artist', emojis: '🎨👾', tokens: 100, creatorId: 'user3', owners: [], followers: [], createdAt: Date.now() - 86400000 * 1 },
-  'badge4': { id: 'badge4', name: 'Synthwave Rider', emojis: '🌆🎶', tokens: 1984, creatorId: 'user3', owners: ['user3'], followers: ['user1', 'user3'], createdAt: Date.now() - 86400000 * 10 },
-  'badge5': { id: 'badge5', name: 'Eco Warrior', emojis: '🌳♻️', tokens: 2050, creatorId: 'user1', owners: ['user1', 'user2'], followers: ['user2'], createdAt: Date.now() - 86400000 * 3 },
+  'badge1': { id: 'badge1', name: 'Cosmic Explorer', emojis: '🚀✨🪐', tokens: 1000, creatorId: 'user1', owners: ['user1', 'user2'], followers: ['user1', 'user2'], createdAt: Date.now() - 86400000 * 2 },
+  'badge2': { id: 'badge2', name: 'Ocean Diver', emojis: '🌊🐠🐙', tokens: 500, creatorId: 'user2', owners: ['user2'], followers: ['user1'], createdAt: Date.now() - 86400000 * 5 },
+  'badge3': { id: 'badge3', name: 'Pixel Artist', emojis: '🎨👾🕹️', tokens: 100, creatorId: 'user3', owners: [], followers: [], createdAt: Date.now() - 86400000 * 1 },
+  'badge4': { id: 'badge4', name: 'Synthwave Rider', emojis: '🌆🎶📼', tokens: 1984, creatorId: 'user3', owners: ['user3'], followers: ['user1', 'user3'], createdAt: Date.now() - 86400000 * 10 },
+  'badge5': { id: 'badge5', name: 'Eco Warrior', emojis: '🌳♻️🌍', tokens: 2050, creatorId: 'user1', owners: ['user1', 'user2'], followers: ['user2'], createdAt: Date.now() - 86400000 * 3 },
 };
 
 const initialShareLinks: Record<string, ShareLink> = {
