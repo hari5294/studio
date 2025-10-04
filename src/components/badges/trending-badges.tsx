@@ -1,3 +1,4 @@
+
 import { badges, getUserById } from '@/lib/data';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,23 +35,20 @@ export function TrendingBadges() {
                 <div className="text-3xl">{getFirstEmoji(badge.emojis)}</div>
                 <div className="flex-grow">
                   <p className="font-semibold">{badge.name}</p>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                        <Avatar className="h-5 w-5">
-                           <AvatarImage src={owner?.avatarUrl} alt={owner?.name} />
-                           <AvatarFallback>{owner?.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span>{owner?.name}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{badge.followers.length}</span>
-                    </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Avatar className="h-5 w-5">
+                        <AvatarImage src={owner?.avatarUrl} alt={owner?.name} />
+                        <AvatarFallback>{owner?.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span>{owner?.name}</span>
                   </div>
                 </div>
                 <div className="text-right">
-                   <p className="font-semibold">{badgesLeft.toLocaleString()}</p>
-                   <p className="text-sm text-muted-foreground">/ {badge.tokens.toLocaleString()}</p>
+                   <div className="flex items-center justify-end gap-1 font-semibold text-lg">
+                        <Users className="h-5 w-5" />
+                        <span>{badge.followers.length.toLocaleString()}</span>
+                   </div>
+                   <p className="text-xs text-muted-foreground">{badgesLeft.toLocaleString()} / {badge.tokens.toLocaleString()} left</p>
                 </div>
               </div>
             </Link>
