@@ -33,13 +33,11 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isVerificationSent, setVerificationSent] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null);
     setVerificationSent(false);
 
     try {
@@ -75,10 +73,13 @@ export default function SignupPage() {
       await auth.signOut();
 
     } catch (error: any) {
-      setError(error.message);
+      let description = error.message;
+      if (error.code === 'auth/email-already-in-use') {
+        description = 'This email address is already in use. Please log in instead.';
+      }
       toast({
         title: 'Sign-up Failed',
-        description: error.message,
+        description: description,
         variant: 'destructive',
       });
     } finally {
@@ -178,7 +179,6 @@ export default function SignupPage() {
                 disabled={isLoading}
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Creating Account...' : 'Create an account'}
             </Button>
