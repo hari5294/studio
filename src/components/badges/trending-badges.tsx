@@ -1,26 +1,16 @@
-import { trendingBadgeDiscovery } from '@/ai/flows/trending-badge-discovery';
 import { badges, getBadgeById, getUserById } from '@/lib/data';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TrendingUp, Flame } from 'lucide-react';
 
-export async function TrendingBadges() {
-  const badgeJoinMetrics = badges.map((badge, index) => ({
-    badgeId: badge.id,
-    joinCount: badge.followers.length * 10 + index * 3, // mock metric
-  }));
-
-  const trendingData = await trendingBadgeDiscovery({
-    badgeJoinMetrics,
-    numberOfTrendingBadges: 5,
-  });
-  
-  const trendingBadgesList = trendingData.trendingBadges
-    .map(tb => {
-      const badge = getBadgeById(tb.badgeId);
-      return badge ? { ...badge, trendScore: tb.trendScore } : null;
-    })
-    .filter(Boolean);
+export function TrendingBadges() {
+  const trendingBadgesList = badges
+    .map((badge, index) => ({
+      ...badge,
+      joinCount: badge.followers.length * 10 + index * 3, // mock metric
+    }))
+    .sort((a, b) => b.joinCount - a.joinCount)
+    .slice(0, 5);
 
   return (
     <div>
