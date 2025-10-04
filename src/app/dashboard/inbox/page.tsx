@@ -52,6 +52,7 @@ function NotificationItem({ notification, onUpdate }: { notification: EnrichedNo
                     badgeId: notification.badgeId,
                     createdAt: Date.now(),
                     read: false,
+                    shareLinkId: newLinkId,
                 }
             }));
              toast({
@@ -69,7 +70,7 @@ function NotificationItem({ notification, onUpdate }: { notification: EnrichedNo
             }, 2000);
             return () => clearTimeout(timer);
         }
-    }, [notification.id, notification.read, setNotifications, onUpdate]);
+    }, [notification.read, notification.id, setNotifications, onUpdate]);
     
     if (!notification.fromUser || !notification.badge) {
         return (
@@ -110,8 +111,8 @@ function NotificationItem({ notification, onUpdate }: { notification: EnrichedNo
                 </p>
             ),
             action: (
-                <Button size="sm" variant="secondary" asChild>
-                    <Link href={`/dashboard/redeem`}>
+                <Button size="sm" variant="secondary" asChild disabled={!notification.shareLinkId}>
+                    <Link href={`/join/${notification.shareLinkId}`}>
                         Redeem Badge <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                 </Button>
@@ -167,7 +168,7 @@ function NotificationList({ notifications, onNotificationUpdate }: { notificatio
 }
 
 export default function InboxPage() {
-  const [allNotifications] = useAtom(notificationsAtom);
+  const [allNotifications, setNotifications] = useAtom(notificationsAtom);
   const [users] = useAtom(usersAtom);
   const [badges] = useAtom(badgesAtom);
   const [currentUserId] = useAtom(currentUserIdAtom);
@@ -179,11 +180,10 @@ export default function InboxPage() {
       const timer = setTimeout(() => setLoading(false), 300);
       return () => clearTimeout(timer);
   }, []);
-
-  // When notifications change, update the key to re-render children
-  useEffect(() => {
-    setKey(Date.now());
-  }, [allNotifications]);
+  
+  const handleNotificationUpdate = () => {
+      setKey(Date.now());
+  }
 
   const enrichNotifications = (notifs: Notification[]): EnrichedNotification[] => {
     return notifs
@@ -229,7 +229,7 @@ export default function InboxPage() {
                             <CardTitle className="font-headline">Badge Requests</CardTitle>
                         </CardHeader>
                         <CardContent>
-                           {requests.length > 0 ? <NotificationList notifications={requests} onNotificationUpdate={() => setKey(Date.now())} /> : <p className="text-center text-muted-foreground py-8">No badge requests yet.</p>}
+                           {requests.length > 0 ? <NotificationList notifications={requests} onNotificationUpdate={handleNotificationUpdate} /> : <p className="text-center text-muted-foreground py-8">No badge requests yet.</p>}
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -239,7 +239,7 @@ export default function InboxPage() {
                             <CardTitle className="font-headline">Received</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {received.length > 0 ? <NotificationList notifications={received} onNotificationUpdate={() => setKey(Date.now())} /> : <p className="text-center text-muted-foreground py-8">You haven't received any new badges.</p>}
+                            {received.length > 0 ? <NotificationList notifications={received} onNotificationUpdate={handleNotificationUpdate} /> : <p className="text-center text-muted-foreground py-8">You haven't received any new badges.</p>}
                         </CardContent>
                     </Card>
                 </TabsContent>

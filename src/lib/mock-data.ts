@@ -36,6 +36,7 @@ export type Notification = {
     badgeId: string; 
     createdAt: number; 
     read: boolean; 
+    shareLinkId?: string;
 };
 
 // Initial Data
@@ -61,7 +62,7 @@ const initialShareLinks: Record<string, ShareLink> = {
 
 const initialNotifications: Record<string, Notification> = {
     'n1': { id: 'n1', type: 'BADGE_REQUEST', userId: 'user1', fromUserId: 'user2', badgeId: 'badge1', createdAt: new Date(Date.now() - 1000 * 60 * 5).getTime(), read: true },
-    'n2': { id: 'n2', type: 'BADGE_RECEIVED', userId: 'user1', fromUserId: 'user2', badgeId: 'badge2', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).getTime(), read: true },
+    'n2': { id: 'n2', type: 'BADGE_RECEIVED', userId: 'user1', fromUserId: 'user2', badgeId: 'badge2', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).getTime(), read: true, shareLinkId: 'link1' },
     'n3': { id: 'n3', type: 'BADGE_REQUEST', userId: 'user1', fromUserId: 'user3', badgeId: 'badge1', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).getTime(), read: true },
 };
 
