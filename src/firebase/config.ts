@@ -23,11 +23,11 @@ import type { FirebaseOptions } from "firebase/app";
 // };
 
 export const firebaseConfig: FirebaseOptions = {
-  "apiKey": "PASTE_YOUR_API_KEY_HERE",
-  "authDomain": "PASTE_YOUR_AUTH_DOMAIN_HERE",
-  "projectId": "PASTE_YOUR_PROJECT_ID_HERE",
-  "storageBucket": "PASTE_YOUR_STORAGE_BUCKET_HERE",
-  "messagingSenderId": "PASTE_YOUR_MESSAGING_SENDER_ID_HERE",
-  "appId": "PASTE_YOUR_APP_ID_HERE",
-  "measurementId": "PASTE_YOUR_MEASUREMENT_ID_HERE"
+  apiKey: "AIzaSyBxah2wopRzHoQ0KYPek_Tqo_IsD_vXMqg",
+  authDomain: "dark-edge-456612-p2.firebaseapp.com",
+  projectId: "dark-edge-456612-p2",
+  storageBucket: "dark-edge-456612-p2.firebasestorage.app",
+  messagingSenderId: "525531950726",
+  appId: "1:525531950726:web:11796cbe21204d7010ab07",
+  measurementId: "G-N6LK8YSSF5"
 };
