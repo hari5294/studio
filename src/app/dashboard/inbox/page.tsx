@@ -103,7 +103,7 @@ function NotificationItem({ notification }: { notification: EnrichedNotification
             title: (
                 <p>
                     <Link href={`/dashboard/profile/${notification.fromUser.id}`} className="font-bold hover:underline">{notification.fromUser.name}</Link>
-                    {' '} sent you the {' '}
+                    {' '} sent you a code for the {' '}
                     <Link href={`/dashboard/badge/${notification.badge.id}`} className="font-bold hover:underline">{notification.badge.name}</Link> badge!
                 </p>
             ),
@@ -152,7 +152,7 @@ function NotificationItem({ notification }: { notification: EnrichedNotification
     )
 }
 
-function NotificationList({ notifications }: { notifications: EnrichedNotification[] }) {
+function NotificationList({ notifications, onNotificationUpdate }: { notifications: EnrichedNotification[], onNotificationUpdate: () => void }) {
     if (notifications.length === 0) {
          return <p className="text-center text-muted-foreground py-8">No notifications here.</p>
     }
@@ -165,16 +165,23 @@ function NotificationList({ notifications }: { notifications: EnrichedNotificati
 }
 
 export default function InboxPage() {
-  const [allNotifications] = useAtom(notificationsAtom);
+  const [allNotifications, setAllNotifications] = useAtom(notificationsAtom);
   const [users] = useAtom(usersAtom);
   const [badges] = useAtom(badgesAtom);
   const [currentUserId] = useAtom(currentUserIdAtom);
 
   const [loading, setLoading] = useState(true);
+  const [key, setKey] = useState(Date.now()); // Add key to force re-render
 
   useEffect(() => {
-      setTimeout(() => setLoading(false), 300);
+      const timer = setTimeout(() => setLoading(false), 300);
+      return () => clearTimeout(timer);
   }, []);
+
+  // When notifications change, update the key to re-render children
+  useEffect(() => {
+    setKey(Date.now());
+  }, [allNotifications]);
 
   const enrichNotifications = (notifs: Notification[]): EnrichedNotification[] => {
     return notifs
@@ -205,7 +212,7 @@ export default function InboxPage() {
       <Header title="Inbox" />
       <div className="flex-1 p-4 md:p-6">
         {userNotifications.length > 0 ? (
-            <Tabs defaultValue="requests" className="w-full max-w-4xl mx-auto">
+            <Tabs defaultValue="requests" className="w-full max-w-4xl mx-auto" key={key}>
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="requests">
                         Badge Requests ({requests.length})
@@ -220,7 +227,7 @@ export default function InboxPage() {
                             <CardTitle className="font-headline">Badge Requests</CardTitle>
                         </CardHeader>
                         <CardContent>
-                           {requests.length > 0 ? <NotificationList notifications={requests} /> : <p className="text-center text-muted-foreground py-8">No badge requests yet.</p>}
+                           {requests.length > 0 ? <NotificationList notifications={requests} onNotificationUpdate={() => setKey(Date.now())} /> : <p className="text-center text-muted-foreground py-8">No badge requests yet.</p>}
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -230,7 +237,7 @@ export default function InboxPage() {
                             <CardTitle className="font-headline">Received</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {received.length > 0 ? <NotificationList notifications={received} /> : <p className="text-center text-muted-foreground py-8">You haven't received any new badges.</p>}
+                            {received.length > 0 ? <NotificationList notifications={received} onNotificationUpdate={() => setKey(Date.now())} /> : <p className="text-center text-muted-foreground py-8">You haven't received any new badges.</p>}
                         </CardContent>
                     </Card>
                 </TabsContent>
