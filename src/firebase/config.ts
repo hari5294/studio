@@ -5,6 +5,23 @@
 /* eslint-disable */
 import type { FirebaseOptions } from "firebase/app";
 
+// PASTE YOUR FIREBASE CONFIG OBJECT HERE
+//
+// 1. Go to your Firebase project console.
+// 2. In Project settings, find your web app.
+// 3. In the "SDK setup and configuration" section, copy the firebaseConfig object.
+//
+// Example:
+// export const firebaseConfig: FirebaseOptions = {
+//   apiKey: "AIzaSy...",
+//   authDomain: "your-project-id.firebaseapp.com",
+//   projectId: "your-project-id",
+//   storageBucket: "your-project-id.appspot.com",
+//   messagingSenderId: "...",
+//   appId: "1:...:web:...",
+//   measurementId: "G-..."
+// };
+
 export const firebaseConfig: FirebaseOptions = {
   "apiKey": "PASTE_YOUR_API_KEY_HERE",
   "authDomain": "PASTE_YOUR_AUTH_DOMAIN_HERE",
