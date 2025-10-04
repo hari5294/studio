@@ -4,6 +4,7 @@ export type User = {
   id: string;
   name: string;
   avatarUrl: string;
+  following: string[]; // array of user ids
 };
 
 export type Badge = {
@@ -28,11 +29,11 @@ export type ShareLink = {
 // --- IN-MEMORY DATABASE ---
 
 let users: User[] = [
-  { id: 'user-1', name: 'Alex', avatarUrl: 'https://picsum.photos/seed/avatar1/100/100' },
-  { id: 'user-2', name: 'Maria', avatarUrl: 'https://picsum.photos/seed/avatar2/100/100' },
-  { id: 'user-3', name: 'David', avatarUrl: 'https://picsum.photos/seed/avatar3/100/100' },
-  { id: 'user-4', name: 'Sarah', avatarUrl: 'https://picsum.photos/seed/avatar4/100/100' },
-  { id: 'user-5', name: 'Ken', avatarUrl: 'https://picsum.photos/seed/avatar5/100/100' },
+  { id: 'user-1', name: 'Alex', avatarUrl: 'https://picsum.photos/seed/avatar1/100/100', following: ['user-2', 'user-4'] },
+  { id: 'user-2', name: 'Maria', avatarUrl: 'https://picsum.photos/seed/avatar2/100/100', following: ['user-1'] },
+  { id: 'user-3', name: 'David', avatarUrl: 'https://picsum.photos/seed/avatar3/100/100', following: ['user-1', 'user-5'] },
+  { id: 'user-4', name: 'Sarah', avatarUrl: 'https://picsum.photos/seed/avatar4/100/100', following: [] },
+  { id: 'user-5', name: 'Ken', avatarUrl: 'https://picsum.photos/seed/avatar5/100/100', following: ['user-3'] },
 ];
 
 let badges: Badge[] = [
@@ -136,6 +137,21 @@ export const followBadge = (badgeId: string, userId: string) => {
     return badge;
 }
 
+export const toggleFollowUser = (currentUserId: string, targetUserId: string) => {
+    const currentUser = getUserById(currentUserId);
+    if (!currentUser) throw new Error('Current user not found');
+    if (currentUserId === targetUserId) throw new Error("You cannot follow yourself.");
+
+    if (currentUser.following.includes(targetUserId)) {
+        // Unfollow
+        currentUser.following = currentUser.following.filter(id => id !== targetUserId);
+    } else {
+        // Follow
+        currentUser.following.push(targetUserId);
+    }
+    return currentUser;
+}
+
 export const claimBadge = (badgeId: string, userId: string, linkId: string): { badge: Badge, newLinks: ShareLink[] } => {
     const badge = getBadgeById(badgeId);
     if (!badge) throw new Error('Badge not found');
@@ -178,7 +194,8 @@ export const createShareLinks = (badgeId: string, ownerId: string, count: number
     
     const newLinks: ShareLink[] = [];
     for (let i = 0; i < count; i++) {
-        const availableTokens = badge.tokens - (badge.owners.length + newLinks.length + shareLinks.filter(l => l.badgeId === badgeId).length);
+        const existingLinksCount = shareLinks.filter(l => l.badgeId === badgeId && !l.used).length;
+        const availableTokens = badge.tokens - badge.owners.length - existingLinksCount;
         if (availableTokens <= 0) break; // Stop if no tokens are left
 
         const newLink: ShareLink = {
