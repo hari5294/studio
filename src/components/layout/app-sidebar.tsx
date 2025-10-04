@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -31,6 +32,7 @@ import {
   User,
   MoreHorizontal,
   LogOut,
+  Search,
 } from 'lucide-react';
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn, getFirstEmoji } from '@/lib/utils';
@@ -50,7 +52,7 @@ export function AppSidebar() {
     setMyBadges(getBadgesByOwner('user-1'));
   }, [pathname]);
 
-  const isActive = (path: string) => pathname === path;
+  const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
   return (
     <Sidebar collapsible="icon" side="left" variant="sidebar">
@@ -72,6 +74,18 @@ export function AppSidebar() {
               <Link href="/dashboard">
                 <Home />
                 <span>Dashboard</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={isActive('/dashboard/search')}
+              tooltip="Search"
+            >
+              <Link href="/dashboard/search">
+                <Search />
+                <span>Search</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -135,18 +149,22 @@ export function AppSidebar() {
           <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/profile">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut className="mr-2 h-4 w-4" />
-              <Link href="/login">Log out</Link>
+            <DropdownMenuItem asChild>
+              <Link href="/login">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

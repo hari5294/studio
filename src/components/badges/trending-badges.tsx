@@ -1,8 +1,9 @@
 
+
 import { getAllBadges, getUserById } from '@/lib/data';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { TrendingUp, Flame, Users } from 'lucide-react';
+import { TrendingUp, Flame, Users, Badge } from 'lucide-react';
 import { getFirstEmoji } from '@/lib/utils';
 
 export function TrendingBadges() {

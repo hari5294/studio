@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, PlusCircle, TrendingUp, User } from 'lucide-react';
+import { Home, PlusCircle, Search, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Home' },
-  { href: '/dashboard/trending', icon: TrendingUp, label: 'Trending' },
+  { href: '/dashboard/search', icon: Search, label: 'Search' },
   { href: '/dashboard/create', icon: PlusCircle, label: 'Create' },
   { href: '/dashboard/profile', icon: User, label: 'Profile' },
 ];

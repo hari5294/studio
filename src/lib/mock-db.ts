@@ -1,4 +1,5 @@
 
+
 export type User = {
   id: string;
   name: string;
@@ -101,6 +102,8 @@ export const getUserById = (id: string) => users.find((u) => u.id === id);
 export const getBadgesByOwner = (ownerId: string) => badges.filter((b) => b.owners.includes(ownerId));
 export const getAllBadges = () => badges;
 export const getAllUsers = () => users;
+export const searchBadges = (query: string) => badges.filter(b => b.name.toLowerCase().includes(query.toLowerCase()));
+export const searchUsers = (query: string) => users.filter(u => u.name.toLowerCase().includes(query.toLowerCase()));
 
 
 // --- Data Mutation Functions ---
@@ -175,7 +178,7 @@ export const createShareLinks = (badgeId: string, ownerId: string, count: number
     
     const newLinks: ShareLink[] = [];
     for (let i = 0; i < count; i++) {
-        const availableTokens = badge.tokens - (badge.owners.length + newLinks.length);
+        const availableTokens = badge.tokens - (badge.owners.length + newLinks.length + shareLinks.filter(l => l.badgeId === badgeId).length);
         if (availableTokens <= 0) break; // Stop if no tokens are left
 
         const newLink: ShareLink = {
