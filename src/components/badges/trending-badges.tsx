@@ -1,7 +1,7 @@
 import { badges, getUserById } from '@/lib/data';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { TrendingUp, Flame } from 'lucide-react';
+import { TrendingUp, Flame, Users } from 'lucide-react';
 import { getFirstEmoji } from '@/lib/utils';
 
 export function TrendingBadges() {
@@ -26,7 +26,7 @@ export function TrendingBadges() {
           const badgesLeft = badge.tokens - badge.owners.length;
           return (
             <Link href={`/dashboard/badge/${badge.id}`} key={badge.id} className="block">
-              <div className="flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-muted/50">
+              <div className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-muted/50">
                 <div className="flex items-center gap-2 text-lg font-bold text-muted-foreground">
                   <Flame className="h-5 w-5 text-accent" />
                   <span>#{index + 1}</span>
@@ -34,12 +34,18 @@ export function TrendingBadges() {
                 <div className="text-3xl">{getFirstEmoji(badge.emojis)}</div>
                 <div className="flex-grow">
                   <p className="font-semibold">{badge.name}</p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Avatar className="h-5 w-5">
-                       <AvatarImage src={owner?.avatarUrl} alt={owner?.name} />
-                       <AvatarFallback>{owner?.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span>{owner?.name}</span>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        <Avatar className="h-5 w-5">
+                           <AvatarImage src={owner?.avatarUrl} alt={owner?.name} />
+                           <AvatarFallback>{owner?.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span>{owner?.name}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span>{badge.followers.length}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">
