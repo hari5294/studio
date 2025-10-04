@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useEffect, useReducer } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useReducer, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getBadgeById, getUserById, User, followBadge } from '@/lib/data';
 import { Header } from '@/components/layout/header';
 import { notFound } from 'next/navigation';
@@ -21,8 +21,9 @@ import { TransferBadgeDialog } from '@/components/badges/transfer-badge-dialog';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-export default function BadgeDetailPage({ params }: { params: { id: string } }) {
+function BadgeDetailContent({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   // use a reducer to force re-renders when data changes
   const [_, forceUpdate] = useReducer((x) => x + 1, 0);
@@ -46,8 +47,14 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
       setIsOwner(badge.owners.includes(currentUserId));
       setIsFollowing(badge.followers.includes(currentUserId));
       setHasChecked(true);
+
+      if (searchParams.get('showShare') === 'true') {
+        setShareOpen(true);
+        // Clean up the URL
+        router.replace(`/dashboard/badge/${params.id}`, { scroll: false });
+      }
     }
-  }, [badge]);
+  }, [badge, searchParams, params.id, router]);
 
   if (!badge) {
     notFound();
@@ -189,5 +196,13 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
       <ShareBadgeDialog open={isShareOpen} onOpenChange={setShareOpen} badge={badge} />
       <TransferBadgeDialog open={isTransferOpen} onOpenChange={setTransferOpen} badge={badge} onTransfer={forceUpdate} />
     </>
+  );
+}
+
+export default function BadgeDetailPage({ params }: { params: { id: string } }) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BadgeDetailContent params={params} />
+    </Suspense>
   );
 }

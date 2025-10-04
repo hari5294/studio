@@ -37,7 +37,7 @@ export default function CreateBadgePage() {
       title: 'Badge Created!',
       description: `Your badge "${badgeName}" has been successfully created.`,
     });
-    router.push(`/dashboard/badge/${newBadge.id}`);
+    router.push(`/dashboard/badge/${newBadge.id}?showShare=true`);
   };
 
   return (
