@@ -1,7 +1,7 @@
 'use client';
 
 import { Header } from '@/components/layout/header';
-import { getUserById, type Badge as BadgeType, type User } from '@/lib/data';
+import { type Badge as BadgeType, type User } from '@/lib/firestore-data';
 import { BadgeCard } from '@/components/badges/badge-card';
 import { TrendingBadges } from '@/components/badges/trending-badges';
 import { Badge } from 'lucide-react';

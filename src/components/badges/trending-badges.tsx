@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TrendingUp, Flame, Users, Badge } from 'lucide-react';
 import { useCollection, useFirestore, useDoc } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
-import type { Badge as BadgeType, User } from '@/lib/data';
+import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
+import type { Badge as BadgeType, User } from '@/lib/firestore-data';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function TrendingBadgeItem({ badge, index }: { badge: BadgeType, index: number }) {

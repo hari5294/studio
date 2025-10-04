@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
-import { type Badge, type User } from '@/lib/data';
+import { type Badge, type User } from '@/lib/firestore-data';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge as BadgeIcon, Users, Search as SearchIcon } from 'lucide-react';

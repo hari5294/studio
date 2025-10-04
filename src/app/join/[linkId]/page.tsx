@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getShareLink, claimBadge, getBadgeById, type Badge, type ShareLink } from '@/lib/data';
+import { getShareLink, claimBadge, getBadgeById, type Badge, type ShareLink } from '@/lib/firestore-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { useUser } from '@/firebase';

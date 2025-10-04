@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
-import { markNotificationAsRead, type Notification, type Badge, type User } from '@/lib/data';
+import { markNotificationAsRead, type Notification, type Badge, type User } from '@/lib/firestore-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,7 +13,7 @@ import { ArrowRight, Mail, Gift, Inbox as InboxIcon } from 'lucide-react';
 import { useUser, useCollection, useFirestore, useDoc } from '@/firebase';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { collection, doc, query, orderBy } from 'firebase/firestore';
+import { collection, doc, query, orderBy, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type EnrichedNotification = Notification & {

@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowRightLeft } from 'lucide-react';
 import React, { useState } from 'react';
-import { type Badge, transferBadgeOwnership, type User } from '@/lib/data';
+import { type Badge, transferBadgeOwnership, type User } from '@/lib/firestore-data';
 import { Combobox } from '@/components/ui/combobox';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';

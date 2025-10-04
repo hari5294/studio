@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
-import { createBadge } from '@/lib/data';
+import { createBadge } from '@/lib/firestore-data';
 import { isOnlyEmojis } from '@/lib/utils';
 import { useUser } from '@/firebase';
 

@@ -38,7 +38,7 @@ import { EmojiBadgeLogo } from '@/components/icons';
 import { cn, getFirstEmoji } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
 import React from 'react';
-import type { Badge } from '@/lib/data';
+import type { Badge } from '@/lib/firestore-data';
 import { useAuth, useUser, useFirestore, useCollection } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';

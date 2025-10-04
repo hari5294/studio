@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { Badge } from '@/lib/data';
+import type { Badge } from '@/lib/firestore-data';
 import { ArrowRight, Users } from 'lucide-react';
 
 type BadgeCardProps = {

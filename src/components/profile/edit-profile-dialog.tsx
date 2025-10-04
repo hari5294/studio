@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Smile } from 'lucide-react';
 import React, { useState } from 'react';
-import { type User, updateUserAvatar } from '@/lib/data';
+import { updateUserAvatar } from '@/lib/firestore-data';
 import { getFirstEmoji, isOnlyEmojis } from '@/lib/utils';
 import { CombinedUser } from '@/firebase/auth/use-user';
 

@@ -2,7 +2,7 @@
 
 import { useState, useReducer, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { followBadge, requestBadgeCode, createShareLinks, getShareLinksForUser, type User, type ShareLink, type Badge } from '@/lib/data';
+import { followBadge, requestBadgeCode, createShareLinks, getShareLinksForUser, type User, type ShareLink, type Badge } from '@/lib/firestore-data';
 import { Header } from '@/components/layout/header';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

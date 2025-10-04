@@ -3,7 +3,7 @@
 import { useState, useReducer } from 'react';
 import { notFound } from 'next/navigation';
 import { Header } from '@/components/layout/header';
-import { toggleFollowUser, type User as UserData, type Badge as BadgeType } from '@/lib/data';
+import { toggleFollowUser, type User as UserData, type Badge as BadgeType } from '@/lib/firestore-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { BadgeCard } from '@/components/badges/badge-card';

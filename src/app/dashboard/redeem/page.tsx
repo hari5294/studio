@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Gift } from 'lucide-react';
-import { getShareLink, claimBadge, getBadgeById } from '@/lib/data';
+import { getShareLink, claimBadge, getBadgeById } from '@/lib/firestore-data';
 import { useUser } from '@/firebase';
 
 export default function RedeemCodePage() {

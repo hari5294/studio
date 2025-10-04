@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Copy, QrCode } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Badge, ShareLink } from '@/lib/data';
+import { Badge, ShareLink } from '@/lib/firestore-data';
 import Image from 'next/image';
 import { Skeleton } from '../ui/skeleton';
 

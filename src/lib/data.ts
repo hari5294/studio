@@ -1,4 +1,4 @@
-// All data functions have been moved to firestore-data.ts to be used by both server and client components.
-// This file now re-exports them to maintain the import paths throughout the application.
+// This file is being deprecated. All data functions now reside in firestore-data.ts.
+// This file will be removed to simplify imports.
 
 export * from './firestore-data';
