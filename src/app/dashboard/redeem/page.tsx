@@ -11,16 +11,22 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Gift } from 'lucide-react';
 import { getShareLink, claimBadge, getBadgeById } from '@/lib/data';
+import { useUser } from '@/firebase';
 
 export default function RedeemCodePage() {
   const router = useRouter();
+  const { user } = useUser();
   const { toast } = useToast();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const currentUserId = 'user-1';
-
+  
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!user) {
+        toast({ title: "Not authenticated", description: "You must be logged in to redeem a code.", variant: "destructive" });
+        return;
+    }
+
     if (!code.trim()) {
       toast({
         title: 'Missing Code',
@@ -33,17 +39,17 @@ export default function RedeemCodePage() {
     setIsLoading(true);
 
     try {
-      const link = getShareLink(code);
+      const link = await getShareLink(code);
       if (!link || link.used) {
         throw new Error("This code is invalid or has already been used.");
       }
 
-      const badge = getBadgeById(link.badgeId);
+      const badge = await getBadgeById(link.badgeId);
       if (!badge) {
         throw new Error("The badge associated with this code could not be found.");
       }
       
-      if (link.ownerId === currentUserId) {
+      if (link.ownerId === user.uid) {
         throw new Error("You cannot redeem a code that you generated yourself.");
       }
 
@@ -51,7 +57,7 @@ export default function RedeemCodePage() {
         throw new Error("All available badges have been claimed.");
       }
 
-      if (badge.owners.includes(currentUserId)) {
+      if (badge.owners.includes(user.uid)) {
         toast({
             title: 'Already an Owner',
             description: `You already own the "${badge.name}" badge.`,
@@ -61,14 +67,13 @@ export default function RedeemCodePage() {
         return;
       }
 
-      const { newLinks } = claimBadge(badge.id, currentUserId, code);
+      const { newLinks } = await claimBadge(badge.id, user.uid, code);
 
       toast({
         title: 'Badge Claimed!',
         description: `You are now an owner of the "${badge.name}" badge.`,
       });
 
-      // Redirect to the badge page. If the user gets new links, show the share dialog.
       const url = newLinks.length > 0
         ? `/dashboard/badge/${badge.id}?showShare=true`
         : `/dashboard/badge/${badge.id}`;

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -12,22 +11,31 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { createBadge } from '@/lib/data';
 import { isOnlyEmojis } from '@/lib/utils';
+import { useUser } from '@/firebase';
 
 export default function CreateBadgePage() {
   const router = useRouter();
+  const { user } = useUser();
   const { toast } = useToast();
   const [emojis, setEmojis] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
 
   const handleEmojiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    // Allow the field to be empty or only contain emojis
     if (value === '' || isOnlyEmojis(value)) {
       setEmojis(value);
     }
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!user) {
+        toast({ title: "Not Authenticated", description: "You must be logged in to create a badge.", variant: "destructive" });
+        return;
+    }
+    
+    setIsLoading(true);
     const formData = new FormData(event.currentTarget);
     const badgeName = formData.get('badgeName') as string;
     const tokens = Number(formData.get('tokens'));
@@ -38,11 +46,12 @@ export default function CreateBadgePage() {
             description: 'Please fill out all fields.',
             variant: 'destructive',
         });
+        setIsLoading(false);
         return;
     }
     
     try {
-        const { newBadge, initialLinks } = createBadge({ name: badgeName, emojis, tokens }, 'user-1');
+        const { newBadge, initialLinks } = await createBadge({ name: badgeName, emojis, tokens }, user.uid);
 
         toast({
         title: 'Badge Created!',
@@ -51,7 +60,6 @@ export default function CreateBadgePage() {
         
         const url = initialLinks.length > 0 ? `/dashboard/badge/${newBadge.id}?showShare=true` : `/dashboard/badge/${newBadge.id}`;
         
-        // Redirect to the badge page and trigger the share dialog
         router.push(url);
     } catch (error: any) {
         toast({
@@ -59,6 +67,8 @@ export default function CreateBadgePage() {
             description: error.message,
             variant: 'destructive',
         });
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -79,7 +89,7 @@ export default function CreateBadgePage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="badge-name">Badge Name</Label>
-                <Input id="badge-name" name="badgeName" placeholder="e.g., Cosmic Explorers" required />
+                <Input id="badge-name" name="badgeName" placeholder="e.g., Cosmic Explorers" required disabled={isLoading} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emojis">Emojis</Label>
@@ -90,6 +100,7 @@ export default function CreateBadgePage() {
                   required 
                   value={emojis}
                   onChange={handleEmojiChange}
+                  disabled={isLoading}
                 />
                 <p className="text-sm text-muted-foreground">
                   Choose up to 3 emojis that represent your badge. Only emojis are allowed.
@@ -97,13 +108,13 @@ export default function CreateBadgePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tokens">Token Amount</Label>
-                <Input id="tokens" name="tokens" type="number" placeholder="1000" required min="1"/>
+                <Input id="tokens" name="tokens" type="number" placeholder="1000" required min="1" disabled={isLoading}/>
                  <p className="text-sm text-muted-foreground">
                   Initial amount of badges available to claim.
                 </p>
               </div>
-              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                Create Badge
+              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading}>
+                {isLoading ? 'Creating...' : 'Create Badge'}
               </Button>
             </form>
           </CardContent>

@@ -8,17 +8,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import type { Badge, User } from '@/lib/data';
+import type { Badge } from '@/lib/data';
 import { ArrowRight, Users } from 'lucide-react';
 
 type BadgeCardProps = {
   badge: Badge;
-  followersData: User[];
 };
 
-export function BadgeCard({ badge, followersData }: BadgeCardProps) {
+export function BadgeCard({ badge }: BadgeCardProps) {
+  const badgesLeft = badge.tokens - badge.owners.length;
+
   return (
     <Card className="flex flex-col transition-all hover:shadow-md">
       <CardHeader>
@@ -31,7 +31,7 @@ export function BadgeCard({ badge, followersData }: BadgeCardProps) {
         </div>
         <CardTitle className="pt-2 font-headline">{badge.name}</CardTitle>
         <CardDescription>
-          {badge.tokens.toLocaleString()} Tokens
+          {badgesLeft.toLocaleString()} / {badge.tokens.toLocaleString()} left
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow" />

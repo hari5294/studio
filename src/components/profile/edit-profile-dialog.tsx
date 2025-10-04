@@ -15,34 +15,37 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Smile } from 'lucide-react';
 import React, { useState } from 'react';
-import { User, updateUserAvatar } from '@/lib/data';
-import { getFirstEmoji } from '@/lib/utils';
+import { type User, updateUserAvatar } from '@/lib/data';
+import { getFirstEmoji, isOnlyEmojis } from '@/lib/utils';
+import { CombinedUser } from '@/firebase/auth/use-user';
 
 type EditProfileDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: User;
+  user: CombinedUser;
   onUpdate: () => void;
 };
 
 export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditProfileDialogProps) {
     const { toast } = useToast();
     const [emoji, setEmoji] = useState(user.emojiAvatar || '');
+    const [isLoading, setIsLoading] = useState(false);
     
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsLoading(true);
         
         try {
-            if (!emoji) {
-                toast({
-                    title: 'No Emoji',
-                    description: 'Please enter an emoji to use as your avatar.',
+            if (!isOnlyEmojis(emoji)) {
+                 toast({
+                    title: 'Invalid Input',
+                    description: 'Please enter only an emoji to use as your avatar.',
                     variant: 'destructive',
                 });
                 return;
             }
             const cleanEmoji = getFirstEmoji(emoji);
-            updateUserAvatar(user.id, cleanEmoji);
+            await updateUserAvatar(user.uid, cleanEmoji);
             
             toast({
                 title: "Avatar Updated!",
@@ -56,6 +59,8 @@ export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditPr
                 description: error.message,
                 variant: "destructive",
             });
+        } finally {
+            setIsLoading(false);
         }
     }
 
@@ -81,12 +86,13 @@ export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditPr
                 onChange={(e) => setEmoji(e.target.value)}
                 placeholder="😀"
                 maxLength={2} // Limit input length to avoid long strings
+                disabled={isLoading}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit">Save Changes</Button>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isLoading}>Cancel</Button>
+            <Button type="submit" disabled={isLoading}>{isLoading ? 'Saving...' : 'Save Changes'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

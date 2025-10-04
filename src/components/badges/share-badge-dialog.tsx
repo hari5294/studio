@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,24 +21,11 @@ type ShareBadgeDialogProps = {
   onOpenChange: (open: boolean) => void;
   badge: Badge;
   links: ShareLink[];
+  isLoading?: boolean;
 };
 
-export function ShareBadgeDialog({ open, onOpenChange, badge, links = [] }: ShareBadgeDialogProps) {
+export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], isLoading = false }: ShareBadgeDialogProps) {
     const { toast } = useToast();
-    const [displayLinks, setDisplayLinks] = useState<ShareLink[]>(links);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        setIsLoading(true);
-        // Simulate a delay for fetching links
-        const timer = setTimeout(() => {
-          setDisplayLinks(links);
-          setIsLoading(false);
-        }, 500);
-    
-        return () => clearTimeout(timer);
-      }, [links, open]);
-
 
     const copyToClipboard = (text: string) => {
         if (typeof window === 'undefined') return;
@@ -68,9 +54,9 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, links = [] }: Shar
                 <Skeleton className="h-10 w-full" />
              </div>
           )}
-          {!isLoading && displayLinks.length > 0 && (
+          {!isLoading && links.length > 0 && (
               <div className="space-y-3">
-                {displayLinks.map(link => (
+                {links.map(link => (
                     <div key={link.linkId} className="flex items-center gap-2 w-full">
                        <Image
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=40x40&data=${encodeURIComponent(`${window.location.origin}/join/${link.linkId}`)}`}
@@ -88,7 +74,7 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, links = [] }: Shar
                 ))}
               </div>
           )}
-           {!isLoading && displayLinks.length === 0 && (
+           {!isLoading && links.length === 0 && (
             <div className="flex flex-col justify-center items-center h-full text-center py-4">
                 <p className="text-sm text-muted-foreground mb-4">
                     You have no more unique codes to share for this badge.

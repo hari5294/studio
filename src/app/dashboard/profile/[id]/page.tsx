@@ -1,80 +1,56 @@
-
 'use client';
 
-import { useState, useEffect, useReducer } from 'react';
+import { useState, useReducer } from 'react';
 import { notFound } from 'next/navigation';
 import { Header } from '@/components/layout/header';
-import { getUserById, getBadgesByOwner, toggleFollowUser, type User, type Badge as BadgeType } from '@/lib/data';
+import { toggleFollowUser, type User as UserData, type Badge as BadgeType } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { BadgeCard } from '@/components/badges/badge-card';
 import { Badge, User as UserIcon, Users, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useIsClient } from '@/hooks/use-is-client';
 import { useToast } from '@/hooks/use-toast';
 import { EditProfileDialog } from '@/components/profile/edit-profile-dialog';
+import { useUser, useDoc, useCollection } from '@/firebase';
+import { useFirestore } from '@/firebase';
+import { collection, query, where, doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CombinedUser } from '@/firebase/auth/use-user';
 
-export default function UserProfilePage({ params }: { params: { id:string } }) {
-  const isClient = useIsClient();
-  const { toast } = useToast();
-  const [_, forceUpdate] = useReducer((x) => x + 1, 0);
 
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isEditProfileOpen, setEditProfileOpen] = useState(false);
-  
-  const currentUserId = 'user-1';
-  const user = getUserById(params.id);
-  const currentUser = getUserById(currentUserId);
-  const ownedBadges = getBadgesByOwner(params.id);
-  const followingUsers = user?.following.map(id => getUserById(id)).filter(Boolean) as User[];
-  
-  useEffect(() => {
-    if (isClient && currentUser && user) {
-        setIsFollowing(currentUser.following.includes(user.id));
+function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: CombinedUser, isCurrentUserProfile: boolean }) {
+    const { user: currentUser } = useUser();
+    const { toast } = useToast();
+    const [_, forceUpdate] = useReducer((x) => x + 1, 0);
+    const [isEditProfileOpen, setEditProfileOpen] = useState(false);
+
+    const isFollowing = currentUser?.following?.includes(user.id) ?? false;
+    
+    const handleProfileUpdate = () => {
+        forceUpdate();
     }
-  }, [isClient, currentUser, user, _]);
 
-
-  if (!user) {
-    notFound();
-  }
-  
-  const handleProfileUpdate = () => {
-    forceUpdate();
-    // This is a bit of a hack to force the sidebar to re-render as well
-    // In a real app with global state management, this would be cleaner
-    window.dispatchEvent(new Event('profileUpdated'));
-  }
-
-
-  const handleFollowToggle = () => {
-    try {
-        toggleFollowUser(currentUserId, user.id);
-        const nowFollowing = !isFollowing;
-        setIsFollowing(nowFollowing);
-        toast({
-            title: nowFollowing ? 'Followed!' : 'Unfollowed.',
-            description: `You are now ${nowFollowing ? 'following' : 'no longer following'} ${user.name}.`
-        });
-        forceUpdate(); // Re-render to update follower list if viewing own profile
-    } catch(e: any) {
-        toast({
-            title: 'Error',
-            description: e.message,
-            variant: 'destructive',
-        });
+    const handleFollowToggle = async () => {
+        if (!currentUser) return;
+        try {
+            await toggleFollowUser(currentUser.uid, user.id);
+            const nowFollowing = !isFollowing;
+            toast({
+                title: nowFollowing ? 'Followed!' : 'Unfollowed.',
+                description: `You are now ${nowFollowing ? 'following' : 'no longer following'} ${user.name}.`
+            });
+        } catch(e: any) {
+            toast({
+                title: 'Error',
+                description: e.message,
+                variant: 'destructive',
+            });
+        }
     }
-  }
 
-  const isCurrentUserProfile = user.id === currentUserId;
-
-  return (
-    <>
-      <Header title="User Profile" />
-      <div className="flex-1 space-y-6 p-4 md:p-6">
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
+    return (
+        <>
             <Card>
               <CardContent className="pt-6 flex flex-col items-center text-center gap-4">
                  <div className="relative group">
@@ -84,9 +60,9 @@ export default function UserProfilePage({ params }: { params: { id:string } }) {
                         ) : (
                             <AvatarImage src={user.avatarUrl} alt={user.name} />
                         )}
-                        <AvatarFallback className="text-3xl">{user.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="text-3xl">{user.name?.charAt(0) ?? '?'}</AvatarFallback>
                     </Avatar>
-                    {isClient && isCurrentUserProfile && (
+                    {isCurrentUserProfile && (
                         <Button 
                             variant="outline" 
                             size="icon" 
@@ -102,7 +78,7 @@ export default function UserProfilePage({ params }: { params: { id:string } }) {
                   <h1 className="text-2xl font-bold font-headline">{user.name}</h1>
                   <p className="text-muted-foreground">Member</p>
                 </div>
-                 {isClient && !isCurrentUserProfile && (
+                 {!isCurrentUserProfile && currentUser && (
                     <Button variant={isFollowing ? 'secondary' : 'outline'} onClick={handleFollowToggle}>
                         <UserIcon className="mr-2 h-4 w-4" />
                         {isFollowing ? 'Unfollow' : 'Follow'}
@@ -110,71 +86,131 @@ export default function UserProfilePage({ params }: { params: { id:string } }) {
                  )}
               </CardContent>
             </Card>
-            
-            <div>
-                <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
-                    <Badge className="h-6 w-6" />
-                    Owned Badges ({ownedBadges.length})
-                </h2>
-                {ownedBadges.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {ownedBadges.map((badge) => {
-                        const followersData =
-                        badge.followers
-                            .map((id) => getUserById(id))
-                            .filter(Boolean) as User[];
-                        return <BadgeCard key={badge.id} badge={badge} followersData={followersData} />;
-                    })}
+            {isCurrentUserProfile && (
+                <EditProfileDialog 
+                    open={isEditProfileOpen} 
+                    onOpenChange={setEditProfileOpen} 
+                    user={user}
+                    onUpdate={handleProfileUpdate}
+                />
+             )}
+        </>
+    )
+}
+
+function OwnedBadges({ userId }: { userId: string}) {
+    const firestore = useFirestore();
+    const badgesQuery = query(collection(firestore, 'badges'), where('owners', 'array-contains', userId));
+    const { data: ownedBadges, loading } = useCollection<BadgeType>(badgesQuery);
+
+    if (loading) {
+        return <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
+        </div>
+    }
+
+    return (
+        <div>
+            <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
+                <Badge className="h-6 w-6" />
+                Owned Badges ({ownedBadges?.length ?? 0})
+            </h2>
+            {ownedBadges && ownedBadges.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {ownedBadges.map((badge) => <BadgeCard key={badge.id} badge={badge} />)}
+                </div>
+            ) : (
+                <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                <p className="text-muted-foreground">This user hasn&apos;t created or claimed any badges yet.</p>
+                </div>
+            )}
+        </div>
+    )
+}
+
+function FollowingList({ user }: { user: CombinedUser }) {
+    const firestore = useFirestore();
+    
+    // Create a query if the user is following anyone
+    const followingQuery = user.following?.length > 0 
+        ? query(collection(firestore, 'users'), where('id', 'in', user.following))
+        : null;
+
+    const { data: followingUsers, loading } = useCollection<UserData>(followingQuery);
+
+    return (
+        <Card>
+            <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2">
+                <Users className="h-6 w-6" />
+                Following ({user.following?.length ?? 0})
+            </CardTitle>
+            </CardHeader>
+            <CardContent>
+            <div className="space-y-4">
+                {loading && user.following?.length > 0 && <p>Loading...</p>}
+
+                {!loading && followingUsers && followingUsers.map((followedUser) => (
+                <Link href={`/dashboard/profile/${followedUser.id}`} key={followedUser.id}>
+                    <div className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
+                    <Avatar>
+                        {followedUser.emojiAvatar ? (
+                            <span className="flex h-full w-full items-center justify-center text-2xl">{followedUser.emojiAvatar}</span>
+                        ) : (
+                            <AvatarImage src={followedUser.avatarUrl} alt={followedUser.name} />
+                        )}
+                        <AvatarFallback>{followedUser.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <p className="font-medium">{followedUser.name}</p>
                     </div>
-                ) : (
-                    <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                    <p className="text-muted-foreground">{user.name} hasn't created or claimed any badges yet.</p>
-                    </div>
+                </Link>
+                ))}
+                {!loading && (!followingUsers || followingUsers.length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center py-4">Not following anyone yet.</p>
                 )}
             </div>
+            </CardContent>
+        </Card>
+    )
+}
+
+
+export default function UserProfilePage({ params }: { params: { id:string } }) {
+  const { user: currentUser, loading: userLoading } = useUser();
+  const firestore = useFirestore();
+  
+  const userDocRef = doc(firestore, 'users', params.id);
+  const { data: user, loading: profileUserLoading } = useDoc<CombinedUser>(userDocRef);
+
+  if (userLoading || profileUserLoading) {
+      return (
+          <div className="flex-1 space-y-6 p-4 md:p-6">
+              <Skeleton className="h-48 w-full" />
+              <Skeleton className="h-64 w-full" />
+          </div>
+      )
+  }
+
+  if (!user) {
+    notFound();
+  }
+  
+  const isCurrentUserProfile = user.id === currentUser?.uid;
+
+  return (
+    <>
+      <Header title="User Profile" />
+      <div className="flex-1 space-y-6 p-4 md:p-6">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <ProfileHeaderCard user={user} isCurrentUserProfile={isCurrentUserProfile} />
+            <OwnedBadges userId={user.id} />
           </div>
           <div className="lg:col-span-1 space-y-6">
-             <Card>
-              <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2">
-                  <Users className="h-6 w-6" />
-                  Following ({followingUsers.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {followingUsers.map((followedUser) => (
-                    <Link href={`/dashboard/profile/${followedUser.id}`} key={followedUser.id}>
-                        <div className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
-                        <Avatar>
-                            {followedUser.emojiAvatar ? (
-                                <span className="flex h-full w-full items-center justify-center text-2xl">{followedUser.emojiAvatar}</span>
-                            ) : (
-                               <AvatarImage src={followedUser.avatarUrl} alt={followedUser.name} />
-                            )}
-                            <AvatarFallback>{followedUser.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <p className="font-medium">{followedUser.name}</p>
-                        </div>
-                    </Link>
-                  ))}
-                  {followingUsers.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">Not following anyone yet.</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+             <FollowingList user={user} />
           </div>
         </div>
       </div>
-      {isCurrentUserProfile && (
-        <EditProfileDialog 
-            open={isEditProfileOpen} 
-            onOpenChange={setEditProfileOpen} 
-            user={user}
-            onUpdate={handleProfileUpdate}
-        />
-      )}
     </>
   );
 }

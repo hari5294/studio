@@ -2,9 +2,19 @@
 'use client';
 
 import { redirect } from 'next/navigation';
+import { useUser } from '@/firebase';
 
 export default function ProfilePage() {
-    // For this demo, we'll redirect to the hardcoded user's profile.
-    // In a real app, you would get the current user's ID from an auth context.
-    redirect('/dashboard/profile/user-1');
+    const { user, loading } = useUser();
+
+    if (loading) {
+        return <div>Loading...</div>; // Or a skeleton loader
+    }
+
+    if (user) {
+        redirect(`/dashboard/profile/${user.uid}`);
+    } else {
+        // Not authenticated, redirect to login
+        redirect('/login');
+    }
 }

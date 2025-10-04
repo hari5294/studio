@@ -18,6 +18,17 @@
           "type": "string",
           "format": "uri",
           "description": "URL of the user's avatar image."
+        },
+        "emojiAvatar": {
+            "type": "string",
+            "description": "A single emoji used as the user's avatar."
+        },
+        "following": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "An array of user IDs that this user is following."
         }
       },
       "required": ["name", "email"]
@@ -38,9 +49,65 @@
         "tokens": {
           "type": "number",
           "description": "The total number of tokens for this badge."
+        },
+        "ownerId": {
+            "type": "string",
+            "description": "The user ID of the original creator of the badge."
+        },
+        "owners": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "An array of user IDs who own a copy of the badge."
+        },
+        "followers": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "An array of user IDs who are following the badge."
+        },
+        "createdAt": {
+            "type": "number",
+            "description": "The timestamp when the badge was created."
         }
       },
-      "required": ["name", "emojis", "tokens"]
+      "required": ["name", "emojis", "tokens", "ownerId", "owners", "followers", "createdAt"]
+    },
+    "shareLink": {
+        "title": "Share Link",
+        "description": "A one-time use link to claim a badge.",
+        "type": "object",
+        "properties": {
+            "badgeId": {
+                "type": "string"
+            },
+            "ownerId": {
+                "type": "string"
+            },
+            "used": {
+                "type": "boolean"
+            },
+            "claimedBy": {
+                "type": ["string", "null"]
+            }
+        },
+        "required": ["badgeId", "ownerId", "used"]
+    },
+    "notification": {
+        "title": "Notification",
+        "description": "A notification for a user.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "type": { "type": "string", "enum": ["BADGE_REQUEST", "BADGE_RECEIVED"] },
+            "fromUserId": { "type": "string" },
+            "badgeId": { "type": "string" },
+            "createdAt": { "type": "number" },
+            "read": { "type": "boolean" }
+        },
+        "required": ["userId", "type", "fromUserId", "badgeId", "createdAt", "read"]
     }
   },
   "auth": {
@@ -58,6 +125,18 @@
         "$ref": "#/entities/badge"
       },
       "description": "Stores information about each badge."
+    },
+    "/shareLinks/{linkId}": {
+        "schema": {
+            "$ref": "#/entities/shareLink"
+        },
+        "description": "Stores all share links for claiming badges."
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+        "schema": {
+            "$ref": "#/entities/notification"
+        },
+        "description": "Stores notifications for a specific user."
     }
   }
 }

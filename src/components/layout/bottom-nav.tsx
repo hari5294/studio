@@ -2,39 +2,39 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, PlusCircle, Search, User, Gift, Inbox } from 'lucide-react';
+import { Home, Search, User, Gift, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getUnreadNotificationCount } from '@/lib/data';
-import { useEffect, useState } from 'react';
+import { useUser, useFirestore, useCollection } from '@/firebase';
+import { collection, where, query } from 'firebase/firestore';
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Home' },
   { href: '/dashboard/search', icon: Search, label: 'Search' },
   { href: '/dashboard/redeem', icon: Gift, label: 'Redeem' },
   { href: '/dashboard/inbox', icon: Inbox, label: 'Inbox', requiresNotification: true },
-  { href: '/dashboard/profile', icon: User, label: 'Profile' },
+  { href: '/dashboard/profile', icon: User, label: 'Profile', isProfile: true },
 ];
 
 export function BottomNavBar() {
   const pathname = usePathname();
-  const [unreadCount, setUnreadCount] = useState(0);
-  const currentUserId = 'user-1';
+  const { user } = useUser();
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    // This effect will re-run on navigation, ensuring the unread count is fresh.
-    setUnreadCount(getUnreadNotificationCount(currentUserId));
-  }, [pathname]);
-
+  const notificationsQuery = user ? query(collection(firestore, `users/${user.uid}/notifications`), where('read', '==', false)) : null;
+  const { data: unreadNotifications } = useCollection(notificationsQuery);
+  const unreadCount = unreadNotifications?.length ?? 0;
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t bg-card/95 backdrop-blur-sm z-40">
       <nav className="grid h-full grid-cols-5">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const href = item.isProfile ? `/dashboard/profile/${user?.uid}` : item.href;
+          const isActive = item.isProfile ? pathname.startsWith(item.href) : pathname === item.href;
+          
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={href}
               className={cn(
                 'relative flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                 isActive
