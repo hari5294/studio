@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Copy, QrCode, RefreshCw } from 'lucide-react';
+import { Copy, QrCode } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge, ShareLink } from '@/lib/data';
 import Image from 'next/image';
@@ -22,17 +22,23 @@ type ShareBadgeDialogProps = {
   onOpenChange: (open: boolean) => void;
   badge: Badge;
   links: ShareLink[];
-  onGenerateNewLinks?: () => void;
 };
 
-export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], onGenerateNewLinks }: ShareBadgeDialogProps) {
+export function ShareBadgeDialog({ open, onOpenChange, badge, links = [] }: ShareBadgeDialogProps) {
     const { toast } = useToast();
     const [displayLinks, setDisplayLinks] = useState<ShareLink[]>(links);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-      setDisplayLinks(links);
-    }, [links, open]);
+        setIsLoading(true);
+        // Simulate a delay for fetching links
+        const timer = setTimeout(() => {
+          setDisplayLinks(links);
+          setIsLoading(false);
+        }, 500);
+    
+        return () => clearTimeout(timer);
+      }, [links, open]);
 
 
     const copyToClipboard = (text: string) => {
@@ -51,7 +57,7 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], onGene
             Share "{badge.name}"
           </DialogTitle>
           <DialogDescription>
-            Share these unique, one-time use codes to invite others to claim this badge.
+            Share these permanent, one-time use codes to invite others to claim this badge.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4 min-h-[150px]">
@@ -82,24 +88,13 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], onGene
                 ))}
               </div>
           )}
-           {!isLoading && displayLinks.length === 0 && onGenerateNewLinks && (
+           {!isLoading && displayLinks.length === 0 && (
             <div className="flex flex-col justify-center items-center h-full text-center py-4">
                 <p className="text-sm text-muted-foreground mb-4">
-                    You have no share codes. Generate new ones if tokens are available.
+                    You have no more unique codes to share for this badge.
                 </p>
-                <Button onClick={onGenerateNewLinks}>
-                    <RefreshCw className="mr-2 h-4 w-4"/>
-                    Generate Codes
-                </Button>
             </div>
           )}
-           {!isLoading && displayLinks.length === 0 && !onGenerateNewLinks && (
-             <div className="flex flex-col justify-center items-center h-full text-center py-4">
-                <p className="text-sm text-muted-foreground mb-4">
-                    You've successfully claimed the badge! You can close this dialog now.
-                </p>
-             </div>
-           )}
         </div>
       </DialogContent>
     </Dialog>

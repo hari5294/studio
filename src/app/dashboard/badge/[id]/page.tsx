@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useReducer, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getBadgeById, getUserById, User, followBadge, ShareLink, getShareLinksForUser, createShareLinks } from '@/lib/data';
+import { getBadgeById, getUserById, User, followBadge, ShareLink, getShareLinksForUser } from '@/lib/data';
 import { Header } from '@/components/layout/header';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -44,18 +44,6 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
     if (badge) {
       const userLinks = getShareLinksForUser(badge.id, currentUserId);
       setShareLinks(userLinks);
-    }
-  };
-
-  const generateNewShareLinks = () => {
-    if (badge) {
-      const newLinks = createShareLinks(badge.id, currentUserId, 3);
-       if (newLinks.length === 0) {
-            toast({ title: "No more badges to share!", description: "The token limit for this badge has been reached.", variant: "default" });
-        } else {
-            toast({ title: "New share codes generated!", description: "You have new unique codes to share.", variant: "default" });
-        }
-      fetchShareLinks(); // Re-fetch to update the list
     }
   };
 
@@ -142,7 +130,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                     <Button 
                         onClick={() => setShareOpen(true)} 
                         className={cn({ 'invisible': !isClient || !isOwner })}
-                        disabled={!isOwner || badgesLeft <= 0}
+                        disabled={!isOwner}
                     >
                         <Share2 className="mr-2 h-4 w-4" />
                         Share
@@ -228,7 +216,6 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
         onOpenChange={setShareOpen} 
         badge={badge} 
         links={shareLinks}
-        onGenerateNewLinks={generateNewShareLinks}
       />
       <TransferBadgeDialog open={isTransferOpen} onOpenChange={setTransferOpen} badge={badge} onTransfer={forceUpdate} />
     </>
