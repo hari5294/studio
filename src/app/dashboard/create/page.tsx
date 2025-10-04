@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
@@ -10,16 +11,25 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { createBadge } from '@/lib/data';
+import { isOnlyEmojis } from '@/lib/utils';
 
 export default function CreateBadgePage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [emojis, setEmojis] = useState('');
+
+  const handleEmojiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    // Allow the field to be empty or only contain emojis
+    if (value === '' || isOnlyEmojis(value)) {
+      setEmojis(value);
+    }
+  };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const badgeName = formData.get('badgeName') as string;
-    const emojis = formData.get('emojis') as string;
     const tokens = Number(formData.get('tokens'));
 
     if (!badgeName || !emojis || !tokens) {
@@ -73,7 +83,14 @@ export default function CreateBadgePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emojis">Emojis</Label>
-                <Input id="emojis" name="emojis" placeholder="🚀✨🪐" required />
+                <Input 
+                  id="emojis" 
+                  name="emojis" 
+                  placeholder="🚀✨🪐" 
+                  required 
+                  value={emojis}
+                  onChange={handleEmojiChange}
+                />
                 <p className="text-sm text-muted-foreground">
                   Choose up to 3 emojis that represent your badge. Only emojis are allowed.
                 </p>
