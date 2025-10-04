@@ -44,7 +44,7 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      const fullName = `${firstName} ${lastName}`;
+      const fullName = `${firstName} ${lastName}`.trim();
 
       // Update Firebase Auth profile
       await updateProfile(user, { displayName: fullName });

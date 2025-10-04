@@ -56,7 +56,8 @@ const getSidebarStateFromCookie = () => {
     if (!cookie) return true;
     const value = cookie.split('=')[1];
     try {
-        return JSON.parse(value);
+        const parsed = JSON.parse(value);
+        return typeof parsed === 'boolean' ? parsed : true;
     } catch (e) {
         return true;
     }

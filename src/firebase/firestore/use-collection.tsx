@@ -27,7 +27,7 @@ export function useCollection<T = DocumentData>(
 
   useEffect(() => {
     if (pathOrRef === null) {
-      setData(null);
+      setData([]);
       setLoading(false);
       return;
     }
@@ -49,8 +49,15 @@ export function useCollection<T = DocumentData>(
         setError(null);
       },
       (err) => {
+        let path = 'unknown';
+        if (typeof pathOrRef === 'string'){
+            path = pathOrRef;
+        } else if (pathOrRef) {
+            path = (pathOrRef as CollectionReference).path;
+        }
+        
         const permissionError = new FirestorePermissionError({
-          path: 'some-path', // This needs to be changed to a real path
+          path: path, 
           operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
@@ -60,7 +67,8 @@ export function useCollection<T = DocumentData>(
     );
 
     return () => unsubscribe();
-  }, [db, pathOrRef, options]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [db, JSON.stringify(pathOrRef)]);
 
   return { data, loading, error };
 }
