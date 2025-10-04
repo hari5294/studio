@@ -210,7 +210,7 @@ export const createShareLinks = (badgeId: string, ownerId: string, count: number
         const badgeNamePart = badge.name.replace(/\s/g, '').substring(0, 5).toUpperCase();
         const timePart = badge.createdAt.toString().slice(-5);
         const randomPart = Math.random().toString(36).substring(2, 6);
-        const secretCode = `${badgeNamePart}-${timePart}-${randomPart}`;
+        const secretCode = `${badgeNamePart}-${badge.id}-${timePart}-${randomPart}`;
         
         // Use btoa for simple base64 encoding on the client/server
         const encodedId = typeof window === 'undefined' ? Buffer.from(secretCode).toString('base64') : btoa(secretCode);
