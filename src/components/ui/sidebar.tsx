@@ -87,15 +87,25 @@ const SidebarProvider = React.forwardRef<
     const [openMobile, setOpenMobile] = React.useState(false)
 
     // Set initial state from cookie or prop
-    const [initialOpen] = React.useState(() => {
-        if (openProp !== undefined) return openProp;
-        if (defaultOpen !== undefined) return defaultOpen;
-        return getSidebarStateFromCookie();
-    });
+    const [initialOpen, setInitialOpen] = React.useState(true);
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const cookieValue = getSidebarStateFromCookie();
+            if (openProp !== undefined) setInitialOpen(openProp);
+            else if (defaultOpen !== undefined) setInitialOpen(defaultOpen);
+            else setInitialOpen(cookieValue);
+        }
+    }, [defaultOpen, openProp]);
+
 
     const [_open, _setOpen] = React.useState(initialOpen)
     const open = openProp ?? _open
     
+    React.useEffect(() => {
+        _setOpen(initialOpen);
+    }, [initialOpen]);
+
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
         const openState = typeof value === "function" ? value(open) : value
@@ -783,5 +793,7 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
+    
 
     
