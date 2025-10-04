@@ -45,10 +45,10 @@ export default function CreateBadgePage() {
     const tokens = Number(formData.get('tokens'));
     
     const emojiCount = [...submittedEmojis].length;
-    if (emojiCount === 0 || emojiCount > 3) {
+    if (emojiCount !== 3) {
         toast({
             title: 'Invalid Emoji Count',
-            description: 'Please use between 1 and 3 emojis.',
+            description: 'Please use exactly 3 emojis.',
             variant: 'destructive',
         });
         setIsLoading(false);
@@ -79,7 +79,7 @@ export default function CreateBadgePage() {
     // Mock API call
     setTimeout(() => {
         try {
-            const newBadgeId = `badge${Date.now()}`;
+            const newBadgeId = crypto.randomUUID();
             
             setBadges(prev => ({
                 ...prev,
@@ -162,7 +162,7 @@ export default function CreateBadgePage() {
                   disabled={isLoading}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Choose 1 to 3 emojis that represent your badge. Only emojis are allowed.
+                  Choose exactly 3 emojis that represent your badge. Only emojis are allowed.
                 </p>
               </div>
               <div className="space-y-2">
