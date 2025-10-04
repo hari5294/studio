@@ -20,7 +20,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isShareOpen, setShareOpen] = useState(false);
-  const [newShareLink, setNewShareLink] = useState<ShareLink | null>(null);
+  const [newShareLinks, setNewShareLinks] = useState<ShareLink[]>([]);
   const currentUserId = 'user-1'; // Hardcoded user for now
 
   useEffect(() => {
@@ -59,15 +59,15 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
     if (!badge) return;
 
     try {
-        const { newLink } = claimBadge(badge.id, currentUserId, params.linkId);
+        const { newLinks } = claimBadge(badge.id, currentUserId, params.linkId);
         
         toast({
             title: 'Badge Claimed!',
             description: `You are now an owner of the "${badge.name}" badge.`,
         });
 
-        if (newLink) {
-            setNewShareLink(newLink);
+        if (newLinks.length > 0) {
+            setNewShareLinks(newLinks);
             setShareOpen(true); // Open the dialog to show the new link
         } else {
              // If no new links, just go to the badge page
@@ -159,7 +159,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
             open={isShareOpen} 
             onOpenChange={handleShareDialogClose} 
             badge={badge}
-            initialLink={newShareLink ?? undefined}
+            initialLinks={newShareLinks}
           />
       )}
     </div>

@@ -105,7 +105,7 @@ export const getAllUsers = () => users;
 
 // --- Data Mutation Functions ---
 
-export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'followers'>, creatorId: string): {newBadge: Badge, initialLink: ShareLink | null} => {
+export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'followers'>, creatorId: string): {newBadge: Badge, initialLinks: ShareLink[]} => {
   const newId = `badge-${badges.length + 1}`;
   const newBadge: Badge = {
     ...data,
@@ -115,8 +115,8 @@ export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'fol
     followers: [],
   };
   badges.unshift(newBadge);
-  const initialLink = createShareLink(newBadge.id, creatorId);
-  return { newBadge, initialLink };
+  const initialLinks = createShareLinks(newBadge.id, creatorId, 3);
+  return { newBadge, initialLinks };
 };
 
 export const followBadge = (badgeId: string, userId: string) => {
@@ -133,7 +133,7 @@ export const followBadge = (badgeId: string, userId: string) => {
     return badge;
 }
 
-export const claimBadge = (badgeId: string, userId: string, linkId: string): { badge: Badge, newLink: ShareLink | null } => {
+export const claimBadge = (badgeId: string, userId: string, linkId: string): { badge: Badge, newLinks: ShareLink[] } => {
     const badge = getBadgeById(badgeId);
     if (!badge) throw new Error('Badge not found');
     if (badge.owners.length >= badge.tokens) throw new Error('No badges left to claim');
@@ -148,12 +148,9 @@ export const claimBadge = (badgeId: string, userId: string, linkId: string): { b
     useShareLink(linkId, userId);
 
     // Generate a new link for the new owner, if tokens are available
-    let newLink: ShareLink | null = null;
-    if (badge.owners.length < badge.tokens) {
-        newLink = createShareLink(badgeId, userId);
-    }
+    const newLinks = createShareLinks(badgeId, userId, 3);
     
-    return { badge, newLink };
+    return { badge, newLinks };
 }
 
 export const transferBadgeOwnership = (badgeId: string, newOwnerId: string) => {
@@ -172,28 +169,37 @@ export const transferBadgeOwnership = (badgeId: string, newOwnerId: string) => {
 
 // --- Share Link Simulation ---
 
-export const createShareLink = (badgeId: string, ownerId: string): ShareLink | null => {
+export const createShareLinks = (badgeId: string, ownerId: string, count: number): ShareLink[] => {
     const badge = getBadgeById(badgeId);
     if (!badge) throw new Error("Badge not found");
+    
+    const newLinks: ShareLink[] = [];
+    for (let i = 0; i < count; i++) {
+        const availableTokens = badge.tokens - (badge.owners.length + newLinks.length);
+        if (availableTokens <= 0) break; // Stop if no tokens are left
 
-    const availableTokens = badge.tokens - badge.owners.length;
-    if (availableTokens <= 0) return null;
+        const newLink: ShareLink = {
+            linkId: Math.random().toString(36).substring(2, 10),
+            badgeId: badgeId,
+            ownerId: ownerId,
+            used: false,
+            claimedBy: null,
+        };
+        shareLinks.push(newLink);
+        newLinks.push(newLink);
+    }
     
-    const newLink: ShareLink = {
-        linkId: Math.random().toString(36).substring(2, 10),
-        badgeId: badgeId,
-        ownerId: ownerId,
-        used: false,
-        claimedBy: null,
-    };
-    
-    shareLinks.push(newLink);
-    return newLink;
+    return newLinks;
 }
 
 export const getShareLink = (linkId: string): ShareLink | undefined => {
     return shareLinks.find(l => l.linkId === linkId);
 }
+
+export const getShareLinksForUser = (badgeId: string, userId: string): ShareLink[] => {
+    return shareLinks.filter(l => l.badgeId === badgeId && l.ownerId === userId && !l.used);
+}
+
 
 export const useShareLink = (linkId: string, userId: string): ShareLink | undefined => {
     const link = getShareLink(linkId);

@@ -31,14 +31,14 @@ export default function CreateBadgePage() {
         return;
     }
 
-    const { newBadge, initialLink } = createBadge({ name: badgeName, emojis, tokens }, 'user-1');
+    const { newBadge, initialLinks } = createBadge({ name: badgeName, emojis, tokens }, 'user-1');
 
     toast({
       title: 'Badge Created!',
       description: `Your badge "${badgeName}" has been successfully created.`,
     });
     
-    const url = initialLink ? `/dashboard/badge/${newBadge.id}?showShare=true&linkId=${initialLink.linkId}` : `/dashboard/badge/${newBadge.id}`;
+    const url = initialLinks.length > 0 ? `/dashboard/badge/${newBadge.id}?showShare=true` : `/dashboard/badge/${newBadge.id}`;
     
     // Redirect to the badge page and trigger the share dialog
     router.push(url);
