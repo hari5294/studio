@@ -19,7 +19,7 @@ export default function CreateBadgePage() {
   const [emojis, setEmojis] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserId] = useAtom(currentUserIdAtom);
-  const [, setBadges] = useAtom(badgesAtom);
+  const [badges, setBadges] = useAtom(badgesAtom);
   const [, setShareLinks] = useAtom(shareLinksAtom);
 
   const handleEmojiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,12 +39,24 @@ export default function CreateBadgePage() {
     setIsLoading(true);
     const formData = new FormData(event.currentTarget);
     const badgeName = formData.get('badgeName') as string;
+    const submittedEmojis = formData.get('emojis') as string;
     const tokens = Number(formData.get('tokens'));
 
-    if (!badgeName || !emojis || !tokens) {
+    if (!badgeName || !submittedEmojis || !tokens) {
         toast({
             title: 'Missing Information',
             description: 'Please fill out all fields.',
+            variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+    }
+
+    const existingBadge = Object.values(badges).find(b => b.emojis === submittedEmojis);
+    if (existingBadge) {
+        toast({
+            title: 'Emojis Already Used',
+            description: `The emoji combination "${submittedEmojis}" is already used for the "${existingBadge.name}" badge. Please choose a unique set of emojis.`,
             variant: 'destructive',
         });
         setIsLoading(false);
@@ -61,7 +73,7 @@ export default function CreateBadgePage() {
                 [newBadgeId]: {
                     id: newBadgeId,
                     name: badgeName,
-                    emojis: emojis,
+                    emojis: submittedEmojis,
                     tokens: tokens,
                     creatorId: currentUserId,
                     owners: [currentUserId],
