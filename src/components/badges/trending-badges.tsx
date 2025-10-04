@@ -1,17 +1,18 @@
 
-import { badges, getUserById } from '@/lib/data';
+import { getAllBadges, getUserById } from '@/lib/data';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { TrendingUp, Flame, Users } from 'lucide-react';
 import { getFirstEmoji } from '@/lib/utils';
 
 export function TrendingBadges() {
-  const trendingBadgesList = badges
+  const trendingBadgesList = getAllBadges()
     .map((badge, index) => ({
       ...badge,
-      joinCount: badge.followers.length * 10 + index * 3, // mock metric
+      // a mock metric based on followers and a bit of randomness
+      sortMetric: badge.followers.length * 10 + index * 3, 
     }))
-    .sort((a, b) => b.joinCount - a.joinCount)
+    .sort((a, b) => b.sortMetric - a.sortMetric)
     .slice(0, 5);
 
   return (

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -8,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
+import { createBadge } from '@/lib/data';
 
 export default function CreateBadgePage() {
   const router = useRouter();
@@ -16,13 +18,26 @@ export default function CreateBadgePage() {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const badgeName = formData.get('badgeName');
+    const badgeName = formData.get('badgeName') as string;
+    const emojis = formData.get('emojis') as string;
+    const tokens = Number(formData.get('tokens'));
+
+    if (!badgeName || !emojis || !tokens) {
+        toast({
+            title: 'Missing Information',
+            description: 'Please fill out all fields.',
+            variant: 'destructive',
+        });
+        return;
+    }
+
+    const newBadge = createBadge({ name: badgeName, emojis, tokens }, 'user-1');
 
     toast({
       title: 'Badge Created!',
       description: `Your badge "${badgeName}" has been successfully created.`,
     });
-    router.push('/dashboard');
+    router.push(`/dashboard/badge/${newBadge.id}`);
   };
 
   return (
@@ -53,9 +68,9 @@ export default function CreateBadgePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tokens">Token Amount</Label>
-                <Input id="tokens" name="tokens" type="number" placeholder="1000" required />
+                <Input id="tokens" name="tokens" type="number" placeholder="1000" required min="1"/>
                  <p className="text-sm text-muted-foreground">
-                  Initial amount of tokens for this badge.
+                  Initial amount of badges available to claim.
                 </p>
               </div>
               <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">

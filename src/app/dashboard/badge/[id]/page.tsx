@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useReducer } from 'react';
 import { useRouter } from 'next/navigation';
-import { getBadgeById, getUserById, User } from '@/lib/data';
+import { getBadgeById, getUserById, User, followBadge } from '@/lib/data';
 import { Header } from '@/components/layout/header';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,24 +19,32 @@ import {
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { TransferBadgeDialog } from '@/components/badges/transfer-badge-dialog';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function BadgeDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const { toast } = useToast();
+  // use a reducer to force re-renders when data changes
+  const [_, forceUpdate] = useReducer((x) => x + 1, 0);
+
   const badge = getBadgeById(params.id);
 
   const [isShareOpen, setShareOpen] = useState(false);
   const [isTransferOpen, setTransferOpen] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  
+  const currentUserId = 'user-1';
 
   useEffect(() => {
     setIsClient(true);
     if (badge) {
-      const currentUserId = 'user-1';
       setIsCreator(badge.ownerId === currentUserId);
       setIsOwner(badge.owners.includes(currentUserId));
+      setIsFollowing(badge.followers.includes(currentUserId));
       setHasChecked(true);
     }
   }, [badge]);
@@ -49,12 +57,22 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
   const owners = badge.owners.map(id => getUserById(id)).filter(Boolean) as User[];
   const followers = badge.followers.map(id => getUserById(id)).filter(Boolean) as User[];
   const badgesLeft = badge.tokens - owners.length;
+
+  const handleFollow = () => {
+    followBadge(badge.id, currentUserId);
+    setIsFollowing(!isFollowing);
+    toast({
+        title: !isFollowing ? 'Followed!' : 'Unfollowed.',
+        description: `You are now ${!isFollowing ? 'following' : 'no longer following'} "${badge.name}".`
+    });
+    forceUpdate();
+  }
   
   return (
     <>
       <Header title="Badge Details" />
       <div className="flex-1 space-y-8 p-4 md:p-8">
-        <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+        <Button variant="ghost" onClick={() => router.push('/dashboard')} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
         </Button>
@@ -91,7 +109,7 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
                     <Button 
                         onClick={() => setShareOpen(true)} 
                         className={cn("bg-accent text-accent-foreground hover:bg-accent/90", { 'hidden': !hasChecked || !isOwner })}
-                        disabled={!isOwner}
+                        disabled={!isOwner || badgesLeft <= 0}
                     >
                         <Share2 className="mr-2 h-4 w-4" />
                         Share
@@ -105,8 +123,8 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
                       <ArrowRightLeft className="mr-2 h-4 w-4" />
                       Transfer
                   </Button>
-                   <Button variant="secondary">
-                      Follow
+                   <Button variant={isFollowing ? 'secondary' : 'outline'} onClick={handleFollow}>
+                      {isFollowing ? 'Unfollow' : 'Follow'}
                    </Button>
                 </div>
               </CardContent>
@@ -128,6 +146,7 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
                             <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <p className="font-medium">{user.name}</p>
+                        {user.id === badge.ownerId && <span className="text-xs text-muted-foreground">(Creator)</span>}
                         </div>
                     ))}
                     {owners.length === 0 && (
@@ -167,8 +186,8 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
           </div>
         </div>
       </div>
-      <ShareBadgeDialog open={isShareOpen} onOpenChange={setShareOpen} badgeName={badge.name} />
-      <TransferBadgeDialog open={isTransferOpen} onOpenChange={setTransferOpen} badgeName={badge.name} />
+      <ShareBadgeDialog open={isShareOpen} onOpenChange={setShareOpen} badge={badge} />
+      <TransferBadgeDialog open={isTransferOpen} onOpenChange={setTransferOpen} badge={badge} onTransfer={forceUpdate} />
     </>
   );
 }
