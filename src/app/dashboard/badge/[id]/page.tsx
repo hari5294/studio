@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useReducer, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getBadgeById, getUserById, User, followBadge, ShareLink } from '@/lib/data';
+import { getBadgeById, getUserById, User, followBadge, ShareLink, getShareLinksForUser, createShareLinks } from '@/lib/data';
 import { Header } from '@/components/layout/header';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -35,8 +35,28 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   const [isOwner, setIsOwner] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [shareLinks, setShareLinks] = useState<ShareLink[]>([]);
   
   const currentUserId = 'user-1';
+
+  const fetchShareLinks = () => {
+    if (badge) {
+      const userLinks = getShareLinksForUser(badge.id, currentUserId);
+      setShareLinks(userLinks);
+    }
+  };
+
+  const generateNewShareLinks = () => {
+    if (badge) {
+      const newLinks = createShareLinks(badge.id, currentUserId, 3);
+       if (newLinks.length === 0) {
+            toast({ title: "No more badges to share!", description: "The token limit for this badge has been reached.", variant: "default" });
+        } else {
+            toast({ title: "New share codes generated!", description: "You have new unique codes to share.", variant: "default" });
+        }
+      fetchShareLinks(); // Re-fetch to update the list
+    }
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -48,12 +68,19 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
       const showShare = searchParams.get('showShare') === 'true';
 
       if (showShare) {
+        fetchShareLinks();
         setShareOpen(true);
         // Clean up URL params
         router.replace(`/dashboard/badge/${params.id}`, { scroll: false });
       }
     }
   }, [badge, searchParams, params.id, router]);
+
+  useEffect(() => {
+    if (isShareOpen) {
+      fetchShareLinks();
+    }
+  }, [isShareOpen]);
 
   if (!badge) {
     notFound();
@@ -196,7 +223,13 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
           </div>
         </div>
       </div>
-      <ShareBadgeDialog open={isShareOpen} onOpenChange={setShareOpen} badge={badge} />
+      <ShareBadgeDialog 
+        open={isShareOpen} 
+        onOpenChange={setShareOpen} 
+        badge={badge} 
+        links={shareLinks}
+        onGenerateNewLinks={generateNewShareLinks}
+      />
       <TransferBadgeDialog open={isTransferOpen} onOpenChange={setTransferOpen} badge={badge} onTransfer={forceUpdate} />
     </>
   );

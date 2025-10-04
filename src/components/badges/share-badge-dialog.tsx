@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Copy, QrCode, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { createShareLinks, getShareLinksForUser, Badge, ShareLink } from '@/lib/data';
+import { Badge, ShareLink } from '@/lib/data';
 import Image from 'next/image';
 import { Skeleton } from '../ui/skeleton';
 
@@ -21,56 +21,32 @@ type ShareBadgeDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   badge: Badge;
-  initialLinks?: ShareLink[];
+  links: ShareLink[];
+  initialLinks?: ShareLink[]; // From claim page
+  onGenerateNewLinks?: () => void;
 };
 
-export function ShareBadgeDialog({ open, onOpenChange, badge, initialLinks = [] }: ShareBadgeDialogProps) {
+export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], initialLinks = [], onGenerateNewLinks }: ShareBadgeDialogProps) {
     const { toast } = useToast();
-    const [links, setLinks] = useState<ShareLink[]>(initialLinks);
-    const [isLoading, setIsLoading] = useState(false);
-    const currentUserId = 'user-1';
+    const [displayLinks, setDisplayLinks] = useState<ShareLink[]>(initialLinks.length > 0 ? initialLinks : links);
+    const [isLoading, setIsLoading] = useState(false); // Can be used by parent later
 
-    const fetchLinks = () => {
-        setIsLoading(true);
-        const userLinks = getShareLinksForUser(badge.id, currentUserId);
-        setLinks(userLinks);
-        setIsLoading(false);
-    }
-    
-    const generateNewLinks = () => {
-        setIsLoading(true);
-        const newLinks = createShareLinks(badge.id, currentUserId, 3);
-        if (newLinks.length === 0) {
-            toast({ title: "No more badges to share!", description: "The token limit for this badge has been reached.", variant: "default" });
-        } else {
-            toast({ title: "New share codes generated!", description: "You have new unique codes to share.", variant: "default" });
-        }
-        fetchLinks();
-    }
-    
     useEffect(() => {
-        if (open) {
-            if (initialLinks.length > 0) {
-                 setLinks(initialLinks);
-            } else {
-                 fetchLinks();
-            }
-        }
-    }, [open, initialLinks]);
-    
+      // Prioritize initialLinks (from claim page), then fall back to links from props.
+      const currentLinks = initialLinks.length > 0 ? initialLinks : links;
+      setDisplayLinks(currentLinks);
+    }, [links, initialLinks, open]);
+
+
     const copyToClipboard = (text: string) => {
+        if (typeof window === 'undefined') return;
         const fullUrl = `${window.location.origin}/join/${text}`;
         navigator.clipboard.writeText(fullUrl);
         toast({ title: "Copied link to clipboard!" });
     }
     
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-        onOpenChange(isOpen);
-        if (!isOpen) {
-            setLinks([]); // Clear links when closing
-        }
-    }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="font-headline flex items-center gap-2">
@@ -89,9 +65,9 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, initialLinks = [] 
                 <Skeleton className="h-10 w-full" />
              </div>
           )}
-          {!isLoading && links.length > 0 && (
+          {!isLoading && displayLinks.length > 0 && (
               <div className="space-y-3">
-                {links.map(link => (
+                {displayLinks.map(link => (
                     <div key={link.linkId} className="flex items-center gap-2 w-full">
                        <Image
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=40x40&data=${encodeURIComponent(`${window.location.origin}/join/${link.linkId}`)}`}
@@ -109,17 +85,24 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, initialLinks = [] 
                 ))}
               </div>
           )}
-           {!isLoading && links.length === 0 && (
+           {!isLoading && displayLinks.length === 0 && onGenerateNewLinks && (
             <div className="flex flex-col justify-center items-center h-full text-center py-4">
                 <p className="text-sm text-muted-foreground mb-4">
                     You have no share codes. Generate new ones if tokens are available.
                 </p>
-                <Button onClick={generateNewLinks}>
+                <Button onClick={onGenerateNewLinks}>
                     <RefreshCw className="mr-2 h-4 w-4"/>
                     Generate Codes
                 </Button>
             </div>
           )}
+           {!isLoading && displayLinks.length === 0 && !onGenerateNewLinks && (
+             <div className="flex flex-col justify-center items-center h-full text-center py-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                    You've successfully claimed the badge!
+                </p>
+             </div>
+           )}
         </div>
       </DialogContent>
     </Dialog>
