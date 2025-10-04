@@ -106,7 +106,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   const [users] = useAtom(usersAtom);
   const [badges, setBadges] = useAtom(badgesAtom);
   const [shareLinks] = useAtom(shareLinksAtom);
-  const [notifications, setNotifications] = useAtom(notificationsAtom);
+  const [, setNotifications] = useAtom(notificationsAtom);
   
   const badge = badges[params.id];
   const creator = badge ? users[badge.creatorId] : null;
@@ -147,7 +147,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
 
   const handleRequestCode = () => {
      if (!currentUser) return;
-     const newNotificationId = `n${Object.keys(notifications).length + 1}`;
+     const newNotificationId = crypto.randomUUID();
      setNotifications(prev => ({
          ...prev,
          [newNotificationId]: {
