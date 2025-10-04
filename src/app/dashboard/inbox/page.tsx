@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,11 +18,9 @@ import { useToast } from '@/hooks/use-toast';
 
 type EnrichedNotification = Notification & { fromUser?: User; badge?: Badge };
 
-function NotificationItem({ notification: initialNotification }: { notification: EnrichedNotification }) {
-    const router = useRouter();
+function NotificationItem({ notification }: { notification: EnrichedNotification }) {
     const { toast } = useToast();
-    const [notification, setNotification] = useState(initialNotification);
-    const [notifications, setNotifications] = useAtom(notificationsAtom);
+    const [, setNotifications] = useAtom(notificationsAtom);
     const [, setShareLinks] = useAtom(shareLinksAtom);
     const [currentUserId] = useAtom(currentUserIdAtom);
     
