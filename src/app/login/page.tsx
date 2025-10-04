@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -14,16 +16,61 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EmojiBadgeLogo } from '@/components/icons';
+import { useAuth } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
+import { GoogleSignInButton } from '@/components/auth/google-signin-button';
 
 export default function LoginPage() {
   const router = useRouter();
+  const auth = useAuth();
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd handle authentication here.
-    // For this demo, we'll just redirect to the dashboard.
-    router.push('/dashboard');
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      if (!userCredential.user.emailVerified) {
+        toast({
+          title: 'Email Not Verified',
+          description: "Please check your inbox and verify your email address before logging in.",
+          variant: 'destructive',
+        });
+        await auth.signOut(); // Sign out the user until they verify
+        setIsLoading(false);
+        return;
+      }
+
+      toast({
+        title: 'Login Successful!',
+        description: 'Welcome back!',
+      });
+      router.push('/dashboard');
+    } catch (error: any) {
+      setError(error.message);
+      toast({
+        title: 'Login Failed',
+        description: 'Please check your email and password.',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+    }
   };
+  
+  const handleGoogleSignInSuccess = () => {
+    router.push('/dashboard');
+    toast({
+        title: 'Signed in successfully!',
+    });
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
@@ -34,7 +81,7 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl font-headline">Welcome Back!</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Sign in to continue to EmojiBadge
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -46,6 +93,9 @@ export default function LoginPage() {
                 type="email"
                 placeholder="m@example.com"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div className="grid gap-2">
@@ -58,12 +108,28 @@ export default function LoginPage() {
                   Forgot your password?
                 </Link>
               </div>
-              <Input id="password" type="password" required />
+              <Input 
+                id="password" 
+                type="password" 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
+              />
             </div>
-            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-              Login
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
+          
+          <div className="relative my-4">
+            <Separator />
+            <span className="absolute left-1/2 -translate-x-1/2 top-[-10px] bg-card px-2 text-xs text-muted-foreground">OR</span>
+          </div>
+
+          <GoogleSignInButton onSuccess={handleGoogleSignInSuccess} />
+
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline">
