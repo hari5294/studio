@@ -30,8 +30,10 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
   const [isCreator, setIsCreator] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     if (badge) {
       const currentUserId = 'user-1';
       setIsCreator(badge.ownerId === currentUserId);
@@ -76,8 +78,12 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
                     </CardDescription>
                   </div>
                   <div className="text-right">
-                    <p className="text-3xl font-bold text-primary">{badgesLeft.toLocaleString()}</p>
-                    <p className="text-sm text-muted-foreground">Badges Left</p>
+                    {isClient && (
+                      <>
+                        <p className="text-3xl font-bold text-primary">{badgesLeft.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">Badges Left</p>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardHeader>
