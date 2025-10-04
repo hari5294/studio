@@ -38,6 +38,12 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
       return;
     }
     
+    if (link.ownerId === currentUserId) {
+        setError("You cannot claim a badge using a code you generated yourself.");
+        setIsLoading(false);
+        return;
+    }
+    
     if(linkedBadge.owners.length >= linkedBadge.tokens) {
         setError("All available badges have been claimed.");
         setIsLoading(false);
@@ -45,14 +51,18 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
     }
     
     if(linkedBadge.owners.includes(currentUserId)) {
-        setError("You already own this badge.");
-        setIsLoading(false);
+        // Don't show an error, just redirect them to the badge they already own
+        toast({
+            title: 'Already an Owner',
+            description: `You already own the "${linkedBadge.name}" badge.`,
+        });
+        router.replace(`/dashboard/badge/${linkedBadge.id}`);
         return;
     }
 
     setBadge(linkedBadge);
     setIsLoading(false);
-  }, [params.linkId]);
+  }, [params.linkId, router, toast]);
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();

@@ -42,13 +42,23 @@ export default function RedeemCodePage() {
       if (!badge) {
         throw new Error("The badge associated with this code could not be found.");
       }
+      
+      if (link.ownerId === currentUserId) {
+        throw new Error("You cannot redeem a code that you generated yourself.");
+      }
 
       if (badge.owners.length >= badge.tokens) {
         throw new Error("All available badges have been claimed.");
       }
 
       if (badge.owners.includes(currentUserId)) {
-        throw new Error("You already own this badge.");
+        toast({
+            title: 'Already an Owner',
+            description: `You already own the "${badge.name}" badge.`,
+            variant: 'default',
+        });
+        router.push(`/dashboard/badge/${badge.id}`);
+        return;
       }
 
       const { newLinks } = claimBadge(badge.id, currentUserId, code);
