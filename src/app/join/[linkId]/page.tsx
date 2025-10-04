@@ -25,8 +25,8 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
 
   useEffect(() => {
     const link = getShareLink(params.linkId);
-    if (!link || link.used || link.expires < Date.now()) {
-      setError("This invitation link is invalid or has expired.");
+    if (!link || link.used) {
+      setError("This invitation link is invalid or has already been used.");
       setIsLoading(false);
       return;
     }

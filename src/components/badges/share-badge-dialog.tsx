@@ -84,7 +84,7 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, initialLinks = [] 
             Share "{badge.name}"
           </DialogTitle>
           <DialogDescription>
-            Share these unique, one-time use links to invite others to claim this badge. Each link expires after 24 hours. New links can be generated.
+            Share these unique, one-time use links to invite others to claim this badge. New links can be generated.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4 min-h-[200px]">

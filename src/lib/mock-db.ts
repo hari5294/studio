@@ -19,7 +19,6 @@ export type ShareLink = {
     linkId: string;
     badgeId: string;
     ownerId: string; // The user who generated this link
-    expires: number;
     used: boolean;
     claimedBy: string | null; // which user used this link
 };
@@ -187,7 +186,6 @@ export const createShareLinks = (badgeId: string, ownerId: string, count: number
             linkId: Math.random().toString(36).substring(2, 10),
             badgeId: badgeId,
             ownerId: ownerId,
-            expires: Date.now() + 1000 * 60 * 60 * 24, // 24 hours
             used: false,
             claimedBy: null,
         };
