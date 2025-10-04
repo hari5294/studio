@@ -15,6 +15,7 @@ export type Badge = {
   ownerId: string; // The original creator
   owners: string[]; // Array of user ids who own a copy
   followers: string[]; // array of user ids
+  createdAt: number; // Unix timestamp
 };
 
 export type ShareLink = {
@@ -45,6 +46,7 @@ let badges: Badge[] = [
     ownerId: 'user-1',
     owners: ['user-1', 'user-2'], // Alex and Maria own this
     followers: ['user-3'],
+    createdAt: 1700000000000,
   },
   {
     id: 'badge-2',
@@ -54,6 +56,7 @@ let badges: Badge[] = [
     ownerId: 'user-2',
     owners: ['user-2', 'user-4', 'user-5'],
     followers: ['user-1'],
+    createdAt: 1700000100000,
   },
   {
     id: 'badge-3',
@@ -63,6 +66,7 @@ let badges: Badge[] = [
     ownerId: 'user-1',
     owners: ['user-1'],
     followers: ['user-5'],
+    createdAt: 1700000200000,
   },
   {
     id: 'badge-4',
@@ -72,6 +76,7 @@ let badges: Badge[] = [
     ownerId: 'user-4',
     owners: ['user-4', 'user-1', 'user-3'],
     followers: ['user-2', 'user-5'],
+    createdAt: 1700000300000,
   },
   {
     id: 'badge-5',
@@ -81,6 +86,7 @@ let badges: Badge[] = [
     ownerId: 'user-3',
     owners: ['user-3'],
     followers: [],
+    createdAt: 1700000400000,
   },
    {
     id: 'badge-6',
@@ -90,6 +96,7 @@ let badges: Badge[] = [
     ownerId: 'user-5',
     owners: ['user-5'],
     followers: ['user-1', 'user-2', 'user-3', 'user-4'],
+    createdAt: 1700000500000,
   },
 ];
 
@@ -109,7 +116,7 @@ export const searchUsers = (query: string) => users.filter(u => u.name.toLowerCa
 
 // --- Data Mutation Functions ---
 
-export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'followers'>, creatorId: string): {newBadge: Badge, initialLinks: ShareLink[]} => {
+export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'followers' | 'createdAt'>, creatorId: string): {newBadge: Badge, initialLinks: ShareLink[]} => {
   const newId = `badge-${badges.length + 1}`;
   const newBadge: Badge = {
     ...data,
@@ -117,6 +124,7 @@ export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'fol
     ownerId: creatorId,
     owners: [creatorId],
     followers: [],
+    createdAt: Date.now(),
   };
   badges.unshift(newBadge);
   const initialLinks = createShareLinks(newBadge.id, creatorId, 3);
@@ -198,8 +206,17 @@ export const createShareLinks = (badgeId: string, ownerId: string, count: number
         const availableTokens = badge.tokens - badge.owners.length - existingLinksCount;
         if (availableTokens <= 0) break; // Stop if no tokens are left
 
+        // Create a more meaningful secret code
+        const badgeNamePart = badge.name.replace(/\s/g, '').substring(0, 5).toUpperCase();
+        const timePart = badge.createdAt.toString().slice(-5);
+        const randomPart = Math.random().toString(36).substring(2, 6);
+        const secretCode = `${badgeNamePart}-${timePart}-${randomPart}`;
+        
+        // Use btoa for simple base64 encoding on the client/server
+        const encodedId = typeof window === 'undefined' ? Buffer.from(secretCode).toString('base64') : btoa(secretCode);
+
         const newLink: ShareLink = {
-            linkId: Math.random().toString(36).substring(2, 10),
+            linkId: encodedId,
             badgeId: badgeId,
             ownerId: ownerId,
             used: false,

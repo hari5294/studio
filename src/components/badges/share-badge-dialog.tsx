@@ -22,20 +22,17 @@ type ShareBadgeDialogProps = {
   onOpenChange: (open: boolean) => void;
   badge: Badge;
   links: ShareLink[];
-  initialLinks?: ShareLink[]; // From claim page
   onGenerateNewLinks?: () => void;
 };
 
-export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], initialLinks = [], onGenerateNewLinks }: ShareBadgeDialogProps) {
+export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], onGenerateNewLinks }: ShareBadgeDialogProps) {
     const { toast } = useToast();
-    const [displayLinks, setDisplayLinks] = useState<ShareLink[]>(initialLinks.length > 0 ? initialLinks : links);
-    const [isLoading, setIsLoading] = useState(false); // Can be used by parent later
+    const [displayLinks, setDisplayLinks] = useState<ShareLink[]>(links);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-      // Prioritize initialLinks (from claim page), then fall back to links from props.
-      const currentLinks = initialLinks.length > 0 ? initialLinks : links;
-      setDisplayLinks(currentLinks);
-    }, [links, initialLinks, open]);
+      setDisplayLinks(links);
+    }, [links, open]);
 
 
     const copyToClipboard = (text: string) => {
@@ -99,7 +96,7 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], initia
            {!isLoading && displayLinks.length === 0 && !onGenerateNewLinks && (
              <div className="flex flex-col justify-center items-center h-full text-center py-4">
                 <p className="text-sm text-muted-foreground mb-4">
-                    You've successfully claimed the badge!
+                    You've successfully claimed the badge! You can close this dialog now.
                 </p>
              </div>
            )}

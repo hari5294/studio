@@ -159,7 +159,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
             open={isShareOpen} 
             onOpenChange={handleShareDialogClose} 
             badge={badge}
-            initialLinks={newShareLinks}
+            links={newShareLinks}
           />
       )}
     </div>
