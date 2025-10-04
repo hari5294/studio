@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useReducer, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getBadgeById, getUserById, User, followBadge, ShareLink } from '@/lib/data';
+import { getBadgeById, getUserById, User, followBadge, ShareLink, getShareLink } from '@/lib/data';
 import { Header } from '@/components/layout/header';
 import { notFound } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -35,6 +35,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   const [isOwner, setIsOwner] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [initialLink, setInitialLink] = useState<ShareLink | undefined>(undefined);
   
   const currentUserId = 'user-1';
 
@@ -45,8 +46,16 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
       setIsOwner(badge.owners.includes(currentUserId));
       setIsFollowing(badge.followers.includes(currentUserId));
 
-      if (searchParams.get('showShare') === 'true') {
+      const showShare = searchParams.get('showShare') === 'true';
+      const linkId = searchParams.get('linkId');
+
+      if (showShare) {
+        if(linkId) {
+            const link = getShareLink(linkId);
+            if(link) setInitialLink(link);
+        }
         setShareOpen(true);
+        // Clean up URL params
         router.replace(`/dashboard/badge/${params.id}`, { scroll: false });
       }
     }
@@ -110,7 +119,10 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                     <Button 
-                        onClick={() => setShareOpen(true)} 
+                        onClick={() => {
+                            setInitialLink(undefined); // Ensure new code is generated
+                            setShareOpen(true)
+                        }} 
                         className={cn({ 'invisible': !isClient || !isOwner })}
                         disabled={!isOwner || badgesLeft <= 0}
                     >
@@ -193,7 +205,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
           </div>
         </div>
       </div>
-      <ShareBadgeDialog open={isShareOpen} onOpenChange={setShareOpen} badge={badge} />
+      <ShareBadgeDialog open={isShareOpen} onOpenChange={setShareOpen} badge={badge} initialLink={initialLink}/>
       <TransferBadgeDialog open={isTransferOpen} onOpenChange={setTransferOpen} badge={badge} onTransfer={forceUpdate} />
     </>
   );

@@ -16,7 +16,7 @@ export type Badge = {
 };
 
 export type ShareLink = {
-    linkId: string;
+    linkId: string; // This is the unique secret code
     badgeId: string;
     ownerId: string; // The user who generated this link
     used: boolean;
@@ -105,7 +105,7 @@ export const getAllUsers = () => users;
 
 // --- Data Mutation Functions ---
 
-export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'followers'>, creatorId: string): {newBadge: Badge, initialLinks: ShareLink[]} => {
+export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'followers'>, creatorId: string): {newBadge: Badge, initialLink: ShareLink | null} => {
   const newId = `badge-${badges.length + 1}`;
   const newBadge: Badge = {
     ...data,
@@ -115,8 +115,8 @@ export const createBadge = (data: Omit<Badge, 'id' | 'ownerId' | 'owners' | 'fol
     followers: [],
   };
   badges.unshift(newBadge);
-  const initialLinks = createShareLinks(newBadge.id, creatorId, 3);
-  return { newBadge, initialLinks };
+  const initialLink = createShareLink(newBadge.id, creatorId);
+  return { newBadge, initialLink };
 };
 
 export const followBadge = (badgeId: string, userId: string) => {
@@ -133,27 +133,27 @@ export const followBadge = (badgeId: string, userId: string) => {
     return badge;
 }
 
-export const claimBadge = (badgeId: string, userId: string, linkId: string): { badge: Badge, newLinks: ShareLink[] } => {
+export const claimBadge = (badgeId: string, userId: string, linkId: string): { badge: Badge, newLink: ShareLink | null } => {
     const badge = getBadgeById(badgeId);
     if (!badge) throw new Error('Badge not found');
     if (badge.owners.length >= badge.tokens) throw new Error('No badges left to claim');
     if (badge.owners.includes(userId)) throw new Error('User already owns this badge');
 
     const link = getShareLink(linkId);
-    if (!link || link.used) throw new Error('This invitation link is invalid or has already been used.');
+    if (!link || link.used) throw new Error('This invitation code is invalid or has already been used.');
 
     // Claim the badge
     badge.owners.push(userId);
     // Mark the link as used
     useShareLink(linkId, userId);
 
-    // Generate new links for the new owner, if tokens are available
-    let newLinks: ShareLink[] = [];
+    // Generate a new link for the new owner, if tokens are available
+    let newLink: ShareLink | null = null;
     if (badge.owners.length < badge.tokens) {
-        newLinks = createShareLinks(badgeId, userId, 3);
+        newLink = createShareLink(badgeId, userId);
     }
     
-    return { badge, newLinks };
+    return { badge, newLink };
 }
 
 export const transferBadgeOwnership = (badgeId: string, newOwnerId: string) => {
@@ -172,27 +172,23 @@ export const transferBadgeOwnership = (badgeId: string, newOwnerId: string) => {
 
 // --- Share Link Simulation ---
 
-export const createShareLinks = (badgeId: string, ownerId: string, count: number): ShareLink[] => {
+export const createShareLink = (badgeId: string, ownerId: string): ShareLink | null => {
     const badge = getBadgeById(badgeId);
     if (!badge) throw new Error("Badge not found");
 
     const availableTokens = badge.tokens - badge.owners.length;
-    const linksToCreate = Math.min(count, availableTokens);
-    if (linksToCreate <= 0) return [];
+    if (availableTokens <= 0) return null;
     
-    const newLinks: ShareLink[] = [];
-    for (let i = 0; i < linksToCreate; i++) {
-        const newLink: ShareLink = {
-            linkId: Math.random().toString(36).substring(2, 10),
-            badgeId: badgeId,
-            ownerId: ownerId,
-            used: false,
-            claimedBy: null,
-        };
-        newLinks.push(newLink);
-    }
-    shareLinks.push(...newLinks);
-    return newLinks;
+    const newLink: ShareLink = {
+        linkId: Math.random().toString(36).substring(2, 10),
+        badgeId: badgeId,
+        ownerId: ownerId,
+        used: false,
+        claimedBy: null,
+    };
+    
+    shareLinks.push(newLink);
+    return newLink;
 }
 
 export const getShareLink = (linkId: string): ShareLink | undefined => {

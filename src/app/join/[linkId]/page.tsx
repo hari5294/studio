@@ -20,20 +20,20 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isShareOpen, setShareOpen] = useState(false);
-  const [newShareLinks, setNewShareLinks] = useState<ShareLink[]>([]);
+  const [newShareLink, setNewShareLink] = useState<ShareLink | null>(null);
   const currentUserId = 'user-1'; // Hardcoded user for now
 
   useEffect(() => {
     const link = getShareLink(params.linkId);
     if (!link || link.used) {
-      setError("This invitation link is invalid or has already been used.");
+      setError("This invitation code is invalid or has already been used.");
       setIsLoading(false);
       return;
     }
 
     const linkedBadge = getBadgeById(link.badgeId);
     if (!linkedBadge) {
-      setError("The badge associated with this link could not be found.");
+      setError("The badge associated with this code could not be found.");
       setIsLoading(false);
       return;
     }
@@ -59,16 +59,16 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
     if (!badge) return;
 
     try {
-        const { newLinks } = claimBadge(badge.id, currentUserId, params.linkId);
+        const { newLink } = claimBadge(badge.id, currentUserId, params.linkId);
         
         toast({
             title: 'Badge Claimed!',
             description: `You are now an owner of the "${badge.name}" badge.`,
         });
 
-        if (newLinks.length > 0) {
-            setNewShareLinks(newLinks);
-            setShareOpen(true); // Open the dialog to show the new links
+        if (newLink) {
+            setNewShareLink(newLink);
+            setShareOpen(true); // Open the dialog to show the new link
         } else {
              // If no new links, just go to the badge page
             router.push(`/dashboard/badge/${badge.id}`);
@@ -159,7 +159,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
             open={isShareOpen} 
             onOpenChange={handleShareDialogClose} 
             badge={badge}
-            initialLinks={newShareLinks}
+            initialLink={newShareLink ?? undefined}
           />
       )}
     </div>
