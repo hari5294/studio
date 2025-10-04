@@ -41,7 +41,7 @@ function NotificationItem({ notification: initialNotification }: { notification:
                 }
             }));
 
-            const newNotificationId = `n${Object.keys(notifications).length + 1}`;
+            const newNotificationId = crypto.randomUUID();
             setNotifications(prev => ({
                 ...prev,
                 [newNotificationId]: {

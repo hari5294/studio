@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAtom } from 'jotai';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge as BadgeIcon, Users, Search as SearchIcon } from 'lucide-react';
 import { BadgeCard } from '@/components/badges/badge-card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,8 +34,9 @@ function SearchResults() {
 
         // Mock search
         setTimeout(() => {
-            const badges = Object.values(allBadges).filter(b => b.name.toLowerCase().includes(queryParam.toLowerCase()));
-            const users = Object.values(allUsers).filter(u => u.name.toLowerCase().includes(queryParam.toLowerCase()));
+            const lowerCaseQuery = queryParam.toLowerCase();
+            const badges = Object.values(allBadges).filter(b => b.name.toLowerCase().includes(lowerCaseQuery));
+            const users = Object.values(allUsers).filter(u => u.name.toLowerCase().includes(lowerCaseQuery));
             setBadgeResults(badges);
             setUserResults(users);
             setLoading(false);
