@@ -23,23 +23,24 @@ function NotificationItem({ notification: initialNotification }: { notification:
     const [notification, setNotification] = useState(initialNotification);
     const [notifications, setNotifications] = useAtom(notificationsAtom);
     const [, setShareLinks] = useAtom(shareLinksAtom);
-    const [currentUser] = useAtom(usersAtom);
+    const [currentUserId] = useAtom(currentUserIdAtom);
     
     const handleSendCode = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        if (notification.badge?.id && notification.fromUser?.id) {
+        if (notification.badge?.id && notification.fromUser?.id && currentUserId) {
             const newLinkId = `link${Date.now()}`;
             setShareLinks(prev => ({
                 ...prev,
                 [newLinkId]: {
                     linkId: newLinkId,
                     badgeId: notification.badgeId,
-                    ownerId: notification.userId,
+                    ownerId: currentUserId,
                     used: false,
                     claimedBy: null
                 }
             }));
+
             const newNotificationId = `n${Object.keys(notifications).length + 1}`;
             setNotifications(prev => ({
                 ...prev,
@@ -109,8 +110,8 @@ function NotificationItem({ notification: initialNotification }: { notification:
             ),
             action: (
                 <Button size="sm" variant="secondary" asChild>
-                    <Link href={`/dashboard/badge/${notification.badge.id}`}>
-                        View Badge <ArrowRight className="ml-2 h-4 w-4" />
+                    <Link href={`/dashboard/redeem`}>
+                        Redeem Badge <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                 </Button>
             )
