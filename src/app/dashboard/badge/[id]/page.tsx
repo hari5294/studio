@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { badgesAtom, usersAtom, notificationsAtom, currentUserIdAtom, Badge, ShareLink } from '@/lib/mock-data';
+import { badgesAtom, usersAtom, notificationsAtom, currentUserIdAtom, Badge, ShareLink, shareLinksAtom } from '@/lib/mock-data';
 
 function BadgeOwners({ badgeId }: { badgeId: string }) {
     const [users] = useAtom(usersAtom);
