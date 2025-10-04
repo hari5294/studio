@@ -29,7 +29,7 @@ function NotificationItem({ notification: initialNotification }: { notification:
         e.preventDefault();
         e.stopPropagation();
         if (notification.badge?.id && notification.fromUser?.id && currentUserId) {
-            const newLinkId = `link${Date.now()}`;
+            const newLinkId = crypto.randomUUID();
             setShareLinks(prev => ({
                 ...prev,
                 [newLinkId]: {

@@ -74,7 +74,7 @@ export default function CreateBadgePage() {
             setShareLinks(prev => {
               const newLinks: Record<string, any> = {};
               for (let i = 0; i < 3; i++) {
-                const newLinkId = `link${Date.now() + i}`;
+                const newLinkId = crypto.randomUUID();
                 newLinks[newLinkId] = {
                   linkId: newLinkId,
                   badgeId: newBadgeId,

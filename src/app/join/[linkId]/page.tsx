@@ -92,7 +92,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
             setShareLinks(prev => {
               const newLinksToAdd: Record<string, ShareLink> = {};
               for (let i = 0; i < 3; i++) {
-                const newLinkId = `link${Date.now() + i}`;
+                const newLinkId = crypto.randomUUID();
                 const newLink: ShareLink = { linkId: newLinkId, badgeId: badge.id, ownerId: currentUserId, used: false, claimedBy: null };
                 newLinksToAdd[newLinkId] = newLink;
                 generatedLinks.push(newLink);
