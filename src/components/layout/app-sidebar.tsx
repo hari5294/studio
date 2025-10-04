@@ -35,7 +35,7 @@ import {
   Inbox
 } from 'lucide-react';
 import { EmojiBadgeLogo } from '@/components/icons';
-import { cn, getFirstEmoji } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
 import { usersAtom, badgesAtom, currentUserIdAtom, notificationsAtom } from '@/lib/mock-data';
 
@@ -63,7 +63,7 @@ function OwnedBadges() {
                     tooltip={badge.name}
                     >
                     <Link href={`/dashboard/badge/${badge.id}`}>
-                        <span className="text-lg">{getFirstEmoji(badge.emojis)}</span>
+                        <span className="text-lg">{badge.emojis}</span>
                         <span>{badge.name}</span>
                     </Link>
                     </SidebarMenuButton>
