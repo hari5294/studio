@@ -14,7 +14,8 @@ import {
   Users,
   Share2,
   ArrowRightLeft,
-  Crown
+  Crown,
+  Send
 } from 'lucide-react';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { TransferBadgeDialog } from '@/components/badges/transfer-badge-dialog';
@@ -88,6 +89,13 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
     });
     forceUpdate();
   }
+
+  const handleRequestCode = () => {
+    toast({
+        title: 'Request Sent!',
+        description: `Your request for a code for "${badge.name}" has been sent to the owners.`,
+    });
+  }
   
   return (
     <>
@@ -150,6 +158,15 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                      className={cn({ 'invisible': !isClient })}
                     >
                       {isFollowing ? 'Unfollow' : 'Follow'}
+                   </Button>
+                   <Button 
+                     variant='outline'
+                     onClick={handleRequestCode}
+                     className={cn({ 'invisible': !isClient || isOwner })}
+                     disabled={isOwner}
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Request a Code
                    </Button>
                 </div>
               </CardContent>
