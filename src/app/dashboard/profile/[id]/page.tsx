@@ -63,9 +63,8 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurre
                         {user.emojiAvatar ? (
                             <span className="flex h-full w-full items-center justify-center text-5xl">{user.emojiAvatar}</span>
                         ) : (
-                            <AvatarImage src={user.avatarUrl} alt={user.name} />
+                            <AvatarFallback className="text-3xl">{user.name?.charAt(0) ?? '?'}</AvatarFallback>
                         )}
-                        <AvatarFallback className="text-3xl">{user.name?.charAt(0) ?? '?'}</AvatarFallback>
                     </Avatar>
                     {isCurrentUserProfile && (
                         <Button 
@@ -159,9 +158,8 @@ function FollowingList({ user }: { user: User }) {
                         {followedUser.emojiAvatar ? (
                             <span className="flex h-full w-full items-center justify-center text-2xl">{followedUser.emojiAvatar}</span>
                         ) : (
-                            <AvatarImage src={followedUser.avatarUrl} alt={followedUser.name} />
+                            <AvatarFallback>{followedUser.name.charAt(0)}</AvatarFallback>
                         )}
-                        <AvatarFallback>{followedUser.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <p className="font-medium">{followedUser.name}</p>
                     </div>

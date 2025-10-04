@@ -95,9 +95,8 @@ function UserMenu() {
                 {currentUser.emojiAvatar ? (
                   <span className="flex h-full w-full items-center justify-center text-xl">{currentUser.emojiAvatar}</span>
                 ) : (
-                  <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
+                  <AvatarFallback>{currentUser.name?.charAt(0) ?? '?'}</AvatarFallback>
                 )}
-                <AvatarFallback>{currentUser.name?.charAt(0) ?? '?'}</AvatarFallback>
               </Avatar>
               <div className="flex-grow truncate group-data-[collapsible=icon]:hidden">
                 <p className="text-sm font-medium">{currentUser.name}</p>

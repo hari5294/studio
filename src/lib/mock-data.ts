@@ -1,11 +1,9 @@
 import { atom } from 'jotai';
-import { placeholderImages } from '@/lib/placeholder-images';
 
 export type User = { 
     id: string; 
     name: string; 
     email: string; 
-    avatarUrl: string; 
     emojiAvatar?: string; 
     following: string[]; 
 };
@@ -41,9 +39,9 @@ export type Notification = {
 
 // Initial Data
 const initialUsers: Record<string, User> = {
-    'user1': { id: 'user1', name: 'John Doe', email: 'john.doe@example.com', avatarUrl: placeholderImages.find(p => p.id === 'user-avatar-1')?.imageUrl!, emojiAvatar: '😀', following: ['user2'] },
-    'user2': { id: 'user2', name: 'Jane Smith', email: 'jane.smith@example.com', avatarUrl: placeholderImages.find(p => p.id === 'user-avatar-2')?.imageUrl!, emojiAvatar: '👩‍💻', following: [] },
-    'user3': { id: 'user3', name: 'Alex Ray', email: 'alex.ray@example.com', avatarUrl: placeholderImages.find(p => p.id === 'user-avatar-3')?.imageUrl!, following: [] },
+    'user1': { id: 'user1', name: 'John Doe', email: 'john.doe@example.com', emojiAvatar: '😀', following: ['user2'] },
+    'user2': { id: 'user2', name: 'Jane Smith', email: 'jane.smith@example.com', emojiAvatar: '👩‍💻', following: [] },
+    'user3': { id: 'user3', name: 'Alex Ray', email: 'alex.ray@example.com', following: [] },
 };
 
 const initialBadges: Record<string, Badge> = {

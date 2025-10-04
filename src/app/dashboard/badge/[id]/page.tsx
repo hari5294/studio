@@ -41,9 +41,8 @@ function BadgeOwners({ badgeId }: { badgeId: string }) {
                             {user.emojiAvatar ? (
                                 <span className="flex h-full w-full items-center justify-center text-2xl">{user.emojiAvatar}</span>
                             ) : (
-                                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                             )}
-                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>
                             <p className="font-medium">{user.name}</p>
@@ -84,9 +83,8 @@ function BadgeFollowers({ badgeId }: { badgeId: string }) {
                     {user.emojiAvatar ? (
                         <span className="flex h-full w-full items-center justify-center text-2xl">{user.emojiAvatar}</span>
                     ) : (
-                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                     )}
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <p className="font-medium">{user.name}</p>
                  </Link>
@@ -202,9 +200,8 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                                     {creator?.emojiAvatar ? (
                                     <span className="flex h-full w-full items-center justify-center text-lg">{creator.emojiAvatar}</span>
                                     ) : (
-                                    <AvatarImage src={creator?.avatarUrl} alt={creator?.name} />
-                                    )}
                                     <AvatarFallback>{creator?.name.charAt(0)}</AvatarFallback>
+                                    )}
                                 </Avatar>
                                 {creator?.name}
                             </Link>

@@ -8,7 +8,6 @@ import { useState, useEffect } from 'react';
 
 type TrendingBadge = Badge & {
     ownerName?: string;
-    ownerAvatar?: string;
     ownerEmoji?: string;
 };
 
@@ -31,9 +30,8 @@ function TrendingBadgeItem({ badge, index }: { badge: TrendingBadge, index: numb
                             {badge.ownerEmoji ? (
                                 <span className="flex h-full w-full items-center justify-center text-sm">{badge.ownerEmoji}</span>
                             ) : (
-                                <AvatarImage src={badge.ownerAvatar} alt={badge.ownerName} />
+                                <AvatarFallback>{badge.ownerName?.charAt(0) ?? '?'}</AvatarFallback>
                             )}
-                            <AvatarFallback>{badge.ownerName?.charAt(0) ?? '?'}</AvatarFallback>
                         </Avatar>
                         <span>{badge.ownerName}</span>
                     </div>
@@ -69,7 +67,6 @@ export function TrendingBadges() {
         return {
             ...badge,
             ownerName: creator?.name,
-            ownerAvatar: creator?.avatarUrl,
             ownerEmoji: creator?.emojiAvatar,
         }
     });

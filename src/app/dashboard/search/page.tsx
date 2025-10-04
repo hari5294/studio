@@ -89,9 +89,8 @@ function SearchResults() {
                            {user.emojiAvatar ? (
                                 <span className="flex h-full w-full items-center justify-center text-3xl">{user.emojiAvatar}</span>
                            ) : (
-                                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                            )}
-                          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>
                             <p className="font-semibold">{user.name}</p>
