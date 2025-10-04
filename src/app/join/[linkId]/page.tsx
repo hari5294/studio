@@ -78,7 +78,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
                 [badge.id]: {
                     ...prev[badge.id],
                     owners: [...prev[badge.id].owners, currentUserId],
-                    followers: [...prev[badge.id].followers, currentUserId]
+                    followers: [...new Set([...prev[badge.id].followers, currentUserId])]
                 }
             }));
 
@@ -87,11 +87,20 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
                 description: `You are now an owner of the "${badge.name}" badge.`,
             });
             
-            const newLinkId = `link${Date.now()}`;
-            const newLink: ShareLink = { linkId: newLinkId, badgeId: badge.id, ownerId: currentUserId, used: false, claimedBy: null };
-            
-            setShareLinks(prev => ({ ...prev, [newLinkId]: newLink }));
-            setNewShareLinks([newLink]);
+            // Create 3 new share links for the new owner
+            const generatedLinks: ShareLink[] = [];
+            setShareLinks(prev => {
+              const newLinksToAdd: Record<string, ShareLink> = {};
+              for (let i = 0; i < 3; i++) {
+                const newLinkId = `link${Date.now() + i}`;
+                const newLink: ShareLink = { linkId: newLinkId, badgeId: badge.id, ownerId: currentUserId, used: false, claimedBy: null };
+                newLinksToAdd[newLinkId] = newLink;
+                generatedLinks.push(newLink);
+              }
+              return { ...prev, ...newLinksToAdd };
+            });
+
+            setNewShareLinks(generatedLinks);
             setShareOpen(true);
             
         } catch(err: any) {

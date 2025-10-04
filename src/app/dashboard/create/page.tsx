@@ -70,18 +70,21 @@ export default function CreateBadgePage() {
                 }
             }));
             
-            // Create a share link for the creator
-            const newLinkId = `link${Date.now()}`;
-            setShareLinks(prev => ({
-              ...prev,
-              [newLinkId]: {
-                linkId: newLinkId,
-                badgeId: newBadgeId,
-                ownerId: currentUserId,
-                used: false,
-                claimedBy: null,
-              },
-            }));
+            // Create 3 share links for the creator
+            setShareLinks(prev => {
+              const newLinks: Record<string, any> = {};
+              for (let i = 0; i < 3; i++) {
+                const newLinkId = `link${Date.now() + i}`;
+                newLinks[newLinkId] = {
+                  linkId: newLinkId,
+                  badgeId: newBadgeId,
+                  ownerId: currentUserId,
+                  used: false,
+                  claimedBy: null,
+                };
+              }
+              return { ...prev, ...newLinks };
+            });
 
             toast({
                 title: 'Badge Created!',
