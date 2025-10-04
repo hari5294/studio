@@ -14,9 +14,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import {
@@ -31,23 +28,27 @@ import {
   Home,
   PlusCircle,
   Settings,
-  Star,
-  TrendingUp,
   User,
   MoreHorizontal,
   LogOut,
-  Badge,
 } from 'lucide-react';
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn, getFirstEmoji } from '@/lib/utils';
 import { getBadgesByOwner } from '@/lib/data';
 import { useSidebar } from '@/components/ui/sidebar';
+import React, { useEffect, useState } from 'react';
+import type { Badge } from '@/lib/data';
 
-const myBadges = getBadgesByOwner('user-1');
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
+  const [myBadges, setMyBadges] = useState<Badge[]>([]);
+
+  useEffect(() => {
+    // This effect will re-run on navigation, ensuring the badge list is fresh.
+    setMyBadges(getBadgesByOwner('user-1'));
+  }, [pathname]);
 
   const isActive = (path: string) => pathname === path;
 

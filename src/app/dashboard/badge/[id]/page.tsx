@@ -20,6 +20,7 @@ import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { TransferBadgeDialog } from '@/components/badges/transfer-badge-dialog';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useIsClient } from '@/hooks/use-is-client';
 
 function BadgeDetailContent({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -34,7 +35,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   const [isCreator, setIsCreator] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const isClient = useIsClient();
   const [shareLinks, setShareLinks] = useState<ShareLink[]>([]);
   
   const currentUserId = 'user-1';
@@ -59,8 +60,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   };
 
   useEffect(() => {
-    setIsClient(true);
-    if (badge) {
+    if (badge && isClient) {
       setIsCreator(badge.ownerId === currentUserId);
       setIsOwner(badge.owners.includes(currentUserId));
       setIsFollowing(badge.followers.includes(currentUserId));
@@ -74,7 +74,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
         router.replace(`/dashboard/badge/${params.id}`, { scroll: false });
       }
     }
-  }, [badge, searchParams, params.id, router]);
+  }, [badge, searchParams, params.id, router, isClient]);
 
   useEffect(() => {
     if (isShareOpen) {
