@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAtom } from 'jotai';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   Sidebar,
@@ -27,7 +27,6 @@ import {
 import {
   Home,
   PlusCircle,
-  Settings,
   User,
   MoreHorizontal,
   Search,
@@ -113,10 +112,6 @@ function UserMenu() {
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
