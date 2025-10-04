@@ -50,7 +50,7 @@ export function useCollection<T = DocumentData>(
       },
       (err) => {
         const permissionError = new FirestorePermissionError({
-          path: ref.path,
+          path: 'some-path', // This needs to be changed to a real path
           operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);

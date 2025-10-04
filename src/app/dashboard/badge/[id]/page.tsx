@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useReducer, Suspense } from 'react';
+import { useState, useReducer, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { followBadge, requestBadgeCode, createShareLinks, getShareLinksForUser, type User, type ShareLink, type Badge } from '@/lib/firestore-data';
 import { Header } from '@/components/layout/header';
@@ -142,15 +142,15 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
     setShareLinksLoading(false);
   };
   
-  useState(() => {
+  useEffect(() => {
     const showShare = searchParams.get('showShare') === 'true';
     if (showShare) {
         setShareOpen(true);
         router.replace(`/dashboard/badge/${params.id}`, { scroll: false });
     }
-  });
+  }, []);
 
-  useState(() => {
+  useEffect(() => {
     if (isShareOpen) fetchShareLinks();
   }, [isShareOpen]);
   
@@ -264,8 +264,8 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                    <Button 
                      variant='outline'
                      onClick={handleRequestCode}
-                     className={cn({ 'invisible': !currentUser || isOwner })}
-                     disabled={isOwner}
+                     className={cn({ 'invisible': !currentUser || !!isOwner })}
+                     disabled={!!isOwner}
                     >
                       <Send className="mr-2 h-4 w-4" />
                       Request Code

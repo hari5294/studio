@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -47,6 +48,20 @@ function useSidebar() {
   return context
 }
 
+const getSidebarStateFromCookie = () => {
+    if (typeof document === 'undefined') return true;
+    const cookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`));
+    if (!cookie) return true;
+    const value = cookie.split('=')[1];
+    try {
+        return JSON.parse(value);
+    } catch (e) {
+        return true;
+    }
+}
+
 const SidebarProvider = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
@@ -57,7 +72,7 @@ const SidebarProvider = React.forwardRef<
 >(
   (
     {
-      defaultOpen = true,
+      defaultOpen,
       open: openProp,
       onOpenChange: setOpenProp,
       className,
@@ -70,10 +85,16 @@ const SidebarProvider = React.forwardRef<
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
 
-    // This is the internal state of the sidebar.
-    // We use openProp and setOpenProp for control from outside the component.
-    const [_open, _setOpen] = React.useState(defaultOpen)
+    // Set initial state from cookie or prop
+    const [initialOpen] = React.useState(() => {
+        if (openProp !== undefined) return openProp;
+        if (defaultOpen !== undefined) return defaultOpen;
+        return getSidebarStateFromCookie();
+    });
+
+    const [_open, _setOpen] = React.useState(initialOpen)
     const open = openProp ?? _open
+    
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
         const openState = typeof value === "function" ? value(open) : value
@@ -84,7 +105,7 @@ const SidebarProvider = React.forwardRef<
         }
 
         // This sets the cookie to keep the sidebar state.
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        document.cookie = `${SIDEBAR_COOKIE_NAME}=${JSON.stringify(openState)}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
       },
       [setOpenProp, open]
     )
@@ -761,3 +782,5 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
+    

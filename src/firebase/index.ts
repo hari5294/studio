@@ -46,14 +46,12 @@ export function getFirebase(): FirebaseInstances {
     const host = process.env.NEXT_PUBLIC_EMULATOR_HOST;
     // It's important to check if the emulators are already connected
     // to avoid re-connecting, which would throw an error.
-    // @ts-expect-error private property
-    if (!auth.emulatorConfig) {
+    if (!(auth as any).emulatorConfig) {
       connectAuthEmulator(auth, `http://${host}:9099`, {
         disableWarnings: true,
       });
     }
-    // @ts-expect-error private property
-    if (!firestore.emulatorConfig) {
+    if (!(firestore as any).emulatorConfig) {
       connectFirestoreEmulator(firestore, host, 8080);
     }
   }
