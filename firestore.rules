@@ -1,73 +1,44 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    function isBadgeCreator(badgeId) {
-        return get(/databases/$(database)/documents/badges/$(badgeId)).data.creatorId == request.auth.uid;
-    }
-
-    // USERS
-    // Users can read anyone's profile.
-    // A user can create their own profile and update their own profile.
+    // Users can read any profile, but only write to their own.
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if false; // Don't allow users to delete their profiles.
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update: if request.auth.uid == userId;
     }
 
-    // BADGES
-    // Anyone can read badges.
-    // Only authenticated users can create badges.
-    // Only the creator can update a badge.
+    // Badges can be read by anyone. Only the creator can update them.
     match /badges/{badgeId} {
       allow read: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && isBadgeCreator(badgeId);
-      allow delete: if false;
-
-      // OWNERS
-      // Anyone can see who owns a badge.
-      // A user can claim a badge (create an owner document for themselves).
-      match /owners/{userId} {
-        allow read: if true;
-        allow write: if isSignedIn() && isOwner(userId);
-      }
-
-      // FOLLOWERS
-      // Anyone can see who follows a badge.
-      // An authenticated user can follow/unfollow a badge.
-      match /followers/{userId} {
-        allow read: if true;
-        allow write: if isSignedIn() && isOwner(userId);
-      }
+      allow create: if request.auth != null;
+      allow update: if request.auth.uid == resource.data.creatorId;
+    }
+    
+    // Badge owners can be read by anyone. Only the user can claim ownership for themselves.
+    match /badges/{badgeId}/owners/{userId} {
+      allow read: if true;
+      allow create: if request.auth.uid == userId;
+      allow delete: if request.auth.uid == userId;
     }
 
-    // SHARE LINKS
-    // Share links can be read to verify them.
-    // Users can create share links for badges they own.
-    // Share links can be updated (to be marked as 'used').
+    // Badge followers can be read by anyone. Only the user can add/remove themselves as a follower.
+    match /badges/{badgeId}/followers/{userId} {
+        allow read: if true;
+        allow write: if request.auth.uid == userId;
+    }
+
+    // Share links can be read if you know the ID. Only the owner can create them.
+    // Anyone can update them (to mark as used).
     match /shareLinks/{linkId} {
-        allow read: if true;
-        allow create: if isSignedIn();
-        allow update: if isSignedIn();
-        allow delete: if false;
+        allow read, update: if request.auth != null;
+        allow create: if request.auth.uid == request.resource.data.ownerId;
     }
-
-    // NOTIFICATIONS
-    // Users can only read, write, and delete their own notifications.
+    
+    // Users can only read and write their own notifications.
     match /users/{userId}/notifications/{notificationId} {
-        allow read, write, delete: if isSignedIn() && isOwner(userId);
+        allow read, write, delete: if request.auth.uid == userId;
     }
   }
 }
