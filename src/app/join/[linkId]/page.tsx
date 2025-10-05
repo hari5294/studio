@@ -6,73 +6,71 @@ import { EmojiBadgeLogo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, User } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
+import { useMockData } from '@/hooks/use-mock-data';
+import type { ShareLink, Badge } from '@/lib/mock-data';
 
-// Placeholder Data
-const shareLinks = [
-    { id: 'sl1', badgeId: 'b1', ownerId: 'u3', used: false, claimedBy: null },
-    { id: 'sl2', badgeId: 'b2', ownerId: 'u2', used: true, claimedBy: 'u1' },
-];
-const badges = [
-    { id: 'b1', name: 'Galactic Pioneer', emojis: '🌌🚀✨', owners: ['u3', 'u2'] },
-    { id: 'b2', name: 'Pixel Perfect', emojis: '🎨🖼️🖌️', owners: ['u2'] },
-];
-
-export default function JoinPage({ params }: { params: { linkId: string } }) {
+export default function JoinPage() {
   const router = useRouter();
+  const params = useParams();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const { shareLinks, badges, redeemShareLink } = useMockData();
   
-  const linkId = params.linkId;
-  const [shareLink, setShareLink] = useState<any>(undefined);
+  const linkId = params.linkId as string;
+  const [link, setLink] = useState<ShareLink | undefined>(undefined);
+  const [badge, setBadge] = useState<Badge | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClaiming, setIsClaiming] = useState(false);
   const [isShareOpen, setShareOpen] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
-  
-  const badge = badges.find(b => b.id === shareLink?.badgeId);
 
   useEffect(() => {
-    const link = shareLinks.find(l => l.id === linkId);
-    setShareLink(link);
+    setIsLoading(true);
+    const foundLink = shareLinks.find(l => l.id === linkId);
+    setLink(foundLink);
 
-    if (!link || link.used) {
+    if (!foundLink) {
         setError("This invitation code is invalid or has already been used.");
         setIsLoading(false);
         return;
     }
-    
-    const linkedBadge = badges.find(b => b.id === link.badgeId);
-    if (!linkedBadge) {
-        setError("The badge associated with this code could not be found.");
+
+    if (foundLink.used) {
+        const claimedByUser = currentUser?.id === foundLink.claimedBy;
+        const message = claimedByUser 
+            ? "You have already claimed this badge."
+            : "This invitation code has already been used by someone else.";
+        setError(message);
         setIsLoading(false);
         return;
     }
+    
+    const foundBadge = badges.find(b => b.id === foundLink.badgeId);
+    setBadge(foundBadge);
 
-    if (currentUser && linkedBadge.owners.includes(currentUser.id)) {
-        setError(`You already own the "${linkedBadge.name}" badge.`);
-        setIsLoading(false);
-        return;
+    if (!foundBadge) {
+        setError("The badge associated with this code could not be found.");
     }
     
     setIsLoading(false);
 
-  }, [linkId, currentUser]);
+  }, [linkId, shareLinks, badges, currentUser]);
 
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!badge || !currentUser) return;
+    if (!link || !badge || !currentUser) return;
 
     setIsClaiming(true);
     try {
-        // redeemShareLink(linkId, currentUser.id);
+        redeemShareLink(link.id, currentUser.id);
         toast({
             title: 'Badge Claimed!',
             description: `You are now an owner of the "${badge.name}" badge.`,
@@ -82,7 +80,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
 
         setTimeout(() => {
             setShareOpen(true);
-        }, 1500)
+        }, 1500);
             
     } catch(err: any) {
          toast({
@@ -91,7 +89,6 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
             variant: 'destructive',
         });
         setError(err.message);
-    } finally {
         setIsClaiming(false);
     }
   };
@@ -194,5 +191,3 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
     </div>
   );
 }
-
-    

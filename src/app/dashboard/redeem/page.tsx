@@ -12,17 +12,19 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { Gift } from 'lucide-react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
+import { useMockData } from '@/hooks/use-mock-data';
 
 export default function RedeemCodePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { redeemShareLink } = useMockData();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
 
   const handleRedeemComplete = (badgeId: string) => {
-    router.push(`/dashboard/badge/${badgeId}?showShare=true`);
+    router.push(`/dashboard/badge/${badgeId}`);
   }
   
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -39,30 +41,26 @@ export default function RedeemCodePage() {
 
     setIsLoading(true);
 
-    // Simulate async operation
-    setTimeout(() => {
-        try {
-            // const { badge } = redeemShareLink(code, user.id);
-            const badge = { name: "Redeemed Badge", emojis: "🎉🙌🎊", id: `redeemed-${Date.now()}` };
-            toast({
-                title: 'Badge Claimed!',
-                description: `You are now an owner of the "${badge.name}" badge.`,
-            });
-            
-            setBurstEmojis(badge.emojis);
+    try {
+        const { badge } = redeemShareLink(code.trim(), user.id);
+        toast({
+            title: 'Badge Claimed!',
+            description: `You are now an owner of the "${badge.name}" badge.`,
+        });
+        
+        setBurstEmojis(badge.emojis);
 
-            setTimeout(() => handleRedeemComplete(badge.id), 2000);
+        setTimeout(() => handleRedeemComplete(badge.id), 2000);
 
-        } catch (error: any) {
-            toast({
-                title: 'Redemption Failed',
-                description: "The code is invalid or has already been used.",
-                variant: 'destructive',
-            });
-            setIsLoading(false);
-            setCode('');
-        }
-    }, 1000);
+    } catch (error: any) {
+        toast({
+            title: 'Redemption Failed',
+            description: error.message || "The code is invalid or has already been used.",
+            variant: 'destructive',
+        });
+        setIsLoading(false);
+        setCode('');
+    }
   };
 
   return (
@@ -105,5 +103,3 @@ export default function RedeemCodePage() {
     </>
   );
 }
-
-    

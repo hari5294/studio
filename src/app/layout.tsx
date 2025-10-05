@@ -4,7 +4,7 @@ import { Poppins, PT_Sans } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
-import { AppStateProvider } from '@/components/providers/state-provider';
+import { MockDataProvider } from '@/lib/mock-data';
 
 const fontPoppins = Poppins({
   subsets: ['latin'],
@@ -37,13 +37,11 @@ export default function RootLayout({
           fontPtSans.variable
         )}
       >
-        <AppStateProvider>
+        <MockDataProvider>
           {children}
-        </AppStateProvider>
+        </MockDataProvider>
         <Toaster />
       </body>
     </html>
   );
 }
-
-    

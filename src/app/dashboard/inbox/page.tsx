@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,38 +10,20 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Mail, Gift, Inbox as InboxIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { useAuth, User } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useMockData } from '@/hooks/use-mock-data';
+import type { Notification } from '@/lib/mock-data';
+import type { User } from '@/hooks/use-auth';
 
-// Placeholder Data
-type Badge = { id: string; name: string; };
-type Notification = { id: string; type: 'BADGE_REQUEST' | 'BADGE_RECEIVED' | 'OWNERSHIP_TRANSFER'; fromUserId: string; badgeId: string; createdAt: number; read: boolean; shareLinkId?: string; };
-type EnrichedNotification = Notification & { fromUser: User; badge: Badge };
+type EnrichedNotification = Notification & { fromUser: User; badge: {id: string, name: string} };
 
-const allUsers: User[] = [
-    { id: 'u1', name: 'Alice', email: 'alice@example.com', emojiAvatar: '👩‍💻', following: ['u2'] },
-    { id: 'u2', name: 'Bob', email: 'bob@example.com', emojiAvatar: '👨‍🎨', following: ['u1', 'u3'] },
-];
-const allBadges: Badge[] = [
-    { id: 'b1', name: 'Galactic Pioneer'},
-    { id: 'b2', name: 'Pixel Perfect' },
-];
-const notifications: Notification[] = [
-    { id: 'n1', type: 'BADGE_REQUEST', fromUserId: 'u1', badgeId: 'b2', createdAt: Date.now() - 1 * 3600000, read: false },
-    { id: 'n2', type: 'BADGE_RECEIVED', fromUserId: 'u2', badgeId: 'b1', createdAt: Date.now() - 2 * 3600000, read: true, shareLinkId: 'sl1' },
-    { id: 'n3', type: 'OWNERSHIP_TRANSFER', fromUserId: 'u2', badgeId: 'b1', createdAt: Date.now() - 4 * 3600000, read: true },
-];
-
-
-function NotificationItem({ notification, onSendCode }: { notification: EnrichedNotification, onSendCode: (badgeId: string, fromUserId: string, fromUserName: string) => void }) {
-
+function NotificationItem({ notification, onSendCode }: { notification: EnrichedNotification, onSendCode: (badgeId: string, toUserId: string, toUserName: string) => void }) {
     const handleSendCode = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        if (notification.badge?.id && notification.fromUser?.id) {
-            onSendCode(notification.badge.id, notification.fromUser.id, notification.fromUser.name);
-        }
+        onSendCode(notification.badge.id, notification.fromUser.id, notification.fromUser.name);
     }
 
     const itemContent = {
@@ -114,44 +96,34 @@ function NotificationItem({ notification, onSendCode }: { notification: Enriched
     )
 }
 
-function NotificationList({ notifications, onSendCode }: { notifications: EnrichedNotification[], onSendCode: (badgeId: string, fromUserId: string, fromUserName: string) => void }) {
-    if (notifications.length === 0) {
-         return <p className="text-center text-muted-foreground py-8">No notifications here.</p>
-    }
-
-    return (
-        <div className="space-y-2">
-            {notifications.map(n => <NotificationItem key={n.id} notification={n} onSendCode={onSendCode} />)}
-        </div>
-    )
-}
-
 export default function InboxPage() {
   const { user, loading } = useAuth();
   const { toast } = useToast();
-  const [key, setKey] = useState(Date.now()); // to force re-render
+  const { getNotificationsForUser, sendBadge, badges, markNotificationAsRead } = useMockData();
 
-  const enrichNotifications = (notifs: Notification[]) => {
-    return notifs
-        .map(n => {
-            const fromUser = allUsers.find(u => u.id === n.fromUserId);
-            const badge = allBadges.find(b => b.id === n.badgeId);
-            return fromUser && badge ? { ...n, fromUser, badge } : null;
-        })
-        .filter((n): n is EnrichedNotification => n !== null)
-        .sort((a, b) => b.createdAt - a.createdAt);
-  }
+  const notifications = user ? getNotificationsForUser(user.id) : [];
 
-  const handleSendCode = (badgeId: string, fromUserId: string, fromUserName: string) => {
+  useEffect(() => {
+    if (user) {
+        notifications.forEach(n => {
+            if (!n.read) {
+                markNotificationAsRead(n.id);
+            }
+        });
+    }
+  }, [user, notifications, markNotificationAsRead]);
+
+  const handleSendCode = (badgeId: string, toUserId: string, toUserName: string) => {
     if (!user) return;
-    const badge = allBadges.find(b => b.id === badgeId);
+    const badge = badges.find(b => b.id === badgeId);
     if (!badge) return;
+
+    sendBadge(user.id, toUserId, badgeId);
 
     toast({
         title: 'Code Sent!',
-        description: `A share code for "${badge.name}" has been sent to ${fromUserName}.`
+        description: `A share code for "${badge.name}" has been sent to ${toUserName}.`
     });
-    setKey(Date.now()); // Re-render to update lists
   }
   
   if (loading) {
@@ -164,15 +136,15 @@ export default function InboxPage() {
       )
   }
 
-  const requests = enrichNotifications(notifications.filter(n => n.type === 'BADGE_REQUEST'));
-  const received = enrichNotifications(notifications.filter(n => n.type === 'BADGE_RECEIVED' || n.type === 'OWNERSHIP_TRANSFER'));
+  const requests = notifications.filter((n): n is EnrichedNotification => n.type === 'BADGE_REQUEST');
+  const received = notifications.filter((n): n is EnrichedNotification => n.type === 'BADGE_RECEIVED' || n.type === 'OWNERSHIP_TRANSFER');
 
   return (
     <>
       <Header title="Inbox" />
       <div className="flex-1 p-4 md:p-6">
         {notifications.length > 0 ? (
-            <Tabs defaultValue="requests" className="w-full max-w-4xl mx-auto" key={key}>
+            <Tabs defaultValue="requests" className="w-full max-w-4xl mx-auto">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="requests">
                         Badge Requests ({requests.length})
@@ -187,7 +159,11 @@ export default function InboxPage() {
                             <CardTitle className="font-headline">Badge Requests</CardTitle>
                         </CardHeader>
                         <CardContent>
-                           {requests.length > 0 ? <NotificationList notifications={requests} onSendCode={handleSendCode}/> : <p className="text-center text-muted-foreground py-8">No badge requests yet.</p>}
+                           {requests.length > 0 ? (
+                                <div className="space-y-2">
+                                    {requests.map(n => <NotificationItem key={n.id} notification={n} onSendCode={handleSendCode} />)}
+                                </div>
+                           ) : <p className="text-center text-muted-foreground py-8">No badge requests yet.</p>}
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -197,7 +173,11 @@ export default function InboxPage() {
                             <CardTitle className="font-headline">Received</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {received.length > 0 ? <NotificationList notifications={received} onSendCode={handleSendCode} /> : <p className="text-center text-muted-foreground py-8">You haven't received any new badges.</p>}
+                            {received.length > 0 ? (
+                                <div className="space-y-2">
+                                    {received.map(n => <NotificationItem key={n.id} notification={n} onSendCode={handleSendCode} />)}
+                                </div>
+                            ) : <p className="text-center text-muted-foreground py-8">You haven't received any new badges.</p>}
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -215,5 +195,3 @@ export default function InboxPage() {
     </>
   );
 }
-
-    

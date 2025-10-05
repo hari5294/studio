@@ -7,17 +7,24 @@ import { TrendingBadges } from '@/components/badges/trending-badges';
 import { useAuth } from '@/hooks/use-auth';
 import { Badge as BadgeIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Placeholder Data
-const myBadges = [
-  { id: 'b1', name: 'Galactic Pioneer', emojis: '🌌🚀✨', tokens: 50, owners: {length: 2}, followers: {length: 3}},
-  { id: 'b3', name: 'Code Ninja', emojis: '💻🥋🥷', tokens: 1000, owners: {length: 1}, followers: {length: 2}},
-];
+import { useMockData } from '@/hooks/use-mock-data';
+import { useMemo } from 'react';
 
 function MyBadges() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { badges, badgeOwners, getBadgeWithDetails } = useMockData();
 
-  if (loading) {
+  const myBadges = useMemo(() => {
+    if (!user) return [];
+    const myBadgeIds = badgeOwners.filter(bo => bo.userId === user.id).map(bo => bo.badgeId);
+    return badges
+      .filter(b => myBadgeIds.includes(b.id))
+      .map(b => getBadgeWithDetails(b.id))
+      .filter(Boolean);
+  }, [user, badges, badgeOwners, getBadgeWithDetails]);
+
+
+  if (authLoading) {
     return (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
@@ -30,7 +37,7 @@ function MyBadges() {
       {myBadges.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {myBadges.map((badge) => (
-            <BadgeCard key={badge.id} badge={badge as any} />
+            <BadgeCard key={badge.id} badge={badge} />
           ))}
         </div>
       ) : (
@@ -60,5 +67,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    

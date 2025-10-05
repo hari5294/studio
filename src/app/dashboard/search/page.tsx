@@ -10,39 +10,33 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge as BadgeIcon, Users, Search as SearchIcon } from 'lucide-react';
 import { BadgeCard } from '@/components/badges/badge-card';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Placeholder Data
-const allBadges = [
-    { id: 'b1', name: 'Galactic Pioneer', emojis: '🌌🚀✨', tokens: 50, owners: {length: 2}, followers: {length: 3}},
-    { id: 'b2', name: 'Pixel Perfect', emojis: '🎨🖼️🖌️', tokens: 250, owners: {length: 1}, followers: {length: 2}},
-    { id: 'b3', name: 'Code Ninja', emojis: '💻🥋🥷', tokens: 1000, owners: {length: 1}, followers: {length: 2}},
-    { id: 'b4', name: 'Super Squad', emojis: '🦸‍♀️🦸‍♂️💥', tokens: 100, owners: {length: 1}, followers: {length: 1}},
-];
-const allUsers = [
-    { id: 'u1', name: 'Alice', email: 'alice@example.com', emojiAvatar: '👩‍💻' },
-    { id: 'u2', name: 'Bob', email: 'bob@example.com', emojiAvatar: '👨‍🎨' },
-    { id: 'u3', name: 'Charlie', email: 'charlie@example.com', emojiAvatar: '👨‍🚀' },
-    { id: 'u4', name: 'Diana', email: 'diana@example.com', emojiAvatar: '🦸‍♀️' },
-];
-
+import { useMockData } from '@/hooks/use-mock-data';
+import type { Badge, User } from '@/lib/mock-data';
 
 function SearchResults() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
-  const loading = false;
-  const [badgeResults, setBadgeResults] = useState(allBadges as any[]);
-  const [userResults, setUserResults] = useState(allUsers as any[]);
+  const { users, getBadgeWithDetails, badges } = useMockData();
+  const [badgeResults, setBadgeResults] = useState<Badge[]>([]);
+  const [userResults, setUserResults] = useState<User[]>([]);
 
   useEffect(() => {
     if (query) {
       const lowerCaseQuery = query.toLowerCase();
-      setBadgeResults(allBadges.filter(b => b.name.toLowerCase().includes(lowerCaseQuery)));
-      setUserResults(allUsers.filter(u => u.name.toLowerCase().includes(lowerCaseQuery)));
+      const filteredBadges = badges
+        .filter(b => b.name.toLowerCase().includes(lowerCaseQuery))
+        .map(b => getBadgeWithDetails(b.id))
+        .filter(Boolean);
+
+      const filteredUsers = users.filter(u => u.name.toLowerCase().includes(lowerCaseQuery));
+
+      setBadgeResults(filteredBadges);
+      setUserResults(filteredUsers as User[]);
     } else {
       setBadgeResults([]);
       setUserResults([]);
     }
-  }, [query]);
+  }, [query, users, badges, getBadgeWithDetails]);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">
@@ -63,7 +57,7 @@ function SearchResults() {
               <BadgeIcon className="h-6 w-6" />
               Badges ({badgeResults.length})
             </h2>
-            {loading ? <Skeleton className="h-48 w-full" /> : badgeResults.length > 0 ? (
+            {badgeResults.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {badgeResults.map((badge) => <BadgeCard key={badge.id} badge={badge} />)}
               </div>
@@ -79,7 +73,7 @@ function SearchResults() {
               <Users className="h-6 w-6" />
               Users ({userResults.length})
             </h2>
-            {loading ? <Skeleton className="h-24 w-full" /> : userResults.length > 0 ? (
+            {userResults.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {userResults.map((user) => (
                   <Link href={`/dashboard/profile/${user.id}`} key={user.id}>
@@ -126,5 +120,3 @@ export default function SearchPage() {
     </>
   );
 }
-
-    

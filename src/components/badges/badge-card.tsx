@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import {
   Card,
@@ -9,9 +10,11 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Users } from 'lucide-react';
+import type { Badge } from '@/lib/mock-data';
+import type { User } from '@/hooks/use-auth';
 
 type BadgeCardProps = {
-  badge: any;
+  badge: Badge & { owners: User[], followers: User[] };
 };
 
 export function BadgeCard({ badge }: BadgeCardProps) {

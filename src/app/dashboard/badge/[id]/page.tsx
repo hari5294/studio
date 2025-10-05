@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams, notFound, useParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -15,41 +15,23 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth, User } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { useMockData } from '@/hooks/use-mock-data';
+import type { Badge as BadgeType } from '@/lib/mock-data';
 
-// Placeholder Data
-const allBadges = [
-    { id: 'b1', name: 'Galactic Pioneer', emojis: '🌌🚀✨', tokens: 50, creatorId: 'u3', owners: ['u3', 'u2'], followers: ['u3', 'u2', 'u1'] },
-    { id: 'b2', name: 'Pixel Perfect', emojis: '🎨🖼️🖌️', tokens: 250, creatorId: 'u2', owners: ['u2'], followers: ['u2', 'u1'] },
-    { id: 'b3', name: 'Code Ninja', emojis: '💻🥋🥷', tokens: 1000, creatorId: 'u1', owners: ['u1'], followers: ['u1', 'u2'] },
-    { id: 'b4', name: 'Super Squad', emojis: '🦸‍♀️🦸‍♂️💥', tokens: 100, creatorId: 'u4', owners: ['u4'], followers: ['u4'] },
-];
-const allUsers = [
-    { id: 'u1', name: 'Alice', email: 'alice@example.com', emojiAvatar: '👩‍💻', following: ['u2'] },
-    { id: 'u2', name: 'Bob', email: 'bob@example.com', emojiAvatar: '👨‍🎨', following: ['u1', 'u3'] },
-    { id: 'u3', name: 'Charlie', email: 'charlie@example.com', emojiAvatar: '👨‍🚀', following: ['u2'] },
-    { id: 'u4', name: 'Diana', email: 'diana@example.com', emojiAvatar: '🦸‍♀️', following: [] },
-];
-type Badge = typeof allBadges[0];
+type EnrichedBadge = BadgeType & { owners: User[], followers: User[], creator: User };
 
-
-function BadgeOwners({ badge }: { badge: Badge }) {
-    const loading = false;
-
-    if (loading) return <Skeleton className="h-32 w-full" />;
-
-    const owners = allUsers.filter(u => badge.owners.includes(u.id));
-
+function BadgeOwners({ badge }: { badge: EnrichedBadge }) {
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
                     <Crown className="h-6 w-6" />
-                    Owners ({owners.length})
+                    Owners ({badge.owners.length})
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                {owners.length > 0 ? owners.map((owner) => (
+                {badge.owners.length > 0 ? badge.owners.map((owner) => (
                     <Link href={`/dashboard/profile/${owner.id}`} key={owner.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
                         <Avatar>
                             {owner.emojiAvatar ? (
@@ -72,24 +54,18 @@ function BadgeOwners({ badge }: { badge: Badge }) {
     )
 }
 
-function BadgeFollowers({ badge }: { badge: Badge }) {
-    const loading = false;
-    
-    if (loading) return <Skeleton className="h-48 w-full" />;
-
-    const followers = allUsers.filter(u => badge.followers.includes(u.id));
-
+function BadgeFollowers({ badge }: { badge: EnrichedBadge }) {
     return (
         <Card>
             <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
                 <Users className="h-6 w-6" />
-                Followers ({followers.length})
+                Followers ({badge.followers.length})
             </CardTitle>
             </CardHeader>
             <CardContent>
             <div className="space-y-4">
-                {followers.length > 0 ? followers.map((follower) => (
+                {badge.followers.length > 0 ? badge.followers.map((follower) => (
                     <Link href={`/dashboard/profile/${follower.id}`} key={follower.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
                          <Avatar>
                             {follower.emojiAvatar ? (
@@ -115,16 +91,15 @@ function BadgeDetailContent() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { user: currentUser, loading: authLoading } = useAuth();
+  const { getBadgeWithDetails, toggleFollowBadge, requestBadge, transferBadgeOwnership, users } = useMockData();
 
   const id = params.id as string;
-  const badge = allBadges.find(b => b.id === id);
-  const creator = allUsers.find(u => u.id === badge?.creatorId);
-  
+  const badge = getBadgeWithDetails(id) as EnrichedBadge | null;
+
   const [isShareOpen, setShareOpen] = useState(searchParams.get('showShare') === 'true');
   const [isTransferOpen, setTransferOpen] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(currentUser && badge ? badge.followers.includes(currentUser.id) : false);
 
-  if (authLoading) {
+  if (authLoading || !badge) {
       return (
            <div className="flex-1 space-y-6 p-4 md:p-6">
                 <Skeleton className="h-10 w-32" />
@@ -145,14 +120,15 @@ function BadgeDetailContent() {
     notFound();
   }
   
+  const { creator } = badge;
   const isCreator = currentUser && badge.creatorId === currentUser.id;
-  const isOwner = currentUser && badge.owners.includes(currentUser.id);
-  
+  const isOwner = currentUser && badge.owners.some(o => o.id === currentUser.id);
+  const isFollowing = currentUser && badge.followers.some(f => f.id === currentUser.id);
   const badgesLeft = badge.tokens - badge.owners.length;
 
   const handleFollow = () => {
     if (!currentUser) return;
-    setIsFollowing(!isFollowing);
+    toggleFollowBadge(currentUser.id, badge.id);
     toast({
         title: !isFollowing ? 'Followed!' : 'Unfollowed.',
         description: `You are now ${!isFollowing ? 'following' : 'no longer following'} "${badge.name}".`
@@ -161,6 +137,7 @@ function BadgeDetailContent() {
 
   const handleRequestCode = () => {
      if (!currentUser) return;
+     requestBadge(currentUser.id, badge.id);
     toast({
         title: 'Request Sent!',
         description: `Your request for a code for "${badge.name}" has been sent to the creator.`,
@@ -168,9 +145,11 @@ function BadgeDetailContent() {
   }
 
   const handleTransfer = async (newOwnerId: string) => {
+    transferBadgeOwnership(badge.id, newOwnerId);
+    const newOwner = users.find(u => u.id === newOwnerId);
     toast({
         title: "Transfer Complete!",
-        description: `Ownership of "${badge.name}" has been transferred.`,
+        description: `Ownership of "${badge.name}" has been transferred to ${newOwner?.name}.`,
     });
   };
   
@@ -196,13 +175,13 @@ function BadgeDetailContent() {
                             Created by
                             <Link href={`/dashboard/profile/${creator.id}`} className="flex items-center gap-2 hover:underline">
                                 <Avatar className="h-6 w-6">
-                                    {creator?.emojiAvatar ? (
+                                    {creator.emojiAvatar ? (
                                     <span className="flex h-full w-full items-center justify-center text-lg">{creator.emojiAvatar}</span>
                                     ) : (
-                                    <AvatarFallback>{creator?.name.charAt(0)}</AvatarFallback>
+                                    <AvatarFallback>{creator.name.charAt(0)}</AvatarFallback>
                                     )}
                                 </Avatar>
-                                {creator?.name}
+                                {creator.name}
                             </Link>
                         </CardDescription>
                     )}
@@ -235,7 +214,8 @@ function BadgeDetailContent() {
                    <Button 
                      variant={isFollowing ? 'secondary' : 'outline'} 
                      onClick={handleFollow}
-                     className={cn({ 'invisible': !currentUser })}
+                     className={cn({ 'invisible': !currentUser || isOwner })}
+                     disabled={isOwner}
                     >
                       {isFollowing ? 'Unfollow' : 'Follow'}
                    </Button>
@@ -274,7 +254,7 @@ function BadgeDetailContent() {
             onOpenChange={setTransferOpen} 
             badge={badge} 
             onTransfer={handleTransfer}
-            users={allUsers.filter(u => badge.owners.includes(u.id))}
+            users={badge.owners}
         />
       )}
     </>
@@ -286,5 +266,3 @@ export default function BadgeDetailPage() {
       <BadgeDetailContent />
   );
 }
-
-    

@@ -14,39 +14,35 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth, User } from '@/hooks/use-auth';
 import { EditProfileDialog } from '@/components/profile/edit-profile-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useMockData } from '@/hooks/use-mock-data';
+import type { Badge as BadgeType } from '@/lib/mock-data';
 
-// Placeholder Data
-const allUsers: User[] = [
-    { id: 'u1', name: 'Alice', email: 'alice@example.com', emojiAvatar: '👩‍💻', following: ['u2'] },
-    { id: 'u2', name: 'Bob', email: 'bob@example.com', emojiAvatar: '👨‍🎨', following: ['u1', 'u3'] },
-    { id: 'u3', name: 'Charlie', email: 'charlie@example.com', emojiAvatar: '👨‍🚀', following: ['u2'] },
-    { id: 'u4', name: 'Diana', email: 'diana@example.com', emojiAvatar: '🦸‍♀️', following: [] },
-];
-const allBadges = [
-    { id: 'b1', name: 'Galactic Pioneer', emojis: '🌌🚀✨', tokens: 50, owners: ['u3', 'u2'], followers: {length: 3} },
-    { id: 'b2', name: 'Pixel Perfect', emojis: '🎨🖼️🖌️', tokens: 250, owners: ['u2'], followers: {length: 2} },
-    { id: 'b3', name: 'Code Ninja', emojis: '💻🥋🥷', tokens: 1000, owners: ['u1'], followers: {length: 2} },
-];
+type EnrichedUser = User & {
+    ownedBadges: BadgeType[],
+    followingUsers: User[],
+}
 
-function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurrentUserProfile: boolean }) {
+function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: EnrichedUser, isCurrentUserProfile: boolean }) {
     const { toast } = useToast();
     const { user: currentUser } = useAuth();
-    const [isFollowing, setIsFollowing] = useState(currentUser?.following.includes(user.id) || false);
+    const { toggleFollowUser, updateUser } = useMockData();
     const [isEditProfileOpen, setEditProfileOpen] = useState(false);
 
     if (!currentUser) return null;
 
+    const isFollowing = currentUser.following.includes(user.id);
+
     const handleFollowToggle = () => {
-        if (user.id === currentUser.id) return; // Can't follow self
-        setIsFollowing(!isFollowing);
+        if (user.id === currentUser.id) return;
+        toggleFollowUser(currentUser.id, user.id);
         toast({
             title: !isFollowing ? 'Followed!' : 'Unfollowed.',
             description: `You are now ${!isFollowing ? 'following' : 'no longer following'} ${user.name}.`
         });
     }
 
-    const handleUpdateUser = async (updatedUser: Partial<User>) => {
-        // In a real app, this would be an API call
+    const handleUpdateUser = async (updatedUserData: Partial<User>) => {
+        updateUser(user.id, updatedUserData);
         toast({
             title: "Avatar Updated!",
             description: `Your profile picture has been updated.`,
@@ -101,17 +97,7 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurre
     )
 }
 
-function OwnedBadges({ userId }: { userId: string}) {
-    const loading = false;
-    
-    if (loading) {
-        return <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
-        </div>
-    }
-
-    const ownedBadges = allBadges.filter(b => b.owners.includes(userId));
-
+function OwnedBadges({ userId, ownedBadges }: { userId: string, ownedBadges: BadgeType[]}) {
     return (
         <div>
             <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
@@ -131,21 +117,20 @@ function OwnedBadges({ userId }: { userId: string}) {
     )
 }
 
-function FollowingList({ user }: { user: User }) {
-    const loading = false;
-    const followingUsers = allUsers.filter(u => user.following.includes(u.id));
+function FollowingList({ user }: { user: EnrichedUser }) {
+    const { followingUsers } = user;
 
     return (
         <Card>
             <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
                 <Users className="h-6 w-6" />
-                Following ({user.following.length})
+                Following ({followingUsers.length})
             </CardTitle>
             </CardHeader>
             <CardContent>
             <div className="space-y-4">
-                {loading ? <Skeleton className="h-16 w-full" /> : followingUsers.length > 0 ? followingUsers.map((followedUser) => (
+                {followingUsers.length > 0 ? followingUsers.map((followedUser) => (
                 <Link href={`/dashboard/profile/${followedUser.id}`} key={followedUser.id}>
                     <div className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
                     <Avatar>
@@ -168,11 +153,15 @@ function FollowingList({ user }: { user: User }) {
 }
 
 
-export default function UserProfilePage({ params }: { params: { id:string } }) {
-  const { user: currentUser, loading } = useAuth();
-  const user = allUsers.find(u => u.id === params.id);
+export default function UserProfilePage() {
+  const { user: currentUser, loading: authLoading } = useAuth();
+  const { getUserWithDetails } = useMockData();
+  const params = useParams();
+  const userId = params.id as string;
+  
+  const user = getUserWithDetails(userId);
 
-  if (loading) {
+  if (authLoading || !user) {
       return (
         <>
           <Header title="User Profile" />
@@ -184,10 +173,6 @@ export default function UserProfilePage({ params }: { params: { id:string } }) {
       )
   }
 
-  if (!user) {
-    notFound();
-  }
-  
   const isCurrentUserProfile = user.id === currentUser?.id;
 
   return (
@@ -196,16 +181,14 @@ export default function UserProfilePage({ params }: { params: { id:string } }) {
       <div className="flex-1 space-y-6 p-4 md:p-6">
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
-            <ProfileHeaderCard user={user} isCurrentUserProfile={isCurrentUserProfile} />
-            <OwnedBadges userId={user.id} />
+            <ProfileHeaderCard user={user as EnrichedUser} isCurrentUserProfile={isCurrentUserProfile} />
+            <OwnedBadges userId={user.id} ownedBadges={user.ownedBadges} />
           </div>
           <div className="lg:col-span-1 space-y-6">
-             <FollowingList user={user} />
+             <FollowingList user={user as EnrichedUser} />
           </div>
         </div>
       </div>
     </>
   );
 }
-
-    

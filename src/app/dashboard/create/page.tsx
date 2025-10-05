@@ -15,11 +15,13 @@ import { isOnlyEmojis } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
+import { useMockData } from '@/hooks/use-mock-data';
 
 export default function CreateBadgePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { createBadge } = useMockData();
   const [emojis, setEmojis] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export default function CreateBadgePage() {
 
     setIsLoading(true);
     const formData = new FormData(event.currentTarget);
-    const badgeName = formData.get('badgeName') as string;
+    const name = formData.get('badgeName') as string;
     const submittedEmojis = formData.get('emojis') as string;
     const tokens = Number(formData.get('tokens'));
     
@@ -68,7 +70,7 @@ export default function CreateBadgePage() {
         return;
     }
 
-    if (!badgeName || !submittedEmojis || !tokens) {
+    if (!name || !submittedEmojis || !tokens) {
         toast({
             title: 'Missing Information',
             description: 'Please fill out all fields.',
@@ -78,30 +80,26 @@ export default function CreateBadgePage() {
         return;
     }
 
-    // Simulate async operation
-    setTimeout(() => {
-        try {
-            // const newBadge = createBadge({ ... });
-            const newBadgeId = `new-badge-${Date.now()}`;
+    try {
+        const newBadge = createBadge({ name, emojis: submittedEmojis, tokens, creatorId: user.id });
+        
+        toast({
+            title: 'Badge Created!',
+            description: `Your badge "${name}" has been successfully created.`,
+        });
+        
+        setBurstEmojis(submittedEmojis);
 
-            toast({
-                title: 'Badge Created!',
-                description: `Your badge "${badgeName}" has been successfully created.`,
-            });
-            
-            setBurstEmojis(submittedEmojis);
+        setTimeout(() => handleAnimationComplete(newBadge.id), 2000);
 
-            setTimeout(() => handleAnimationComplete(newBadgeId), 2000);
-
-        } catch (error: any) {
-            toast({
-                title: 'Creation Failed',
-                description: error.message,
-                variant: 'destructive',
-            });
-            setIsLoading(false);
-        }
-    }, 1000);
+    } catch (error: any) {
+        toast({
+            title: 'Creation Failed',
+            description: error.message,
+            variant: 'destructive',
+        });
+        setIsLoading(false);
+    }
   };
 
   return (
@@ -169,5 +167,3 @@ export default function CreateBadgePage() {
     </>
   );
 }
-
-    

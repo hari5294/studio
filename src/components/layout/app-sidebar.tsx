@@ -40,18 +40,23 @@ import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-
-// Placeholder data
-const ownedBadges = [
-    { id: 'b3', name: 'Code Ninja', emojis: '💻🥋🥷' },
-];
+import { useMockData } from '@/hooks/use-mock-data';
+import { useMemo } from 'react';
 
 function OwnedBadges() {
     const pathname = usePathname();
     const { user } = useAuth();
+    const { badges, badgeOwners } = useMockData();
     const { isMobile, setOpenMobile } = useSidebar();
     
+    const ownedBadges = useMemo(() => {
+        if (!user) return [];
+        const myBadgeIds = badgeOwners.filter(bo => bo.userId === user.id).map(bo => bo.badgeId);
+        return badges.filter(b => myBadgeIds.includes(b.id));
+    }, [user, badges, badgeOwners]);
+
     if (ownedBadges.length === 0) return null;
+
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
     const handleClick = () => {
@@ -72,8 +77,9 @@ function OwnedBadges() {
                     asChild
                     isActive={isActive(`/dashboard/badge/${badge.id}`)}
                     tooltip={badge.name}
+                    onClick={handleClick}
                     >
-                    <Link href={`/dashboard/badge/${badge.id}`} onClick={handleClick}>
+                    <Link href={`/dashboard/badge/${badge.id}`}>
                         <span className="text-lg">{badge.emojis}</span>
                         <span>{badge.name}</span>
                     </Link>
@@ -152,8 +158,15 @@ function UserMenu() {
 
 function InboxMenuLink() {
     const pathname = usePathname();
+    const { user } = useAuth();
+    const { notifications } = useMockData();
     const { isMobile, setOpenMobile } = useSidebar();
-    const unreadCount = 1; // Placeholder
+    
+    const unreadCount = useMemo(() => {
+        if (!user) return 0;
+        return notifications.filter(n => n.toUserId === user.id && !n.read).length;
+    }, [user, notifications]);
+
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
     const handleClick = () => {
@@ -168,8 +181,9 @@ function InboxMenuLink() {
               asChild
               isActive={isActive('/dashboard/inbox')}
               tooltip="Inbox"
+              onClick={handleClick}
             >
-              <Link href="/dashboard/inbox" className="relative" onClick={handleClick}>
+              <Link href="/dashboard/inbox" className="relative">
                 <Inbox />
                 <span>Inbox</span>
                 {unreadCount > 0 && (
@@ -219,8 +233,9 @@ export function AppSidebar() {
               asChild
               isActive={pathname === '/dashboard'}
               tooltip="Dashboard"
+              onClick={handleClick}
             >
-              <Link href="/dashboard" onClick={handleClick}>
+              <Link href="/dashboard">
                 <Home />
                 <span>Dashboard</span>
               </Link>
@@ -231,8 +246,9 @@ export function AppSidebar() {
               asChild
               isActive={isActive('/dashboard/search')}
               tooltip="Search"
+              onClick={handleClick}
             >
-              <Link href="/dashboard/search" onClick={handleClick}>
+              <Link href="/dashboard/search">
                 <Search />
                 <span>Search</span>
               </Link>
@@ -244,8 +260,9 @@ export function AppSidebar() {
               isActive={isActive('/dashboard/redeem')}
               tooltip="Redeem Code"
               disabled={!user}
+              onClick={handleClick}
             >
-              <Link href="/dashboard/redeem" onClick={handleClick}>
+              <Link href="/dashboard/redeem">
                 <Gift />
                 <span>Redeem Code</span>
               </Link>
@@ -260,8 +277,9 @@ export function AppSidebar() {
                 isActive={isActive(`/dashboard/profile/${user?.id}`)}
                 tooltip="My Profile"
                 disabled={!user}
+                onClick={handleClick}
             >
-                <Link href={`/dashboard/profile`} onClick={handleClick}>
+                <Link href={`/dashboard/profile`}>
                     <User />
                     <span>My Profile</span>
                 </Link>
@@ -273,8 +291,9 @@ export function AppSidebar() {
               isActive={isActive('/dashboard/create')}
               tooltip="Create Badge"
                disabled={!user}
+               onClick={handleClick}
             >
-              <Link href="/dashboard/create" onClick={handleClick}>
+              <Link href="/dashboard/create">
                 <PlusCircle />
                 <span>Create Badge</span>
               </Link>

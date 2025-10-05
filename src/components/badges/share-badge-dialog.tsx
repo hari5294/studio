@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -7,18 +8,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Copy, QrCode } from 'lucide-react';
+import { Copy, QrCode, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Skeleton } from '../ui/skeleton';
 import type { User } from '@/hooks/use-auth';
-
-// Placeholder Types
-type Badge = { id: string; name: string; emojis: string; };
-type ShareLink = { id: string; };
+import type { Badge, ShareLink } from '@/lib/mock-data';
+import { useMockData } from '@/hooks/use-mock-data';
 
 
 type ShareBadgeDialogProps = {
@@ -26,23 +26,28 @@ type ShareBadgeDialogProps = {
   onOpenChange: (open: boolean) => void;
   badge: Badge;
   user: User;
-  links?: ShareLink[];
 };
 
-export function ShareBadgeDialog({ open, onOpenChange, badge, user, links: initialLinks }: ShareBadgeDialogProps) {
+export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadgeDialogProps) {
     const { toast } = useToast();
-    
-    // Placeholder links
-    const links = initialLinks ?? [
-        { id: `link-1`},
-        { id: `link-2`},
-        { id: `link-3`},
-    ];
-    const isLoading = false;
+    const { shareLinks, createShareLinks } = useMockData();
+    const [isLoading, setIsLoading] = React.useState(false);
 
-    const copyToClipboard = (text: string) => {
+    const availableLinks = shareLinks.filter(l => l.badgeId === badge.id && l.ownerId === user.id && !l.used);
+
+    const handleCreateLinks = () => {
+        setIsLoading(true);
+        // Simulate async operation
+        setTimeout(() => {
+            createShareLinks(badge.id, user.id, 5);
+            toast({ title: "5 new codes created!" });
+            setIsLoading(false);
+        }, 500);
+    }
+
+    const copyToClipboard = (linkId: string) => {
         if (typeof window === 'undefined') return;
-        const fullUrl = `${window.location.origin}/join/${text}`;
+        const fullUrl = `${window.location.origin}/join/${linkId}`;
         navigator.clipboard.writeText(fullUrl);
         toast({ title: "Copied link to clipboard!" });
     }
@@ -73,9 +78,9 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user, links: initi
                 <Skeleton className="h-10 w-full" />
              </div>
           )}
-          {!isLoading && links.length > 0 && (
+          {!isLoading && availableLinks.length > 0 && (
               <div className="space-y-3">
-                {links.map(link => (
+                {availableLinks.map(link => (
                     <div key={link.id} className="flex items-center gap-2 w-full">
                        <Image
                           src={qrCodeUrl(link.id)}
@@ -94,7 +99,7 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user, links: initi
                 ))}
               </div>
           )}
-           {!isLoading && links.length === 0 && (
+           {!isLoading && availableLinks.length === 0 && (
             <div className="flex flex-col justify-center items-center h-full text-center py-4">
                 <p className="text-sm text-muted-foreground mb-4">
                     You have no more unique codes to share for this badge.
@@ -102,6 +107,12 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user, links: initi
             </div>
           )}
         </div>
+        <DialogFooter>
+            <Button variant="outline" onClick={handleCreateLinks} disabled={isLoading}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                {isLoading ? "Generating..." : "Generate 5 More"}
+            </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
