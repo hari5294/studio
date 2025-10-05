@@ -39,7 +39,7 @@ export function useAuth(options: UseAuthOptions = {}) {
       // If user is logged in and tries to access login/signup, redirect to dashboard
       router.push('/dashboard');
     } else if (options.required && !user && !isAuthPage) {
-      // If page requires auth and user is not logged in, redirect to login
+      // If page requires auth and user is not logged in (and it's not an auth page already), redirect to login
       router.push('/login');
     }
   }, [user, loading, pathname, router, options.required]);
@@ -50,7 +50,7 @@ export function useAuth(options: UseAuthOptions = {}) {
         setTimeout(() => {
             const foundUser = Object.values(users).find(u => u.email === email);
             if (foundUser) {
-                // In a real app, you'd set a token/session here
+                setCurrentUserId(foundUser.id);
                 resolve(foundUser);
             } else {
                 reject(new Error('User not found'));
@@ -69,17 +69,15 @@ export function useAuth(options: UseAuthOptions = {}) {
                 setLoading(false);
                 return;
             }
-            // Create a new user (in real app, this would be an API call)
+            const newUserId = `user${Object.keys(users).length + 1}`;
             const newUser: User = {
-                id: `user${Object.keys(users).length + 1}`,
+                id: newUserId,
                 name,
                 email,
                 emojiAvatar: '😀',
                 following: []
             };
-            // This part is tricky with mock data and Jotai from a hook...
-            // It's better to handle state updates in the component.
-            // For now, we just resolve the new user.
+            // The component handles adding the user to the atom state
             resolve(newUser);
             setLoading(false);
         }, 500);

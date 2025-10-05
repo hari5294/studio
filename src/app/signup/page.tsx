@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAtom } from 'jotai';
 import { AuthLayout, AuthForm } from '@/components/auth/auth-form';
@@ -11,8 +10,8 @@ import { usersAtom, currentUserIdAtom, User } from '@/lib/mock-data';
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { signup } = useAuth();
-  const [users, setUsers] = useAtom(usersAtom);
+  const { signup, loading } = useAuth();
+  const [, setUsers] = useAtom(usersAtom);
   const [,setCurrentUserId] = useAtom(currentUserIdAtom);
 
   const handleSubmit = async (email: string, name?: string) => {
@@ -52,6 +51,7 @@ export default function SignupPage() {
         buttonText="Sign Up"
         onSubmit={handleSubmit}
         includeName={true}
+        isLoading={loading}
       />
     </AuthLayout>
   );

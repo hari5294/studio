@@ -52,18 +52,16 @@ type AuthFormProps = {
     buttonText: string;
     onSubmit: (email: string, name?: string) => void;
     includeName?: boolean;
+    isLoading?: boolean;
 }
 
-export function AuthForm({ buttonText, onSubmit, includeName = false }: AuthFormProps) {
+export function AuthForm({ buttonText, onSubmit, includeName = false, isLoading = false }: AuthFormProps) {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     await onSubmit(email, name);
-    setIsLoading(false);
   };
 
   return (
