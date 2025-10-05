@@ -1,24 +1,18 @@
+
 'use client';
 
 import {
   Auth,
-  getAuth,
-  GoogleAuthProvider,
   signInAnonymously,
   onAuthStateChanged
 } from 'firebase/auth';
 import {
-  createContext,
   ReactNode,
-  useContext,
   useEffect,
-  useState,
 } from 'react';
 import { useAtom } from 'jotai';
 
-import { FirebaseProvider, initializeFirebase } from '.';
-import { FirebaseApp } from 'firebase/app';
-import { Firestore } from 'firebase/firestore';
+import { FirebaseProvider, initializeFirebase, useAuth } from '.';
 import { currentUserIdAtom, usersAtom, User } from '@/lib/mock-data';
 
 
@@ -43,12 +37,14 @@ export function FirebaseClientProvider({
 }
 
 function AuthWrapper({ children }: { children: ReactNode }) {
-  const auth = getAuth();
+  const auth = useAuth();
   const [, setCurrentUserId] = useAtom(currentUserIdAtom);
   const [users, setUsers] = useAtom(usersAtom);
 
 
   useEffect(() => {
+    if (!auth) return;
+    
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // User is signed in.
