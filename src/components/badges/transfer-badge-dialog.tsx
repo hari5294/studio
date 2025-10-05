@@ -30,11 +30,11 @@ export function TransferBadgeDialog({ open, onOpenChange, badge, onTransfer }: T
     const [recipientId, setRecipientId] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [users] = useAtom(usersAtom);
-    const [notifications, setNotifications] = useAtom(notificationsAtom);
+    const [, setNotifications] = useAtom(notificationsAtom);
 
     const usersOptions = Object.values(users)
         .filter(u => badge.owners.includes(u.id) && u.id !== badge.creatorId)
-        .map(u => ({ value: u.id, label: `${u.name} (${u.email})` })) ?? [];
+        .map(u => ({ value: u.id, label: u.name })) ?? [];
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,7 +47,7 @@ export function TransferBadgeDialog({ open, onOpenChange, badge, onTransfer }: T
 
                 onTransfer(recipientId);
 
-                const newNotificationId = `n${Object.keys(notifications).length + 1}`;
+                const newNotificationId = crypto.randomUUID();
                 setNotifications(prev => ({
                     ...prev,
                     [newNotificationId]: {
