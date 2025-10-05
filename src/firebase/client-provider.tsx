@@ -1,18 +1,43 @@
+
 'use client';
 
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { ReactNode, useEffect } from 'react';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { Auth, getAuth } from 'firebase/auth';
+import { Firestore, getFirestore } from 'firebase/firestore';
 
-import { FirebaseProvider, initializeFirebase, useAuth, useFirestore } from '.';
+import { FirebaseProvider, useAuth, useFirestore } from '.';
 import { User } from '@/lib/mock-data';
+import { firebaseConfig } from './config';
+
+
+function initializeClientFirebase(): {
+  app: FirebaseApp;
+  firestore: Firestore;
+  auth: Auth;
+} {
+  const apps = getApps();
+  if (apps.length) {
+    const app = apps[0];
+    const auth = getAuth(app);
+    const firestore = getFirestore(app);
+    return { app, auth, firestore };
+  } else {
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const firestore = getFirestore(app);
+    return { app, auth, firestore };
+  }
+}
 
 export interface FirebaseClientProviderProps {
   children: React.ReactNode;
 }
 
 export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
-  const { app, firestore, auth } = initializeFirebase();
+  const { app, firestore, auth } = initializeClientFirebase();
 
   return (
     <FirebaseProvider firebaseApp={app} firestore={firestore} auth={auth}>
@@ -43,6 +68,7 @@ function AuthWrapper({ children }: { children: ReactNode }) {
                 following: [],
             };
             try {
+                // Use setDoc here to ensure the document is created with the UID as the ID
                 await setDoc(userRef, userProfile);
             } catch (e) {
                 console.error("Error creating user document:", e);
