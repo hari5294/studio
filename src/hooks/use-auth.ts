@@ -5,8 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   onAuthStateChanged,
   User as FirebaseUser,
-  GoogleAuthProvider,
-  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
 import { useAuth as useFirebaseAuth } from '@/firebase';
@@ -84,39 +84,45 @@ export function useAuth(options: UseAuthOptions = {}) {
     }
   }, [user, loading, pathname, router, options.required]);
 
-  const loginWithGoogle = async (): Promise<User | null> => {
+  const loginOrSignup = async (email: string, password: string): Promise<User | null> => {
     if (!auth || !firestore) throw new Error('Auth not initialized.');
     setLoading(true);
 
-    const provider = new GoogleAuthProvider();
-    
     try {
-      const userCredential = await signInWithPopup(auth, provider);
-      const firebaseUser = userCredential.user;
-      
-      const userRef = doc(firestore, 'users', firebaseUser.uid);
-      const userSnap = await getDoc(userRef);
-      
-      let userProfile: User;
-      if (userSnap.exists()) {
-        userProfile = { id: userSnap.id, ...userSnap.data() } as User;
-      } else {
-        userProfile = {
-          id: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          name: firebaseUser.displayName || 'New User',
-          emojiAvatar: '😀',
-          following: [],
-        };
-        await setDoc(userRef, userProfile);
-      }
-      
-      setUser(userProfile);
-      router.push('/dashboard');
-      return userProfile;
-    } catch (error) {
-        console.error("Google sign-in error:", error);
-        throw error;
+        // Try to sign in first
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCredential.user;
+        const userRef = doc(firestore, "users", firebaseUser.uid);
+        const userSnap = await getDoc(userRef);
+        const userProfile = { id: userSnap.id, ...userSnap.data() } as User;
+        setUser(userProfile);
+        router.push('/dashboard');
+        return userProfile;
+    } catch (error: any) {
+        // If user not found, create a new user
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+            try {
+                const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const firebaseUser = newUserCredential.user;
+                const userProfile: User = {
+                    id: firebaseUser.uid,
+                    email: firebaseUser.email || '',
+                    name: firebaseUser.email?.split('@')[0] || 'New User',
+                    emojiAvatar: '😀',
+                    following: [],
+                };
+                await setDoc(doc(firestore, "users", firebaseUser.uid), userProfile);
+                setUser(userProfile);
+                router.push('/dashboard');
+                return userProfile;
+            } catch (createError: any) {
+                console.error("Sign-up error:", createError);
+                throw createError;
+            }
+        } else {
+            console.error("Sign-in error:", error);
+            throw error;
+        }
     } finally {
         setLoading(false);
     }
@@ -129,5 +135,5 @@ export function useAuth(options: UseAuthOptions = {}) {
     router.push('/login');
   };
 
-  return { user, loading, loginWithGoogle, logout };
+  return { user, loading, loginOrSignup, logout };
 }
