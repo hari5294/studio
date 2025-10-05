@@ -106,6 +106,10 @@ export function useAuth(options: UseAuthOptions = {}) {
     setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      auth.tenantId = null;
       const userCredential = await signInWithPopup(auth, provider);
       const firebaseUser = userCredential.user;
 
