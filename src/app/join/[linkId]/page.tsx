@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { useAtom } from 'jotai';
 import { shareLinksAtom, badgesAtom, currentUserIdAtom, ShareLink, Badge } from '@/lib/mock-data';
+import { EmojiBurst } from '@/components/effects/emoji-burst';
 
 const EXPIRY_HOURS = 24;
 
@@ -28,6 +30,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
   const [isClaiming, setIsClaiming] = useState(false);
   const [isShareOpen, setShareOpen] = useState(false);
   const [newShareLinks, setNewShareLinks] = useState<ShareLink[]>([]);
+  const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
   
   const linkId = params.linkId;
 
@@ -98,6 +101,8 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
                 description: `You are now an owner of the "${badge.name}" badge.`,
             });
             
+            setBurstEmojis(badge.emojis);
+
             // Create 3 new share links for the new owner
             const generatedLinks: ShareLink[] = [];
             setShareLinks(prev => {
@@ -112,7 +117,8 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
             });
 
             setNewShareLinks(generatedLinks);
-            setShareOpen(true);
+            
+            setTimeout(() => setShareOpen(true), 1500);
             
         } catch(err: any) {
              toast({
@@ -164,6 +170,20 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
         )
     }
 
+    if (burstEmojis) {
+      return (
+        <CardHeader className="text-center">
+          <div className="mb-4 flex justify-center">
+            <div className="text-6xl">{badge.emojis}</div>
+          </div>
+          <CardTitle className="text-2xl font-headline">Success!</CardTitle>
+          <CardDescription>
+              You've claimed the "{badge.name}" badge.
+          </CardDescription>
+        </CardHeader>
+      )
+    }
+
     return (
         <>
             <CardHeader className="text-center">
@@ -188,7 +208,8 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
 
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
+    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4 relative">
+       {burstEmojis && <EmojiBurst emojis={burstEmojis} />}
       <Card className="mx-auto w-full max-w-sm">
         {renderContent()}
          <CardContent>

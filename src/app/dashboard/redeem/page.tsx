@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -11,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Gift } from 'lucide-react';
 import { badgesAtom, currentUserIdAtom, shareLinksAtom, ShareLink } from '@/lib/mock-data';
+import { EmojiBurst } from '@/components/effects/emoji-burst';
 
 const EXPIRY_HOURS = 24;
 
@@ -19,10 +21,15 @@ export default function RedeemCodePage() {
   const { toast } = useToast();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
 
   const [currentUserId] = useAtom(currentUserIdAtom);
   const [shareLinks, setShareLinks] = useAtom(shareLinksAtom);
   const [badges, setBadges] = useAtom(badgesAtom);
+
+  const handleRedeemComplete = (badgeId: string) => {
+    router.push(`/dashboard/badge/${badgeId}?showShare=true`);
+  }
   
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -90,8 +97,9 @@ export default function RedeemCodePage() {
                 title: 'Badge Claimed!',
                 description: `You are now an owner of the "${badgeToClaim.name}" badge.`,
             });
-
-            router.push(`/dashboard/badge/${link.badgeId}?showShare=true`);
+            
+            setBurstEmojis(badgeToClaim.emojis);
+            setTimeout(() => handleRedeemComplete(link.badgeId), 2000);
 
         } catch (error: any) {
             toast({
@@ -99,7 +107,6 @@ export default function RedeemCodePage() {
                 description: error.message,
                 variant: 'destructive',
             });
-        } finally {
             setIsLoading(false);
             setCode('');
         }
@@ -142,6 +149,7 @@ export default function RedeemCodePage() {
           </CardContent>
         </Card>
       </div>
+       {burstEmojis && <EmojiBurst emojis={burstEmojis} />}
     </>
   );
 }
