@@ -45,16 +45,19 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadge
         }, 500);
     }
 
+    const getFullUrl = (linkId: string) => {
+        if (typeof window === 'undefined') return `.../join/${linkId}`;
+        return `${window.location.origin}/join/${linkId}`;
+    }
+
     const copyToClipboard = (linkId: string) => {
-        if (typeof window === 'undefined') return;
-        const fullUrl = `${window.location.origin}/join/${linkId}`;
+        const fullUrl = getFullUrl(linkId);
         navigator.clipboard.writeText(fullUrl);
         toast({ title: "Copied link to clipboard!" });
     }
 
     const qrCodeUrl = (linkId: string) => {
-        if (typeof window === 'undefined') return '';
-        const data = encodeURIComponent(`${window.location.origin}/join/${linkId}`);
+        const data = encodeURIComponent(getFullUrl(linkId));
         return `https://api.qrserver.com/v1/create-qr-code/?size=40x40&data=${data}`;
     }
     
@@ -91,7 +94,7 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadge
                           data-ai-hint="qr code"
                           unoptimized // for external images
                         />
-                      <Input readOnly value={link.id} className="bg-muted font-mono text-xs" />
+                      <Input readOnly value={getFullUrl(link.id)} className="bg-muted font-mono text-xs" />
                       <Button variant="ghost" size="icon" onClick={() => copyToClipboard(link.id)}>
                           <Copy className="h-4 w-4"/>
                       </Button>
