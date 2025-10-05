@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAtom } from 'jotai';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -34,12 +34,12 @@ import {
   Gift,
   Inbox,
   LogOut,
-  LogIn
 } from 'lucide-react';
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
-import { usersAtom, badgesAtom, currentUserIdAtom, notificationsAtom, login, logout } from '@/lib/mock-data';
+import { usersAtom, badgesAtom, currentUserIdAtom, notificationsAtom, logout } from '@/lib/mock-data';
+import { useAuth } from '@/hooks/use-auth';
 
 function OwnedBadges() {
     const pathname = usePathname();
@@ -79,30 +79,10 @@ function OwnedBadges() {
 }
 
 function UserMenu() {
-    const [currentUserId, setCurrentUserId] = useAtom(currentUserIdAtom);
-    const [users] = useAtom(usersAtom);
+    const { user, logout, loading } = useAuth();
     
-    const handleLogout = () => {
-      setCurrentUserId(logout());
-    };
-
-    const handleLogin = () => {
-      setCurrentUserId(login('user1'));
-    }
-
-    const currentUser = currentUserId ? users[currentUserId] : null;
-
-    if (!currentUser) {
-        return (
-            <Button
-              variant="ghost"
-              className='w-full justify-start'
-              onClick={handleLogin}
-            >
-                <LogIn className="mr-2 h-4 w-4" />
-                <span className="group-data-[collapsible=icon]:hidden">Login</span>
-            </Button>
-        )
+    if (loading || !user) {
+        return null;
     };
 
     return (
@@ -116,15 +96,15 @@ function UserMenu() {
               )}
             >
               <Avatar className="h-8 w-8">
-                {currentUser.emojiAvatar ? (
-                  <span className="flex h-full w-full items-center justify-center text-xl">{currentUser.emojiAvatar}</span>
+                {user.emojiAvatar ? (
+                  <span className="flex h-full w-full items-center justify-center text-xl">{user.emojiAvatar}</span>
                 ) : (
-                  <AvatarFallback>{currentUser.name?.charAt(0) ?? '?'}</AvatarFallback>
+                  <AvatarFallback>{user.name?.charAt(0) ?? '?'}</AvatarFallback>
                 )}
               </Avatar>
               <div className="flex-grow truncate group-data-[collapsible=icon]:hidden">
-                <p className="text-sm font-medium">{currentUser.name}</p>
-                <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+                <p className="text-sm font-medium">{user.name}</p>
+                <p className="text-xs text-muted-foreground">{user.email}</p>
               </div>
               <MoreHorizontal className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:hidden" />
             </Button>
@@ -133,13 +113,13 @@ function UserMenu() {
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href={`/dashboard/profile/${currentUser.id}`}>
+              <Link href={`/dashboard/profile/${user.id}`}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </Link>
             </DropdownMenuItem>
              <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
+            <DropdownMenuItem onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logout</span>
             </DropdownMenuItem>
@@ -188,10 +168,10 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" side="left" variant="sidebar">
       <SidebarHeader className="h-16 justify-between border-b px-3">
-        <div className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <EmojiBadgeLogo className="size-8 text-primary" />
           <span className="text-lg font-semibold font-headline">EmojiBadge</span>
-        </div>
+        </Link>
         {!isMobile && <SidebarTrigger />}
       </SidebarHeader>
       <SidebarContent className="p-2">
