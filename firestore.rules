@@ -1,44 +1,43 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Users can read any profile, but only write to their own.
+    
+    // Users can view any public profile, but only edit their own.
     match /users/{userId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update: if request.auth.uid == userId;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
-
-    // Badges can be read by anyone. Only the creator can update them.
+    
+    // Badges can be read by anyone, but only the creator can update or delete.
     match /badges/{badgeId} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow create: if request.auth != null;
-      allow update: if request.auth.uid == resource.data.creatorId;
-    }
-    
-    // Badge owners can be read by anyone. Only the user can claim ownership for themselves.
-    match /badges/{badgeId}/owners/{userId} {
-      allow read: if true;
-      allow create: if request.auth.uid == userId;
-      allow delete: if request.auth.uid == userId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.creatorId;
+
+      // Badge owners can be read by anyone. Only a new user can claim ownership.
+      match /owners/{userId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow delete: if false; // Ownership is permanent
+      }
+
+      // Followers can be read by anyone. Any user can follow/unfollow.
+      match /followers/{userId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
-    // Badge followers can be read by anyone. Only the user can add/remove themselves as a follower.
-    match /badges/{badgeId}/followers/{userId} {
-        allow read: if true;
-        allow write: if request.auth.uid == userId;
-    }
-
-    // Share links can be read if you know the ID. Only the owner can create them.
-    // Anyone can update them (to mark as used).
+    // Share links can only be read/updated via the specific transaction that redeems them.
     match /shareLinks/{linkId} {
-        allow read, update: if request.auth != null;
-        allow create: if request.auth.uid == request.resource.data.ownerId;
+        allow read, write: if false; // Handled by backend logic/transactions
     }
-    
-    // Users can only read and write their own notifications.
+
+    // Users can only manage their own notifications.
     match /users/{userId}/notifications/{notificationId} {
-        allow read, write, delete: if request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
