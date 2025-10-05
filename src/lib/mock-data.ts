@@ -192,7 +192,7 @@ export const MockDataProvider = ({ children }: { children: ReactNode }) => {
         createShareLink,
         redeemShareLink,
         addNotification,
-        markNotificationAsRead
+        markNotificationAsRead,
     };
 
     return <MockDataContext.Provider value={value}>{children}</MockDataContext.Provider>;
