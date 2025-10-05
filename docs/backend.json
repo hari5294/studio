@@ -113,7 +113,7 @@
     }
   },
   "auth": {
-    "providers": ["anonymous", "google.com"]
+    "providers": ["anonymous"]
   },
   "firestore": {
     "/users/{userId}": {
