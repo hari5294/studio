@@ -6,6 +6,6 @@ export const firebaseConfig = {
   projectId: "badgese-e258f",
   storageBucket: "badgese-e258f.appspot.com",
   messagingSenderId: "877963955625",
-  appId: "1:877963955625:web:a21674fc078a0e30bc48b8",
+  appId: "1:877963955625:web:a2-1674fc078a0e30bc48b8",
   measurementId: "G-5ZGXZRLGZL"
 };
