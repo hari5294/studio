@@ -3,7 +3,6 @@
 
 import {
   Auth,
-  signInAnonymously,
   onAuthStateChanged
 } from 'firebase/auth';
 import {
@@ -45,12 +44,14 @@ function AuthWrapper({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!auth) return;
     
+    // This is a simplified auth listener for the mock data setup.
+    // In a real Firebase app, you would fetch the user profile from Firestore here.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // User is signed in.
         setCurrentUserId(user.uid);
         
-        // Check if user profile exists, if not create a mock one
+        // If the user's profile doesn't exist in our mock data, create one.
         if (!users[user.uid]) {
             const newUser: User = {
                 id: user.uid,
@@ -63,10 +64,8 @@ function AuthWrapper({ children }: { children: ReactNode }) {
         }
 
       } else {
-        // User is signed out.
-        signInAnonymously(auth).catch((error) => {
-            console.error('Error signing in anonymously:', error);
-        });
+        // User is signed out. Clear the user ID.
+        setCurrentUserId(null);
       }
     });
 
