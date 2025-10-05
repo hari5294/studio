@@ -10,23 +10,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Users } from 'lucide-react';
 import { Badge } from '@/lib/mock-data';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import { useMemo } from 'react';
 
 type BadgeCardProps = {
   badge: Badge;
 };
 
 export function BadgeCard({ badge }: BadgeCardProps) {
-  const firestore = useFirestore();
-  const ownersQuery = useMemo(() => firestore ? collection(firestore, `badges/${badge.id}/owners`) : null, [firestore, badge.id]);
-  const followersQuery = useMemo(() => firestore ? collection(firestore, `badges/${badge.id}/followers`) : null, [firestore, badge.id]);
-  
-  const { data: owners } = useCollection(ownersQuery);
-  const { data: followers } = useCollection(followersQuery);
-
-  const badgesLeft = badge.tokens - (owners?.length || 0);
+  const badgesLeft = badge.tokens - badge.owners.length;
 
   return (
     <Card className="flex flex-col transition-all hover:shadow-md">
@@ -35,7 +25,7 @@ export function BadgeCard({ badge }: BadgeCardProps) {
           <div className="text-4xl">{badge.emojis}</div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Users className="h-4 w-4" />
-            <span className="text-sm font-medium">{followers?.length ?? 0}</span>
+            <span className="text-sm font-medium">{badge.followers.length}</span>
           </div>
         </div>
         <CardTitle className="pt-2 font-headline">{badge.name}</CardTitle>

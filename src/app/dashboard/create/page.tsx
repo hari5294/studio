@@ -9,20 +9,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Smile } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { useMockData } from '@/lib/mock-data';
 import { isOnlyEmojis } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
-import { useAuth, useFirestore } from '@/firebase';
-import { addDoc, collection, doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
-import { Badge, ShareLink } from '@/lib/mock-data';
 
 export default function CreateBadgePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
-  const firestore = useFirestore();
-  
+  const { createBadge } = useMockData();
   const [emojis, setEmojis] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
@@ -52,10 +50,7 @@ export default function CreateBadgePage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user || !firestore) {
-        toast({ title: 'Error', description: 'You must be logged in to create a badge.', variant: 'destructive'});
-        return;
-    }
+    if (!user) return;
 
     setIsLoading(true);
     const formData = new FormData(event.currentTarget);
@@ -84,62 +79,34 @@ export default function CreateBadgePage() {
         return;
     }
 
-    try {
-        const newBadgeRef = doc(collection(firestore, 'badges'));
-        const newBadgeId = newBadgeRef.id;
+    // Simulate async operation
+    setTimeout(() => {
+        try {
+            const newBadge = createBadge({
+                name: badgeName,
+                emojis: submittedEmojis,
+                tokens,
+                creatorId: user.id,
+            });
 
-        const newBadge: Omit<Badge, 'id'> = {
-            name: badgeName,
-            emojis: submittedEmojis,
-            tokens: tokens,
-            creatorId: user.id,
-            createdAt: Date.now(),
-        };
+            toast({
+                title: 'Badge Created!',
+                description: `Your badge "${badgeName}" has been successfully created.`,
+            });
+            
+            setBurstEmojis(submittedEmojis);
 
-        const batch = writeBatch(firestore);
-        
-        batch.set(newBadgeRef, newBadge);
+            setTimeout(() => handleAnimationComplete(newBadge.id), 2000);
 
-        // Add creator as the first owner
-        const ownerRef = doc(firestore, 'badges', newBadgeId, 'owners', user.id);
-        batch.set(ownerRef, { userId: user.id, badgeId: newBadgeId, claimedAt: Date.now() });
-
-        // Add creator as the first follower
-        const followerRef = doc(firestore, 'badges', newBadgeId, 'followers', user.id);
-        batch.set(followerRef, { userId: user.id, badgeId: newBadgeId, followedAt: Date.now() });
-        
-        // Create initial 3 share links
-        for (let i = 0; i < 3; i++) {
-            const newLinkRef = doc(collection(firestore, 'shareLinks'));
-            const newLink: Omit<ShareLink, 'linkId'> = {
-                badgeId: newBadgeId,
-                ownerId: user.id,
-                used: false,
-                claimedBy: null,
-                createdAt: Date.now(),
-            };
-            batch.set(newLinkRef, newLink);
+        } catch (error: any) {
+            toast({
+                title: 'Creation Failed',
+                description: error.message,
+                variant: 'destructive',
+            });
+            setIsLoading(false);
         }
-
-        await batch.commit();
-
-        toast({
-            title: 'Badge Created!',
-            description: `Your badge "${badgeName}" has been successfully created.`,
-        });
-        
-        setBurstEmojis(submittedEmojis);
-
-        setTimeout(() => handleAnimationComplete(newBadgeId), 2000);
-
-    } catch (error: any) {
-        toast({
-            title: 'Creation Failed',
-            description: error.message,
-            variant: 'destructive',
-        });
-        setIsLoading(false);
-    }
+    }, 1000);
   };
 
   return (

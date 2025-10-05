@@ -3,8 +3,7 @@ import { Poppins, PT_Sans } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
-import { FirebaseClientProvider } from '@/firebase';
-import { FirebaseErrorListener } from '@/firebase/firebase-error-listener';
+import { MockDataProvider } from '@/lib/mock-data';
 
 
 const fontPoppins = Poppins({
@@ -38,11 +37,10 @@ export default function RootLayout({
           fontPtSans.variable
         )}
       >
-        <FirebaseClientProvider>
-            <FirebaseErrorListener />
+        <MockDataProvider>
             {children}
             <Toaster />
-        </FirebaseClientProvider>
+        </MockDataProvider>
       </body>
     </html>
   );

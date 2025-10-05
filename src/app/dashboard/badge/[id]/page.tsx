@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams, notFound, useParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -12,32 +12,43 @@ import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { TransferBadgeDialog } from '@/components/badges/transfer-badge-dialog';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { Badge, ShareLink, User, BadgeOwner, BadgeFollower } from '@/lib/mock-data';
+import { useMockData, User, Badge } from '@/lib/mock-data';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
-import { useAuth, useDoc, useCollection, useFirestore } from '@/firebase';
-import { doc, collection, writeBatch, deleteDoc, setDoc, addDoc } from 'firebase/firestore';
 
-function BadgeOwners({ badgeId }: { badgeId: string }) {
-    const firestore = useFirestore();
-    const ownersQuery = useMemo(() => firestore ? collection(firestore, 'badges', badgeId, 'owners') : null, [firestore, badgeId]);
-    const { data: owners, loading } = useCollection<BadgeOwner>(ownersQuery);
+function BadgeOwners({ badge }: { badge: Badge }) {
+    const { users, loading } = useMockData();
 
     if (loading) return <Skeleton className="h-32 w-full" />;
+
+    const owners = users.filter(u => badge.owners.includes(u.id));
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
                     <Crown className="h-6 w-6" />
-                    Owners ({owners?.length || 0})
+                    Owners ({owners.length})
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                {owners && owners.length > 0 ? owners.map((owner) => (
-                    <OwnerItem key={owner.userId} userId={owner.userId} />
+                {owners.length > 0 ? owners.map((owner) => (
+                    <Link href={`/dashboard/profile/${owner.id}`} key={owner.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
+                        <Avatar>
+                            {owner.emojiAvatar ? (
+                                <span className="flex h-full w-full items-center justify-center text-2xl">{owner.emojiAvatar}</span>
+                            ) : (
+                                <AvatarFallback>{owner.name.charAt(0)}</AvatarFallback>
+                            )}
+                        </Avatar>
+                        <div>
+                            <p className="font-medium">{owner.name}</p>
+                            {badge.creatorId === owner.id && <CardDescription>Creator</CardDescription>}
+                        </div>
+                    </Link>
                 )) : (
                     <p className="text-sm text-muted-foreground text-center py-4">No one owns this badge yet.</p>
                 )}
@@ -47,50 +58,34 @@ function BadgeOwners({ badgeId }: { badgeId: string }) {
     )
 }
 
-function OwnerItem({ userId }: { userId: string }) {
-    const firestore = useFirestore();
-    const userRef = useMemo(() => firestore ? doc(firestore, 'users', userId) : null, [firestore, userId]);
-    const { data: user, loading } = useDoc<User>(userRef);
-
-    if (loading || !user) return <Skeleton className="h-12 w-full" />;
-
-    return (
-        <Link href={`/dashboard/profile/${user.id}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
-            <Avatar>
-                {user.emojiAvatar ? (
-                    <span className="flex h-full w-full items-center justify-center text-2xl">{user.emojiAvatar}</span>
-                ) : (
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                )}
-            </Avatar>
-            <div>
-                <p className="font-medium">{user.name}</p>
-                {/* Creator check needs badge data, simplified for now */}
-            </div>
-        </Link>
-    );
-}
-
-
-function BadgeFollowers({ badgeId }: { badgeId: string }) {
-    const firestore = useFirestore();
-    const followersQuery = useMemo(() => firestore ? collection(firestore, 'badges', badgeId, 'followers') : null, [firestore, badgeId]);
-    const { data: followers, loading } = useCollection<BadgeFollower>(followersQuery);
-
+function BadgeFollowers({ badge }: { badge: Badge }) {
+    const { users, loading } = useMockData();
+    
     if (loading) return <Skeleton className="h-48 w-full" />;
+
+    const followers = users.filter(u => badge.followers.includes(u.id));
 
     return (
         <Card>
             <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
                 <Users className="h-6 w-6" />
-                Followers ({followers?.length || 0})
+                Followers ({followers.length})
             </CardTitle>
             </CardHeader>
             <CardContent>
             <div className="space-y-4">
-                {followers && followers.length > 0 ? followers.map((follower) => (
-                 <FollowerItem key={follower.userId} userId={follower.userId} />
+                {followers.length > 0 ? followers.map((follower) => (
+                    <Link href={`/dashboard/profile/${follower.id}`} key={follower.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
+                         <Avatar>
+                            {follower.emojiAvatar ? (
+                                <span className="flex h-full w-full items-center justify-center text-2xl">{follower.emojiAvatar}</span>
+                            ) : (
+                                <AvatarFallback>{follower.name.charAt(0)}</AvatarFallback>
+                            )}
+                        </Avatar>
+                        <p className="font-medium">{follower.name}</p>
+                    </Link>
                 )) : (
                     <p className="text-sm text-muted-foreground text-center py-4">No followers yet.</p>
                 )}
@@ -100,56 +95,21 @@ function BadgeFollowers({ badgeId }: { badgeId: string }) {
     )
 }
 
-function FollowerItem({ userId }: { userId: string }) {
-    const firestore = useFirestore();
-    const userRef = useMemo(() => firestore ? doc(firestore, 'users', userId) : null, [firestore, userId]);
-    const { data: user, loading } = useDoc<User>(userRef);
-    
-    if (loading || !user) return <Skeleton className="h-12 w-full" />;
-
-    return (
-        <Link href={`/dashboard/profile/${user.id}`} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
-            <Avatar>
-            {user.emojiAvatar ? (
-                <span className="flex h-full w-full items-center justify-center text-2xl">{user.emojiAvatar}</span>
-            ) : (
-                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-            )}
-            </Avatar>
-            <p className="font-medium">{user.name}</p>
-        </Link>
-    );
-}
-
 function BadgeDetailContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  const firestore = useFirestore();
+  const { badges, users, createShareLink, followBadge, unfollowBadge, addNotification, transferBadgeOwnership, loading } = useMockData();
+
   const id = params.id as string;
-
-  const badgeRef = useMemo(() => firestore ? doc(firestore, 'badges', id) : null, [firestore, id]);
-  const { data: badge, loading: badgeLoading } = useDoc<Badge>(badgeRef);
+  const badge = badges.find(b => b.id === id);
+  const creator = users.find(u => u.id === badge?.creatorId);
   
-  const creatorRef = useMemo(() => firestore && badge ? doc(firestore, 'users', badge.creatorId) : null, [firestore, badge]);
-  const { data: creator } = useDoc<User>(creatorRef);
-
-  const ownersQuery = useMemo(() => firestore ? collection(firestore, 'badges', id, 'owners') : null, [firestore, id]);
-  const { data: owners, loading: ownersLoading } = useCollection<BadgeOwner>(ownersQuery);
-
-  const followersQuery = useMemo(() => firestore ? collection(firestore, 'badges', id, 'followers') : null, [firestore, id]);
-  const { data: followers, loading: followersLoading } = useCollection<BadgeFollower>(followersQuery);
-
-  const shareLinksQuery = useMemo(() => firestore && currentUser ? collection(firestore, 'shareLinks') : null, [firestore, currentUser]);
-  const { data: allShareLinks, loading: shareLinksLoading } = useCollection<ShareLink>(shareLinksQuery);
-
   const [isShareOpen, setShareOpen] = useState(searchParams.get('showShare') === 'true');
   const [isTransferOpen, setTransferOpen] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
-
-  const loading = badgeLoading || ownersLoading || followersLoading || shareLinksLoading;
 
   if (loading) {
       return (
@@ -173,43 +133,33 @@ function BadgeDetailContent() {
   }
   
   const isCreator = currentUser && badge.creatorId === currentUser.id;
-  const isOwner = currentUser && owners?.some(o => o.userId === currentUser.id);
-  const isFollowing = currentUser && followers?.some(f => f.userId === currentUser.id);
+  const isOwner = currentUser && badge.owners.includes(currentUser.id);
+  const isFollowing = currentUser && badge.followers.includes(currentUser.id);
   
-  const badgesLeft = badge.tokens - (owners?.length || 0);
+  const badgesLeft = badge.tokens - badge.owners.length;
 
-  const handleFollow = async () => {
-    if (!currentUser || !firestore) return;
-
-    const followerRef = doc(firestore, 'badges', id, 'followers', currentUser.id);
-    
-    try {
-        if(isFollowing) {
-            await deleteDoc(followerRef);
-        } else {
-            await setDoc(followerRef, { userId: currentUser.id, badgeId: id, followedAt: Date.now() });
-            setBurstEmojis(badge.emojis);
-            setTimeout(() => setBurstEmojis(null), 2000);
-        }
-        toast({
-            title: isFollowing ? 'Unfollowed.' : 'Followed!',
-            description: `You are now ${isFollowing ? 'no longer following' : 'following'} "${badge.name}".`
-        });
-    } catch(e) {
-        toast({ title: 'Error', description: 'Could not update follow status.', variant: 'destructive'});
+  const handleFollow = () => {
+    if (!currentUser) return;
+    if(isFollowing) {
+        unfollowBadge(badge.id, currentUser.id);
+    } else {
+        followBadge(badge.id, currentUser.id);
+        setBurstEmojis(badge.emojis);
+        setTimeout(() => setBurstEmojis(null), 2000);
     }
+    toast({
+        title: isFollowing ? 'Unfollowed.' : 'Followed!',
+        description: `You are now ${isFollowing ? 'no longer following' : 'following'} "${badge.name}".`
+    });
   }
 
-  const handleRequestCode = async () => {
-     if (!currentUser || !firestore) return;
-     const notificationRef = collection(firestore, 'users', badge.creatorId, 'notifications');
-     await addDoc(notificationRef, {
-         type: 'BADGE_REQUEST',
+  const handleRequestCode = () => {
+     if (!currentUser) return;
+     addNotification({
          userId: badge.creatorId,
          fromUserId: currentUser.id,
-         badgeId: id,
-         createdAt: Date.now(),
-         read: false,
+         badgeId: badge.id,
+         type: 'BADGE_REQUEST',
      });
     toast({
         title: 'Request Sent!',
@@ -218,11 +168,8 @@ function BadgeDetailContent() {
   }
 
   const handleTransfer = async (newOwnerId: string) => {
-    if (!firestore) return;
-    await updateDoc(badgeRef, { creatorId: newOwnerId });
+    transferBadgeOwnership(badge.id, newOwnerId);
   };
-
-  const userShareLinks = allShareLinks?.filter(link => link.badgeId === id && link.ownerId === currentUser?.id && !link.used) ?? [];
   
   return (
     <>
@@ -303,11 +250,11 @@ function BadgeDetailContent() {
               </CardContent>
             </Card>
 
-            <BadgeOwners badgeId={id} />
+            <BadgeOwners badge={badge} />
           </div>
 
           <div className="lg:col-span-1 space-y-6">
-            <BadgeFollowers badgeId={id} />
+            <BadgeFollowers badge={badge} />
           </div>
         </div>
       </div>
@@ -316,7 +263,8 @@ function BadgeDetailContent() {
           open={isShareOpen} 
           onOpenChange={setShareOpen} 
           badge={badge} 
-          links={userShareLinks}
+          user={currentUser} 
+          createShareLink={createShareLink}
         />
       )}
       {currentUser && isCreator && (
@@ -325,6 +273,7 @@ function BadgeDetailContent() {
             onOpenChange={setTransferOpen} 
             badge={badge} 
             onTransfer={handleTransfer}
+            users={users.filter(u => badge.owners.includes(u.id))}
         />
       )}
     </>

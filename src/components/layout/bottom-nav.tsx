@@ -4,11 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Search, User, Gift, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth, useCollection, useFirestore } from '@/firebase';
-import { useMemo } from 'react';
-import { collection, query, where } from 'firebase/firestore';
-import { Notification } from '@/lib/mock-data';
-
+import { useAuth } from '@/hooks/use-auth';
+import { useMockData } from '@/lib/mock-data';
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Home', exact: true },
@@ -21,15 +18,9 @@ const navItems = [
 export function BottomNavBar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const firestore = useFirestore();
+  const { notifications } = useMockData();
 
-  const notificationsQuery = useMemo(() => {
-    if (!firestore || !user?.id) return null;
-    return query(collection(firestore, 'users', user.id, 'notifications'), where('read', '==', false));
-  }, [firestore, user?.id]);
-
-  const { data: unreadNotifications } = useCollection<Notification>(notificationsQuery);
-  const unreadCount = unreadNotifications?.length ?? 0;
+  const unreadCount = notifications.filter(n => n.userId === user?.id && !n.read).length;
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t bg-card/95 backdrop-blur-sm z-40">

@@ -40,27 +40,18 @@ import { EmojiBadgeLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
-import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
-import { useMemo } from 'react';
-import { Badge, Notification } from '@/lib/mock-data';
+import { useMockData, Badge, Notification } from '@/lib/mock-data';
 import { SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 
 function OwnedBadges() {
     const pathname = usePathname();
     const { user } = useAuth();
-    const firestore = useFirestore();
-
-    const ownedBadgesQuery = useMemo(() => {
-        if (!firestore || !user?.id) return null;
-        return query(collection(firestore, 'badges'), where('creatorId', '==', user.id));
-    }, [firestore, user?.id]);
-
-    const { data: ownedBadges } = useCollection<Badge>(ownedBadgesQuery);
+    const { badges } = useMockData();
+    const ownedBadges = badges.filter(b => b.creatorId === user?.id);
 
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
     
-    if (!ownedBadges || ownedBadges.length === 0) return null;
+    if (ownedBadges.length === 0) return null;
 
     return (
         <div className="mt-4 flex flex-col gap-2 p-2 pt-0">
@@ -155,16 +146,8 @@ function UserMenu() {
 function InboxMenuLink() {
     const pathname = usePathname();
     const { user } = useAuth();
-    const firestore = useFirestore();
-
-    const notificationsQuery = useMemo(() => {
-        if (!firestore || !user?.id) return null;
-        return query(collection(firestore, 'users', user.id, 'notifications'), where('read', '==', false));
-    }, [firestore, user?.id]);
-
-    const { data: unreadNotifications } = useCollection<Notification>(notificationsQuery);
-    
-    const unreadCount = unreadNotifications?.length ?? 0;
+    const { notifications } = useMockData();
+    const unreadCount = notifications.filter(n => n.userId === user?.id && !n.read).length;
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
     return (
@@ -198,12 +181,10 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" side="left" variant="sidebar">
-       {isMobile && (
-        <SheetHeader className="sr-only">
-          <SheetTitle>Navigation Menu</SheetTitle>
-          <SheetDescription>
-            Main navigation links for the application.
-          </SheetDescription>
+      {isMobile && (
+        <SheetHeader className="p-4 border-b">
+          <SheetTitle>EmojiBadge</SheetTitle>
+          <SheetDescription>Navigation Menu</SheetDescription>
         </SheetHeader>
       )}
       <SidebarHeader className="h-16 justify-between border-b px-3">

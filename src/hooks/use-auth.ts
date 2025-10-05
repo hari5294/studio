@@ -1,20 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import {
-  onAuthStateChanged,
-  User as FirebaseUser,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-} from 'firebase/auth';
-import { useAuth as useFirebaseAuth } from '@/firebase';
-import { useFirestore } from '@/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { User, useMockData } from '@/lib/mock-data';
 
-import { User } from '@/lib/mock-data';
-import { emitPermissionError } from '@/lib/error-emitter';
+type AuthContextType = {
+  user: User | null;
+  loading: boolean;
+  login: (email: string) => void;
+  logout: () => void;
+};
+
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 type UseAuthOptions = {
   required?: boolean;
@@ -23,110 +20,56 @@ type UseAuthOptions = {
 export function useAuth(options: UseAuthOptions = {}) {
   const router = useRouter();
   const pathname = usePathname();
-  const auth = useFirebaseAuth();
-  const firestore = useFirestore();
-
+  const { users, loading: mockDataLoading } = useMockData();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth || !firestore) return;
-
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        const userRef = doc(firestore, 'users', firebaseUser.uid);
-        let userSnap;
-        try {
-          userSnap = await getDoc(userRef);
-        } catch (e) {
-          emitPermissionError(e, userRef, 'get', null);
-          setLoading(false);
-          return;
-        }
-
-        if (userSnap.exists()) {
-          setUser({ id: userSnap.id, ...userSnap.data() } as User);
-        } else {
-           // If user doesn't exist, create them
-           const userProfile: User = {
-                id: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                name: firebaseUser.displayName || 'Anonymous User',
-                emojiAvatar: '😀',
-                following: [],
-            };
-            try {
-                await setDoc(userRef, userProfile);
-                setUser(userProfile);
-            } catch (e) {
-                emitPermissionError(e, userRef, 'create', userProfile);
-            }
-        }
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [auth, firestore]);
-
+    setLoading(true);
+    // In a real app, you'd check a token in localStorage, etc.
+    // For this mock, we'll see if a user is "logged in" via localStorage
+    const loggedInUserEmail = typeof window !== 'undefined' ? localStorage.getItem('loggedInUser') : null;
+    
+    if (loggedInUserEmail) {
+      const foundUser = users.find(u => u.email === loggedInUserEmail);
+      setUser(foundUser || null);
+    } else {
+      setUser(null);
+    }
+    setLoading(false);
+  }, [users]);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || mockDataLoading) return;
 
-    const isAuthPage = ['/login'].includes(pathname);
+    const isAuthPage = ['/login', '/signup'].includes(pathname);
 
     if (options.required && !user && !isAuthPage) {
       router.push('/login');
-    } else if (user && (isAuthPage || pathname === '/')) {
+    }
+
+    if (user && (isAuthPage || pathname === '/')) {
       router.push('/dashboard');
     }
-  }, [user, loading, pathname, router, options.required]);
+  }, [user, loading, mockDataLoading, pathname, router, options.required]);
 
- const loginWithGoogle = async (): Promise<User | null> => {
-    if (!auth || !firestore) throw new Error('Auth not initialized.');
-    setLoading(true);
-
-    try {
-        const provider = new GoogleAuthProvider();
-        const userCredential = await signInWithPopup(auth, provider);
-        const firebaseUser = userCredential.user;
-        const userRef = doc(firestore, "users", firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
-
-        let userProfile: User;
-
-        if (userSnap.exists()) {
-            userProfile = { id: userSnap.id, ...userSnap.data() } as User;
-        } else {
-            userProfile = {
-                id: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                name: firebaseUser.displayName || 'New User',
-                emojiAvatar: '😀',
-                following: [],
-            };
-            await setDoc(userRef, userProfile);
-        }
-        setUser(userProfile);
+  const login = (email: string) => {
+    const foundUser = users.find(u => u.email === email);
+    if(foundUser) {
+        localStorage.setItem('loggedInUser', email);
+        setUser(foundUser);
         router.push('/dashboard');
-        return userProfile;
-    } catch (error: any) {
-        console.error("Google sign-in error:", error);
-        throw error;
-    } finally {
-        setLoading(false);
+    } else {
+        // In a real app, you'd show an error. Here we'll just fail silently for simplicity.
+        console.error("User not found in mock data");
     }
   };
 
-
-  const logout = async () => {
-    if (!auth) return;
-    await signOut(auth);
+  const logout = () => {
+    localStorage.removeItem('loggedInUser');
     setUser(null);
     router.push('/login');
   };
 
-  return { user, loading, loginWithGoogle, logout };
+  return { user, loading: loading || mockDataLoading, login, logout };
 }

@@ -1,29 +1,35 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { EmojiBadgeLogo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { useMockData, ShareLink } from '@/lib/mock-data';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
-import { useAuth, useDoc, useFirestore } from '@/firebase';
-import { Badge, ShareLink } from '@/lib/mock-data';
-import { doc, getDoc, runTransaction, collection } from 'firebase/firestore';
 
-const EXPIRY_HOURS = 24;
 
 export default function JoinPage({ params }: { params: { linkId: string } }) {
   const router = useRouter();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  const firestore = useFirestore();
-
-  const [badge, setBadge] = useState<Badge | null>(null);
+  const {
+    badges,
+    shareLinks,
+    users,
+    redeemShareLink,
+    createShareLink,
+    loading,
+  } = useMockData();
+  
+  const linkId = params.linkId;
+  const [shareLink, setShareLink] = useState<ShareLink | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -31,96 +37,61 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
   const [newShareLinks, setNewShareLinks] = useState<ShareLink[]>([]);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
   
-  const linkId = params.linkId;
-
-  const linkRef = useMemo(() => firestore ? doc(firestore, 'shareLinks', linkId) : null, [firestore, linkId]);
-  const { data: shareLink, loading: linkLoading } = useDoc<ShareLink>(linkRef);
 
   useEffect(() => {
-    if (linkLoading || !shareLink || !firestore) {
-        if(!linkLoading) setIsLoading(false);
+    const link = shareLinks.find(l => l.id === linkId);
+    setShareLink(link);
+
+    if (!link || link.used) {
+        setError("This invitation code is invalid or has already been used.");
+        setIsLoading(false);
         return;
     }
     
-    const initialize = async () => {
-        const now = Date.now();
-        const expiryTime = shareLink.createdAt + (EXPIRY_HOURS * 60 * 60 * 1000);
-
-        if (shareLink.used) {
-            setError("This invitation code is invalid or has already been used.");
-            setIsLoading(false);
-            return;
-        }
-
-        if (now > expiryTime) {
-            setError(`This code has expired. Codes are valid for ${EXPIRY_HOURS} hours.`);
-            setIsLoading(false);
-            return;
-        }
-
-        const badgeRef = doc(firestore, 'badges', shareLink.badgeId);
-        const badgeDoc = await getDoc(badgeRef);
-
-        if (!badgeDoc.exists()) {
-            setError("The badge associated with this code could not be found.");
-            setIsLoading(false);
-            return;
-        }
-        const linkedBadge = { id: badgeDoc.id, ...badgeDoc.data() } as Badge;
-
-        if (currentUser) {
-            const ownerRef = doc(firestore, `badges/${linkedBadge.id}/owners`, currentUser.id);
-            const ownerDoc = await getDoc(ownerRef);
-            if (ownerDoc.exists()) {
-                 setError(`You already own the "${linkedBadge.name}" badge.`);
-                 setIsLoading(false);
-                 return;
-            }
-        }
-        
-        setBadge(linkedBadge);
+    const linkedBadge = badges.find(b => b.id === link.badgeId);
+    if (!linkedBadge) {
+        setError("The badge associated with this code could not be found.");
         setIsLoading(false);
+        return;
     }
-    initialize();
 
-  }, [linkId, shareLink, linkLoading, firestore, currentUser]);
+    if (currentUser && linkedBadge.owners.includes(currentUser.id)) {
+        setError(`You already own the "${linkedBadge.name}" badge.`);
+        setIsLoading(false);
+        return;
+    }
+    
+    setIsLoading(false);
+
+  }, [linkId, shareLinks, badges, currentUser]);
+
+  const badge = badges.find(b => b.id === shareLink?.badgeId);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!badge || !currentUser || !firestore || !shareLink) return;
+    if (!badge || !currentUser) return;
 
     setIsClaiming(true);
-
     try {
-        const generatedLinks: ShareLink[] = [];
-        await runTransaction(firestore, async (transaction) => {
-             // Update link
-            transaction.update(linkRef, { used: true, claimedBy: currentUser.id });
-
-            // Update badge owners and followers
-            const ownerRef = doc(firestore, `badges/${badge.id}/owners`, currentUser.id);
-            transaction.set(ownerRef, { userId: currentUser.id, badgeId: badge.id, claimedAt: Date.now() });
-
-            const followerRef = doc(firestore, `badges/${badge.id}/followers`, currentUser.id);
-            transaction.set(followerRef, { userId: currentUser.id, badgeId: badge.id, followedAt: Date.now() }, { merge: true });
-
-            // Create 3 new share links for the new owner
-            for (let i = 0; i < 3; i++) {
-                const newLinkRef = doc(collection(firestore, 'shareLinks'));
-                const newLinkData = { badgeId: badge.id, ownerId: currentUser.id, used: false, claimedBy: null, createdAt: Date.now() };
-                transaction.set(newLinkRef, newLinkData);
-                generatedLinks.push({ linkId: newLinkRef.id, ...newLinkData });
-            }
-        });
-
+        redeemShareLink(linkId, currentUser.id);
         toast({
             title: 'Badge Claimed!',
             description: `You are now an owner of the "${badge.name}" badge.`,
         });
         
+        // Create new links for sharing
+        const newLinks: ShareLink[] = [];
+        for (let i = 0; i < 3; i++) {
+           const newLink = createShareLink({badgeId: badge.id, ownerId: currentUser.id});
+           newLinks.push(newLink);
+        }
+        setNewShareLinks(newLinks);
+        
         setBurstEmojis(badge.emojis);
-        setNewShareLinks(generatedLinks);
-        setTimeout(() => setShareOpen(true), 1500);
+
+        setTimeout(() => {
+            setShareOpen(true);
+        }, 1500)
             
     } catch(err: any) {
          toast({
@@ -142,7 +113,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
   }
 
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading || loading) {
       return (
         <div className="text-center space-y-4 pt-6">
             <div className="mb-4 flex justify-center">
@@ -221,11 +192,13 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
             </div>
          </CardContent>
       </Card>
-      {badge && (
+      {badge && currentUser && (
           <ShareBadgeDialog 
             open={isShareOpen} 
             onOpenChange={handleShareDialogClose} 
             badge={badge}
+            user={currentUser}
+            createShareLink={createShareLink}
             links={newShareLinks}
           />
       )}

@@ -12,21 +12,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Copy, QrCode } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useMockData } from '@/lib/mock-data';
 import Image from 'next/image';
 import { Skeleton } from '../ui/skeleton';
-import { Badge, ShareLink } from '@/lib/mock-data';
+import { Badge, ShareLink, User } from '@/lib/mock-data';
 
 type ShareBadgeDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   badge: Badge;
-  links: ShareLink[];
-  isLoading?: boolean;
+  user: User;
+  createShareLink: (data: { badgeId: string; ownerId: string }) => ShareLink;
+  links?: ShareLink[];
 };
 
-export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], isLoading = false }: ShareBadgeDialogProps) {
+export function ShareBadgeDialog({ open, onOpenChange, badge, user, createShareLink, links: initialLinks }: ShareBadgeDialogProps) {
+    const { shareLinks: allLinks, loading } = useMockData();
     const { toast } = useToast();
     const [qrError, setQrError] = React.useState(false);
+
+    const userLinks = allLinks.filter(link => link.badgeId === badge.id && link.ownerId === user.id && !link.used);
+    const links = initialLinks ?? userLinks;
+    const isLoading = loading && !initialLinks;
 
     const copyToClipboard = (text: string) => {
         if (typeof window === 'undefined') return;
@@ -64,9 +71,9 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], isLoad
           {!isLoading && links.length > 0 && (
               <div className="space-y-3">
                 {links.map(link => (
-                    <div key={link.linkId} className="flex items-center gap-2 w-full">
+                    <div key={link.id} className="flex items-center gap-2 w-full">
                        <Image
-                          src={qrCodeUrl(link.linkId)}
+                          src={qrCodeUrl(link.id)}
                           alt="QR Code"
                           width={40}
                           height={40}
@@ -74,8 +81,8 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, links = [], isLoad
                           data-ai-hint="qr code"
                           unoptimized // for external images
                         />
-                      <Input readOnly value={link.linkId} className="bg-muted font-mono text-xs" />
-                      <Button variant="ghost" size="icon" onClick={() => copyToClipboard(link.linkId)}>
+                      <Input readOnly value={link.id} className="bg-muted font-mono text-xs" />
+                      <Button variant="ghost" size="icon" onClick={() => copyToClipboard(link.id)}>
                           <Copy className="h-4 w-4"/>
                       </Button>
                     </div>

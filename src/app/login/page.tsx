@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { AuthLayout } from '@/components/auth/auth-form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { Button } from '@/components/ui/button';
 
 // Simple SVG for Google icon
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -17,28 +20,60 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
   const { toast } = useToast();
-  const { loginWithGoogle, loading } = useAuth();
+  const { login, loading } = useAuth();
 
-  const handleGoogleLogin = async () => {
-    try {
-      await loginWithGoogle();
-      // The useAuth hook will handle redirection on successful login
-    } catch (error: any) {
-      toast({
-        title: 'Authentication Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+        toast({
+            title: 'Email is required',
+            description: 'Please enter your email to log in.',
+            variant: 'destructive'
+        });
+        return;
     }
+    login(email);
   };
+  
+  const handleGoogleLogin = () => {
+    // For now, we just log in the first mock user
+    login('johndoe@example.com');
+  }
 
   return (
     <AuthLayout
       title="Welcome to EmojiBadge!"
-      description="Sign in with your Google account to continue."
+      description="Sign in to create, share, and claim badges."
       isLoading={loading}
     >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+            />
+        </div>
+        <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign In'}
+        </Button>
+        <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                    Or continue with
+                </span>
+            </div>
+        </div>
         <Button 
             variant="outline" 
             className="w-full"
@@ -46,8 +81,9 @@ export default function LoginPage() {
             disabled={loading}
         >
             <GoogleIcon className="mr-2 h-5 w-5" />
-            {loading ? 'Signing in...' : 'Sign in with Google'}
+            Sign in with Google
         </Button>
+      </form>
     </AuthLayout>
   );
 }
