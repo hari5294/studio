@@ -11,7 +11,7 @@ import { EmojiBurst } from '@/components/effects/emoji-burst';
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { signup, loading } = useAuth();
+  const { signup, loginWithGoogle, loading } = useAuth();
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
 
 
@@ -42,6 +42,19 @@ export default function SignupPage() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const user = await loginWithGoogle();
+      handleSignupComplete(user);
+    } catch (error: any) {
+      toast({
+        title: 'Sign Up Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <>
       {burstEmojis && <EmojiBurst emojis={burstEmojis} />}
@@ -51,6 +64,8 @@ export default function SignupPage() {
         footerText="Already have an account?"
         footerLink="/login"
         footerLinkText="Login"
+        onGoogleSignIn={handleGoogleLogin}
+        isLoading={loading}
       >
         <AuthForm
           buttonText="Sign Up"

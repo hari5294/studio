@@ -11,7 +11,7 @@ import { User } from '@/lib/mock-data';
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { login, loading } = useAuth();
+  const { login, loginWithGoogle, loading } = useAuth();
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
 
   const handleLoginComplete = (user: User) => {
@@ -37,15 +37,30 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const user = await loginWithGoogle();
+      handleLoginComplete(user);
+    } catch (error: any) {
+      toast({
+        title: 'Login Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <>
       {burstEmojis && <EmojiBurst emojis={burstEmojis} />}
       <AuthLayout
         title="Welcome Back!"
-        description="Enter your email and password to sign in."
+        description="Sign in to your account to continue."
         footerText="Don't have an account?"
         footerLink="/signup"
         footerLinkText="Sign Up"
+        onGoogleSignIn={handleGoogleLogin}
+        isLoading={loading}
       >
         <AuthForm
           buttonText="Login"

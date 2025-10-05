@@ -9,6 +9,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { useAuth as useFirebaseAuth } from '@/firebase';
 import { useFirestore } from '@/firebase';
@@ -114,6 +116,42 @@ export function useAuth(options: UseAuthOptions = {}) {
     }
   };
 
+  const loginWithGoogle = async (): Promise<User> => {
+    if (!auth || !firestore) {
+      throw new Error('Auth not initialized.');
+    }
+    setLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const userCredential = await signInWithPopup(auth, provider);
+      const firebaseUser = userCredential.user;
+      const userRef = doc(firestore, 'users', firebaseUser.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const userData = { id: userSnap.id, ...userSnap.data() } as User;
+        setUser(userData);
+        return userData;
+      } else {
+        const newUserProfile: User = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          name: firebaseUser.displayName || 'Anonymous User',
+          emojiAvatar: '😀',
+          following: [],
+        };
+        await setDoc(userRef, newUserProfile);
+        setUser(newUserProfile);
+        return newUserProfile;
+      }
+    } catch(e) {
+      emitPermissionError(e, null, 'get', null);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const signup = async (name: string, email: string, password?: string): Promise<User> => {
     if (!auth || !firestore || !password) {
       throw new Error('Auth not initialized or password missing.');
@@ -159,5 +197,5 @@ export function useAuth(options: UseAuthOptions = {}) {
     router.push('/login');
   };
 
-  return { user, loading, login, signup, logout };
+  return { user, loading, login, signup, logout, loginWithGoogle };
 }
