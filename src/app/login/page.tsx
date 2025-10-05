@@ -11,9 +11,10 @@ export default function LoginPage() {
   const { toast } = useToast();
   const { login, loading } = useAuth();
 
-  const handleSubmit = async (email: string) => {
+  const handleSubmit = async (email: string, password?: string) => {
+    if (!password) return; // Should be handled by form validation
     try {
-      const user = await login(email);
+      const user = await login(email, password);
       toast({
         title: 'Login Successful',
         description: `Welcome back, ${user.name}!`,
@@ -31,7 +32,7 @@ export default function LoginPage() {
   return (
     <AuthLayout
       title="Welcome Back!"
-      description="Enter your email to sign in to your account."
+      description="Enter your email and password to sign in."
       footerText="Don't have an account?"
       footerLink="/signup"
       footerLinkText="Sign Up"

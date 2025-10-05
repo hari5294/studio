@@ -50,18 +50,19 @@ export function AuthLayout({ children, title, description, footerText, footerLin
 
 type AuthFormProps = {
     buttonText: string;
-    onSubmit: (email: string, name?: string) => void;
+    onSubmit: (email: string, password?: string, name?: string) => void;
     includeName?: boolean;
     isLoading?: boolean;
 }
 
 export function AuthForm({ buttonText, onSubmit, includeName = false, isLoading = false }: AuthFormProps) {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(email, name);
+    await onSubmit(email, password, name);
   };
 
   return (
@@ -89,6 +90,17 @@ export function AuthForm({ buttonText, onSubmit, includeName = false, isLoading 
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled={isLoading}
+            />
+        </div>
+        <div className="grid gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
             />
         </div>

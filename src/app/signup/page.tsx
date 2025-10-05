@@ -14,13 +14,13 @@ export default function SignupPage() {
   const [, setUsers] = useAtom(usersAtom);
   const [,setCurrentUserId] = useAtom(currentUserIdAtom);
 
-  const handleSubmit = async (email: string, name?: string) => {
-    if (!name) {
-       toast({ title: 'Name is required for sign up.', variant: 'destructive'});
+  const handleSubmit = async (email: string, password?: string, name?: string) => {
+    if (!name || !password) {
+       toast({ title: 'Name and password are required for sign up.', variant: 'destructive'});
        return;
     }
     try {
-      const newUser = await signup(name, email);
+      const newUser = await signup(name, email, password);
       // Add the new user to our mock data
       setUsers(prev => ({...prev, [newUser.id]: newUser}));
       setCurrentUserId(newUser.id);

@@ -30,37 +30,37 @@ export function useAuth(options: UseAuthOptions = {}) {
   }, [currentUserId]);
 
   useEffect(() => {
-    // This effect handles redirection based on auth state
-    if (loading || typeof window === 'undefined') return;
+    if (loading) return;
+    if (typeof window === 'undefined') return;
 
     const isAuthPage = pathname === '/login' || pathname === '/signup';
 
-    if (options.required && !user && !isAuthPage) {
-      // If page requires auth and user is not logged in (and it's not an auth page already), redirect to login
+    if (options.required && !currentUserId && !isAuthPage) {
       router.push('/login');
-    } else if (user && isAuthPage) {
-      // If user is logged in and tries to access login/signup, redirect to dashboard
+    } else if (currentUserId && isAuthPage) {
       router.push('/dashboard');
     }
-  }, [user, loading, pathname, router, options.required]);
+  }, [currentUserId, loading, pathname, router, options.required]);
 
-  const login = (email: string): Promise<User> => {
+  const login = (email: string, password?: string): Promise<User> => {
     return new Promise((resolve, reject) => {
         setLoading(true);
         setTimeout(() => {
             const foundUser = Object.values(users).find(u => u.email === email);
             if (foundUser) {
+                // In a real app, you'd verify the password here.
+                // For mock data, we just check if it exists.
                 setCurrentUserId(foundUser.id);
                 resolve(foundUser);
             } else {
-                reject(new Error('User not found'));
+                reject(new Error('User not found or password incorrect.'));
             }
             setLoading(false);
         }, 500);
     });
   };
 
-  const signup = (name: string, email: string): Promise<User> => {
+  const signup = (name: string, email: string, password?: string): Promise<User> => {
      return new Promise((resolve, reject) => {
          setLoading(true);
         setTimeout(() => {
@@ -77,7 +77,8 @@ export function useAuth(options: UseAuthOptions = {}) {
                 emojiAvatar: '😀',
                 following: []
             };
-            // The component handles adding the user to the atom state
+            // The component handles adding the user to the atom state.
+            // In a real app, you'd save the new user to the database here.
             resolve(newUser);
             setLoading(false);
         }, 500);
