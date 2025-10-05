@@ -15,15 +15,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { EditProfileDialog } from '@/components/profile/edit-profile-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMockData, User } from '@/lib/mock-data';
-import { EmojiBurst } from '@/components/effects/emoji-burst';
-
 
 function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurrentUserProfile: boolean }) {
     const { toast } = useToast();
     const { user: currentUser } = useAuth();
     const { followUser, unfollowUser, updateUser } = useMockData();
     const [isEditProfileOpen, setEditProfileOpen] = useState(false);
-    const [burstEmoji, setBurstEmoji] = useState<string | null>(null);
 
     if (!currentUser) return null;
 
@@ -35,10 +32,6 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurre
         const isNowFollowing = !isFollowing;
         if (isNowFollowing) {
             followUser(currentUser.id, user.id);
-            if(user.emojiAvatar) {
-                setBurstEmoji(user.emojiAvatar);
-                setTimeout(() => setBurstEmoji(null), 2000);
-            }
         } else {
             unfollowUser(currentUser.id, user.id);
         }
@@ -58,7 +51,6 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurre
 
     return (
         <>
-            {burstEmoji && <EmojiBurst emojis={burstEmoji} />}
             <Card>
               <CardContent className="pt-6 flex flex-col items-center text-center gap-4">
                  <div className="relative group">

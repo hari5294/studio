@@ -16,7 +16,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useMockData, User, Badge } from '@/lib/mock-data';
-import { EmojiBurst } from '@/components/effects/emoji-burst';
 
 function BadgeOwners({ badge }: { badge: Badge }) {
     const { users, loading } = useMockData();
@@ -109,7 +108,6 @@ function BadgeDetailContent() {
   
   const [isShareOpen, setShareOpen] = useState(searchParams.get('showShare') === 'true');
   const [isTransferOpen, setTransferOpen] = useState(false);
-  const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
 
   if (loading) {
       return (
@@ -144,8 +142,6 @@ function BadgeDetailContent() {
         unfollowBadge(badge.id, currentUser.id);
     } else {
         followBadge(badge.id, currentUser.id);
-        setBurstEmojis(badge.emojis);
-        setTimeout(() => setBurstEmojis(null), 2000);
     }
     toast({
         title: isFollowing ? 'Unfollowed.' : 'Followed!',
@@ -174,7 +170,6 @@ function BadgeDetailContent() {
   return (
     <>
       <Header title="Badge Details" />
-      {burstEmojis && <EmojiBurst emojis={burstEmojis} />}
       <div className="flex-1 space-y-6 p-4 md:p-6">
         <Button variant="ghost" onClick={() => router.push('/dashboard')} className="mb-2">
           <ArrowLeft className="mr-2 h-4 w-4" />
