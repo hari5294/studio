@@ -10,17 +10,7 @@ import { Firestore, getFirestore } from 'firebase/firestore';
 
 import { FirebaseProvider, useAuth, useFirestore } from '.';
 import { User } from '@/lib/mock-data';
-
-// Hardcoded Firebase config to ensure it is always available on the client.
-const firebaseConfig = {
-  apiKey: "AIzaSyBKyV2J1wOkMQ2wEiGYRO6p675DzwL852o",
-  authDomain: "badgese-e258f.firebaseapp.com",
-  projectId: "badgese-e258f",
-  storageBucket: "badgese-e258f.appspot.com",
-  messagingSenderId: "877963955625",
-  appId: "1:877963955625:web:a2-1674fc078a0e30bc48b8",
-  measurementId: "G-5ZGXZRLGZL"
-};
+import { firebaseConfig } from './config';
 
 
 function initializeClientFirebase(): {
