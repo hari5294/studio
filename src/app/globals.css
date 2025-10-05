@@ -83,3 +83,30 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @keyframes emoji-burst {
+    0% {
+      transform: translate(0, 0) scale(0.5);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--tx), var(--ty)) scale(1.2);
+      opacity: 0;
+    }
+  }
+
+  @keyframes container-fade-out {
+    0% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  .animate-emoji-burst {
+    animation: emoji-burst 1s forwards;
+  }
+
+  .animate-container-fade-out {
+    animation: container-fade-out 2s forwards;
+  }
+}

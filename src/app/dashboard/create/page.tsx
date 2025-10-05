@@ -11,9 +11,10 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Smile } from 'lucide-react';
 import { isOnlyEmojis } from '@/lib/utils';
-import { badgesAtom, currentUserIdAtom, shareLinksAtom, ShareLink } from '@/lib/mock-data';
+import { badgesAtom, currentUserIdAtom, shareLinksAtom, ShareLink, Badge } from '@/lib/mock-data';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import { EmojiBurst } from '@/components/effects/emoji-burst';
 
 export default function CreateBadgePage() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function CreateBadgePage() {
   const [currentUserId] = useAtom(currentUserIdAtom);
   const [, setBadges] = useAtom(badgesAtom);
   const [, setShareLinks] = useAtom(shareLinksAtom);
+  const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
 
   const handleEmojiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -40,6 +42,11 @@ export default function CreateBadgePage() {
         }
         return prev;
     });
+  }
+
+  const handleAnimationComplete = (newBadgeId: string) => {
+    const url = `/dashboard/badge/${newBadgeId}?showShare=true`;
+    router.push(url);
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -80,22 +87,19 @@ export default function CreateBadgePage() {
     setTimeout(() => {
         try {
             const newBadgeId = crypto.randomUUID();
+            const newBadge: Badge = {
+                id: newBadgeId,
+                name: badgeName,
+                emojis: submittedEmojis,
+                tokens: tokens,
+                creatorId: currentUserId,
+                owners: [currentUserId],
+                followers: [currentUserId],
+                createdAt: Date.now(),
+            };
             
-            setBadges(prev => ({
-                ...prev,
-                [newBadgeId]: {
-                    id: newBadgeId,
-                    name: badgeName,
-                    emojis: submittedEmojis,
-                    tokens: tokens,
-                    creatorId: currentUserId,
-                    owners: [currentUserId],
-                    followers: [currentUserId],
-                    createdAt: Date.now(),
-                }
-            }));
+            setBadges(prev => ({ ...prev, [newBadgeId]: newBadge }));
             
-            // Create 3 share links for the creator
             setShareLinks(prev => {
               const newLinks: Record<string, ShareLink> = {};
               for (let i = 0; i < 3; i++) {
@@ -117,8 +121,9 @@ export default function CreateBadgePage() {
                 description: `Your badge "${badgeName}" has been successfully created.`,
             });
             
-            const url = `/dashboard/badge/${newBadgeId}?showShare=true`;
-            router.push(url);
+            setBurstEmojis(submittedEmojis);
+
+            setTimeout(() => handleAnimationComplete(newBadgeId), 2000); // Wait for burst to finish
 
         } catch (error: any) {
             toast({
@@ -126,7 +131,6 @@ export default function CreateBadgePage() {
                 description: error.message,
                 variant: 'destructive',
             });
-        } finally {
             setIsLoading(false);
         }
     }, 1000);
@@ -143,7 +147,7 @@ export default function CreateBadgePage() {
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle className="font-headline">Badge Details</CardTitle>
-            <CardDescription>Design your unique badge with emojis and a name.</CardDescription>
+            <CardDescription>Design your unique badge with a name and exactly 3 emojis.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -193,6 +197,7 @@ export default function CreateBadgePage() {
           </CardContent>
         </Card>
       </div>
+      {burstEmojis && <EmojiBurst emojis={burstEmojis} />}
     </>
   );
 }
