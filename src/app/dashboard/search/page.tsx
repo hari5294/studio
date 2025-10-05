@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useState, useEffect } from 'react';
@@ -125,3 +126,5 @@ export default function SearchPage() {
     </>
   );
 }
+
+    

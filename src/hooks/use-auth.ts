@@ -74,3 +74,5 @@ export function useAuth(options: { required?: boolean } = {}) {
 
   return { user, loading, login, logout };
 }
+
+    

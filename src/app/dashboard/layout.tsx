@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppSidebar } from '@/components/layout/app-sidebar';
@@ -42,3 +43,5 @@ export default function DashboardLayout({
     </SidebarProvider>
   );
 }
+
+    

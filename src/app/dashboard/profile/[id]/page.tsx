@@ -207,3 +207,5 @@ export default function UserProfilePage({ params }: { params: { id:string } }) {
     </>
   );
 }
+
+    

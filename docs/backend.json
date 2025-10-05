@@ -113,7 +113,7 @@
     }
   },
   "auth": {
-    "providers": ["emailLink"]
+    "providers": ["google.com"]
   },
   "firestore": {
     "/users/{userId}": {

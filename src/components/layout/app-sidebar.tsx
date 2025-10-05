@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -50,9 +49,16 @@ const ownedBadges = [
 function OwnedBadges() {
     const pathname = usePathname();
     const { user } = useAuth();
+    const { isMobile, setOpenMobile } = useSidebar();
     
     if (ownedBadges.length === 0) return null;
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
+
+    const handleClick = () => {
+        if (isMobile) {
+            setOpenMobile(false);
+        }
+    };
 
     return (
         <div className="mt-4 flex flex-col gap-2 p-2 pt-0">
@@ -67,7 +73,7 @@ function OwnedBadges() {
                     isActive={isActive(`/dashboard/badge/${badge.id}`)}
                     tooltip={badge.name}
                     >
-                    <Link href={`/dashboard/badge/${badge.id}`}>
+                    <Link href={`/dashboard/badge/${badge.id}`} onClick={handleClick}>
                         <span className="text-lg">{badge.emojis}</span>
                         <span>{badge.name}</span>
                     </Link>
@@ -146,8 +152,15 @@ function UserMenu() {
 
 function InboxMenuLink() {
     const pathname = usePathname();
+    const { isMobile, setOpenMobile } = useSidebar();
     const unreadCount = 1; // Placeholder
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
+
+    const handleClick = () => {
+        if (isMobile) {
+            setOpenMobile(false);
+        }
+    };
 
     return (
         <SidebarMenuItem>
@@ -156,7 +169,7 @@ function InboxMenuLink() {
               isActive={isActive('/dashboard/inbox')}
               tooltip="Inbox"
             >
-              <Link href="/dashboard/inbox" className="relative">
+              <Link href="/dashboard/inbox" className="relative" onClick={handleClick}>
                 <Inbox />
                 <span>Inbox</span>
                 {unreadCount > 0 && (
@@ -173,10 +186,16 @@ function InboxMenuLink() {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const { user } = useAuth();
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
+
+  const handleClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon" side="left" variant="sidebar">
@@ -187,7 +206,7 @@ export function AppSidebar() {
         </SheetHeader>
       )}
       <SidebarHeader className="h-16 justify-between border-b px-3">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2" onClick={handleClick}>
           <EmojiBadgeLogo className="size-8 text-primary" />
           <span className="text-lg font-semibold font-headline">EmojiBadge</span>
         </Link>
@@ -201,7 +220,7 @@ export function AppSidebar() {
               isActive={pathname === '/dashboard'}
               tooltip="Dashboard"
             >
-              <Link href="/dashboard">
+              <Link href="/dashboard" onClick={handleClick}>
                 <Home />
                 <span>Dashboard</span>
               </Link>
@@ -213,7 +232,7 @@ export function AppSidebar() {
               isActive={isActive('/dashboard/search')}
               tooltip="Search"
             >
-              <Link href="/dashboard/search">
+              <Link href="/dashboard/search" onClick={handleClick}>
                 <Search />
                 <span>Search</span>
               </Link>
@@ -226,7 +245,7 @@ export function AppSidebar() {
               tooltip="Redeem Code"
               disabled={!user}
             >
-              <Link href="/dashboard/redeem">
+              <Link href="/dashboard/redeem" onClick={handleClick}>
                 <Gift />
                 <span>Redeem Code</span>
               </Link>
@@ -242,7 +261,7 @@ export function AppSidebar() {
                 tooltip="My Profile"
                 disabled={!user}
             >
-                <Link href={`/dashboard/profile`}>
+                <Link href={`/dashboard/profile`} onClick={handleClick}>
                     <User />
                     <span>My Profile</span>
                 </Link>
@@ -255,7 +274,7 @@ export function AppSidebar() {
               tooltip="Create Badge"
                disabled={!user}
             >
-              <Link href="/dashboard/create">
+              <Link href="/dashboard/create" onClick={handleClick}>
                 <PlusCircle />
                 <span>Create Badge</span>
               </Link>

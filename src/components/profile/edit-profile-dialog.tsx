@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -106,3 +107,5 @@ export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditPr
     </Dialog>
   );
 }
+
+    
