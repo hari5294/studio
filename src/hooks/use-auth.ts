@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAtom } from 'jotai';
 import { useRouter, usePathname } from 'next/navigation';
-import { currentUserIdAtom, usersAtom, User, logout as logoutUser } from '@/lib/mock-data';
+import { currentUserIdAtom, usersAtom, User } from '@/lib/mock-data';
 
 type UseAuthOptions = {
   required?: boolean; // Does the page require authentication?
@@ -12,7 +12,7 @@ type UseAuthOptions = {
 export function useAuth(options: UseAuthOptions = {}) {
   const router = useRouter();
   const pathname = usePathname();
-  const [currentUserId] = useAtom(currentUserIdAtom);
+  const [currentUserId, setCurrentUserId] = useAtom(currentUserIdAtom);
   const [users] = useAtom(usersAtom);
   
   // Use a local loading state to simulate async behavior
@@ -87,7 +87,8 @@ export function useAuth(options: UseAuthOptions = {}) {
   };
   
   const logout = () => {
-    logoutUser();
+    setCurrentUserId(null);
+    router.push('/login');
   };
 
   return { user, loading, login, signup, logout };
