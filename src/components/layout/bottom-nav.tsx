@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAtom } from 'jotai';
 import { Home, Search, User, Gift, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { currentUserIdAtom, notificationsAtom } from '@/lib/mock-data';
+import { useAuth, useCollection, useFirestore } from '@/firebase';
+import { useMemo } from 'react';
+import { collection, query, where } from 'firebase/firestore';
+import { Notification } from '@/lib/mock-data';
+
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Home', exact: true },
@@ -17,16 +20,22 @@ const navItems = [
 
 export function BottomNavBar() {
   const pathname = usePathname();
-  const [currentUserId] = useAtom(currentUserIdAtom);
-  const [allNotifications] = useAtom(notificationsAtom);
+  const { user } = useAuth();
+  const firestore = useFirestore();
 
-  const unreadCount = Object.values(allNotifications).filter(n => n.userId === currentUserId && !n.read).length;
+  const notificationsQuery = useMemo(() => {
+    if (!firestore || !user?.id) return null;
+    return query(collection(firestore, 'users', user.id, 'notifications'), where('read', '==', false));
+  }, [firestore, user?.id]);
+
+  const { data: unreadNotifications } = useCollection<Notification>(notificationsQuery);
+  const unreadCount = unreadNotifications?.length ?? 0;
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t bg-card/95 backdrop-blur-sm z-40">
       <nav className="grid h-full grid-cols-5">
         {navItems.map((item) => {
-          const href = item.isProfile ? `/dashboard/profile/${currentUserId}` : item.href;
+          const href = item.isProfile && user ? `/dashboard/profile/${user.id}` : item.href;
           const isActive = item.exact ? pathname === href : pathname.startsWith(item.href);
           
           return (

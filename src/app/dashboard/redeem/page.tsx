@@ -3,7 +3,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAtom } from 'jotai';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,9 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Gift } from 'lucide-react';
-import { badgesAtom, currentUserIdAtom, shareLinksAtom, ShareLink } from '@/lib/mock-data';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
 import { useSound } from '@/components/providers/sound-provider';
+import { useAuth, useDoc, useFirestore } from '@/firebase';
+import { doc, writeBatch, collection, getDoc, runTransaction } from 'firebase/firestore';
+import { Badge, ShareLink } from '@/lib/mock-data';
 
 const EXPIRY_HOURS = 24;
 
@@ -21,13 +22,12 @@ export default function RedeemCodePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { playSound } = useSound();
+  const { user } = useAuth();
+  const firestore = useFirestore();
+
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
-
-  const [currentUserId] = useAtom(currentUserIdAtom);
-  const [shareLinks, setShareLinks] = useAtom(shareLinksAtom);
-  const [badges, setBadges] = useAtom(badgesAtom);
 
   const handleRedeemComplete = (badgeId: string) => {
     router.push(`/dashboard/badge/${badgeId}?showShare=true`);
@@ -35,7 +35,7 @@ export default function RedeemCodePage() {
   
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!currentUserId) {
+    if (!user || !firestore) {
         toast({ title: 'Error', description: 'You must be logged in to redeem a code.', variant: 'destructive'});
         return;
     }
@@ -50,51 +50,57 @@ export default function RedeemCodePage() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-        try {
-            const link = shareLinks[code];
-            const now = Date.now();
-            const expiryTime = (link?.createdAt || 0) + (EXPIRY_HOURS * 60 * 60 * 1000);
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            const linkRef = doc(firestore, 'shareLinks', code);
+            const linkDoc = await transaction.get(linkRef);
 
-            if (!link || link.used) {
+            if (!linkDoc.exists()) {
+                throw new Error("This code is invalid or has already been used.");
+            }
+
+            const link = linkDoc.data() as ShareLink;
+            const now = Date.now();
+            const expiryTime = link.createdAt + (EXPIRY_HOURS * 60 * 60 * 1000);
+
+            if (link.used) {
                 throw new Error("This code is invalid or has already been used.");
             }
              if (now > expiryTime) {
                 throw new Error(`This code has expired. Codes are valid for ${EXPIRY_HOURS} hours.`);
             }
             
-            const badgeToClaim = badges[link.badgeId];
-            if (!badgeToClaim) {
+            const badgeRef = doc(firestore, 'badges', link.badgeId);
+            const badgeDoc = await transaction.get(badgeRef);
+            if (!badgeDoc.exists()) {
                 throw new Error("The badge for this code could not be found.");
             }
-            if(badgeToClaim.owners.includes(currentUserId)){
+            const badgeToClaim = badgeDoc.data() as Badge;
+            
+            const ownerRef = doc(firestore, 'badges', link.badgeId, 'owners', user.id);
+            const ownerDoc = await transaction.get(ownerRef);
+            if(ownerDoc.exists()){
                 throw new Error(`You already own the "${badgeToClaim.name}" badge.`);
             }
 
             // Mark link as used
-            setShareLinks(prev => ({ ...prev, [code]: { ...prev[code], used: true, claimedBy: currentUserId }}));
+            transaction.update(linkRef, { used: true, claimedBy: user.id });
             
             // Add user to badge owners
-            setBadges(prev => ({
-                ...prev,
-                [link.badgeId]: {
-                    ...prev[link.badgeId],
-                    owners: [...prev[link.badgeId].owners, currentUserId],
-                    followers: [...new Set([...prev[link.badgeId].followers, currentUserId])],
-                }
-            }));
+            transaction.set(ownerRef, { userId: user.id, badgeId: link.badgeId, claimedAt: Date.now() });
+
+            // Add user to followers if not already
+            const followerRef = doc(firestore, 'badges', link.badgeId, 'followers', user.id);
+            transaction.set(followerRef, { userId: user.id, badgeId: link.badgeId, followedAt: Date.now() }, { merge: true });
 
             // Create 3 new share links for the new owner
-            setShareLinks(prev => {
-              const newLinksToAdd: Record<string, ShareLink> = {};
-              for (let i = 0; i < 3; i++) {
-                const newLinkId = crypto.randomUUID();
-                const newLink: ShareLink = { linkId: newLinkId, badgeId: link.badgeId, ownerId: currentUserId, used: false, claimedBy: null, createdAt: Date.now() };
-                newLinksToAdd[newLinkId] = newLink;
-              }
-              return { ...prev, ...newLinksToAdd };
-            });
-            
+            for (let i = 0; i < 3; i++) {
+                const newLinkRef = doc(collection(firestore, 'shareLinks'));
+                const newLink: Omit<ShareLink, 'linkId'> = { badgeId: link.badgeId, ownerId: user.id, used: false, claimedBy: null, createdAt: Date.now() };
+                transaction.set(newLinkRef, newLink);
+            }
+
+            // Show UI feedback after transaction
             toast({
                 title: 'Badge Claimed!',
                 description: `You are now an owner of the "${badgeToClaim.name}" badge.`,
@@ -103,17 +109,17 @@ export default function RedeemCodePage() {
             playSound('claim');
             setBurstEmojis(badgeToClaim.emojis);
             setTimeout(() => handleRedeemComplete(link.badgeId), 2000);
+        });
 
-        } catch (error: any) {
-            toast({
-                title: 'Redemption Failed',
-                description: error.message,
-                variant: 'destructive',
-            });
-            setIsLoading(false);
-            setCode('');
-        }
-    }, 1000);
+    } catch (error: any) {
+        toast({
+            title: 'Redemption Failed',
+            description: error.message,
+            variant: 'destructive',
+        });
+        setIsLoading(false);
+        setCode('');
+    }
   };
 
   return (
@@ -145,7 +151,7 @@ export default function RedeemCodePage() {
                   className="font-mono"
                 />
               </div>
-              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !currentUserId}>
+              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !user}>
                 {isLoading ? 'Redeeming...' : 'Redeem Badge'}
               </Button>
             </form>
@@ -156,5 +162,3 @@ export default function RedeemCodePage() {
     </>
   );
 }
-
-    

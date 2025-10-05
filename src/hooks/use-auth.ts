@@ -1,10 +1,10 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAtom } from 'jotai';
 import { useRouter, usePathname } from 'next/navigation';
 import {
+  onAuthStateChanged,
+  User as FirebaseUser,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
@@ -14,7 +14,7 @@ import { useAuth as useFirebaseAuth } from '@/firebase';
 import { useFirestore } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
-import { currentUserIdAtom, User } from '@/lib/mock-data';
+import { User } from '@/lib/mock-data';
 
 type UseAuthOptions = {
   required?: boolean;
@@ -26,38 +26,30 @@ export function useAuth(options: UseAuthOptions = {}) {
   const auth = useFirebaseAuth();
   const firestore = useFirestore();
 
-  const [currentUserId, setCurrentUserId] = useAtom(currentUserIdAtom);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Rely on Firebase's onAuthStateChanged in the provider
-    // to set the initial user state.
-    const storedUserId = localStorage.getItem('currentUserId');
-    if (storedUserId) {
-        setCurrentUserId(storedUserId);
-    }
-    setLoading(false);
-  }, [setCurrentUserId]);
+    if (!auth || !firestore) return;
 
-   useEffect(() => {
-    if (loading || !firestore || !currentUserId) {
-        if (!currentUserId) setUser(null);
-        return;
-    };
-
-    const fetchUser = async () => {
-        const userRef = doc(firestore, 'users', currentUserId);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        const userRef = doc(firestore, 'users', firebaseUser.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-            setUser(userSnap.data() as User);
+          setUser({ id: userSnap.id, ...userSnap.data() } as User);
         } else {
-            setUser(null);
+          // This case can happen for a brief moment after signup before the doc is created
+          setUser(null);
         }
-    };
-    fetchUser();
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
 
-   }, [currentUserId, firestore, loading]);
+    return () => unsubscribe();
+  }, [auth, firestore]);
 
 
   useEffect(() => {
@@ -65,12 +57,12 @@ export function useAuth(options: UseAuthOptions = {}) {
 
     const isAuthPage = pathname === '/login' || pathname === '/signup';
 
-    if (options.required && !currentUserId && !isAuthPage) {
+    if (options.required && !user && !isAuthPage) {
       router.push('/login');
-    } else if (currentUserId && isAuthPage) {
+    } else if (user && isAuthPage) {
       router.push('/dashboard');
     }
-  }, [currentUserId, loading, pathname, router, options.required]);
+  }, [user, loading, pathname, router, options.required]);
 
   const login = async (email: string, password?: string): Promise<User> => {
     if (!auth || !firestore || !password) {
@@ -85,10 +77,8 @@ export function useAuth(options: UseAuthOptions = {}) {
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
-        const userData = userSnap.data() as User;
+        const userData = { id: userSnap.id, ...userSnap.data() } as User;
         setUser(userData);
-        setCurrentUserId(firebaseUser.uid);
-        localStorage.setItem('currentUserId', firebaseUser.uid);
         return userData;
       } else {
          throw new Error('User profile not found.');
@@ -119,9 +109,8 @@ export function useAuth(options: UseAuthOptions = {}) {
         };
 
         // The user document is created by onAuthStateChanged listener in provider
+        // but we set it here to update the UI immediately
         setUser(newUser);
-        setCurrentUserId(newUser.id);
-        localStorage.setItem('currentUserId', newUser.id);
         return newUser;
 
     } finally {
@@ -132,8 +121,6 @@ export function useAuth(options: UseAuthOptions = {}) {
   const logout = async () => {
     if (!auth) return;
     await signOut(auth);
-    setCurrentUserId(null);
-    localStorage.removeItem('currentUserId');
     setUser(null);
     router.push('/login');
   };

@@ -1,49 +1,47 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useAtom } from 'jotai';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge as BadgeIcon, Users, Search as SearchIcon } from 'lucide-react';
 import { BadgeCard } from '@/components/badges/badge-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { badgesAtom, usersAtom, User, Badge } from '@/lib/mock-data';
+import { User, Badge } from '@/lib/mock-data';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 
 function SearchResults() {
   const searchParams = useSearchParams();
   const queryParam = searchParams.get('q') || '';
-  
-  const [allBadges] = useAtom(badgesAtom);
-  const [allUsers] = useAtom(usersAtom);
+  const firestore = useFirestore();
 
-  const [badgeResults, setBadgeResults] = useState<Badge[]>([]);
-  const [userResults, setUserResults] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
+  const badgesQuery = useMemo(() => {
+    if (!firestore || !queryParam) return null;
+    return query(
+        collection(firestore, 'badges'), 
+        where('name', '>=', queryParam),
+        where('name', '<=', queryParam + '\uf8ff'),
+        limit(20)
+    );
+  }, [firestore, queryParam]);
 
-  useEffect(() => {
-    const performSearch = async () => {
-        if (!queryParam) {
-            setBadgeResults([]);
-            setUserResults([]);
-            return;
-        }
-        setLoading(true);
+  const usersQuery = useMemo(() => {
+    if (!firestore || !queryParam) return null;
+     return query(
+        collection(firestore, 'users'), 
+        where('name', '>=', queryParam),
+        where('name', '<=', queryParam + '\uf8ff'),
+        limit(20)
+    );
+  }, [firestore, queryParam]);
 
-        // Mock search
-        setTimeout(() => {
-            const lowerCaseQuery = queryParam.toLowerCase();
-            const badges = Object.values(allBadges).filter(b => b.name.toLowerCase().includes(lowerCaseQuery));
-            const users = Object.values(allUsers).filter(u => u.name.toLowerCase().includes(lowerCaseQuery));
-            setBadgeResults(badges);
-            setUserResults(users);
-            setLoading(false);
-        }, 500);
-    }
-    performSearch();
-  }, [queryParam, allBadges, allUsers]);
+  const { data: badgeResults, loading: badgesLoading } = useCollection<Badge>(badgesQuery);
+  const { data: userResults, loading: usersLoading } = useCollection<User>(usersQuery);
+
+  const loading = badgesLoading || usersLoading;
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">
@@ -62,9 +60,9 @@ function SearchResults() {
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
               <BadgeIcon className="h-6 w-6" />
-              Badges ({badgeResults.length})
+              Badges ({badgeResults?.length || 0})
             </h2>
-            {loading ? <Skeleton className="h-48 w-full" /> : badgeResults.length > 0 ? (
+            {loading ? <Skeleton className="h-48 w-full" /> : badgeResults && badgeResults.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {badgeResults.map((badge) => <BadgeCard key={badge.id} badge={badge} />)}
               </div>
@@ -78,9 +76,9 @@ function SearchResults() {
           <div>
             <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
               <Users className="h-6 w-6" />
-              Users ({userResults.length})
+              Users ({userResults?.length || 0})
             </h2>
-            {loading ? <Skeleton className="h-24 w-full" /> : userResults.length > 0 ? (
+            {loading ? <Skeleton className="h-24 w-full" /> : userResults && userResults.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {userResults.map((user) => (
                   <Link href={`/dashboard/profile/${user.id}`} key={user.id}>

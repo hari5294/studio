@@ -2,11 +2,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useAtom } from 'jotai';
 import { AuthLayout, AuthForm } from '@/components/auth/auth-form';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { usersAtom, currentUserIdAtom, User } from '@/lib/mock-data';
+import { User } from '@/lib/mock-data';
 import { useState } from 'react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
 
@@ -14,17 +13,10 @@ export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { signup, loading } = useAuth();
-  const [, setUsers] = useAtom(usersAtom);
-  const [,setCurrentUserId] = useAtom(currentUserIdAtom);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
 
 
   const handleSignupComplete = (newUser: User) => {
-     // Add the new user to our mock data
-    setUsers(prev => ({...prev, [newUser.id]: newUser}));
-    setCurrentUserId(newUser.id);
-    localStorage.setItem('currentUserId', newUser.id);
-
     toast({
       title: 'Account Created!',
       description: `Welcome, ${newUser.name}!`,

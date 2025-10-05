@@ -1,18 +1,25 @@
 import Link from 'next/link';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { TrendingUp, Flame, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAtom } from 'jotai';
-import { badgesAtom, usersAtom, Badge } from '@/lib/mock-data';
-import { useState, useEffect } from 'react';
+import { Badge, User } from '@/lib/mock-data';
+import { useMemo } from 'react';
+import { useCollection, useDoc, useFirestore } from '@/firebase';
+import { collection, doc, query, orderBy, limit } from 'firebase/firestore';
 
 type TrendingBadge = Badge & {
     ownerName?: string;
     ownerEmoji?: string;
+    followerCount: number;
+    ownerCount: number;
 };
 
 function TrendingBadgeItem({ badge, index }: { badge: TrendingBadge, index: number }) {
-    const badgesLeft = badge.tokens - badge.owners.length;
+    const firestore = useFirestore();
+    const creatorRef = useMemo(() => firestore ? doc(firestore, 'users', badge.creatorId) : null, [firestore, badge.creatorId]);
+    const { data: creator } = useDoc<User>(creatorRef);
+
+    const badgesLeft = badge.tokens - badge.ownerCount;
 
     return (
         <Link href={`/dashboard/badge/${badge.id}`} className="block">
@@ -24,23 +31,23 @@ function TrendingBadgeItem({ badge, index }: { badge: TrendingBadge, index: numb
             <div className="text-3xl">{badge.emojis}</div>
             <div className="flex-grow">
                 <p className="font-semibold">{badge.name}</p>
-                {badge.ownerName && (
+                {creator && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Avatar className="h-5 w-5">
-                            {badge.ownerEmoji ? (
-                                <span className="flex h-full w-full items-center justify-center text-sm">{badge.ownerEmoji}</span>
+                            {creator.emojiAvatar ? (
+                                <span className="flex h-full w-full items-center justify-center text-sm">{creator.emojiAvatar}</span>
                             ) : (
-                                <AvatarFallback>{badge.ownerName?.charAt(0) ?? '?'}</AvatarFallback>
+                                <AvatarFallback>{creator.name?.charAt(0) ?? '?'}</AvatarFallback>
                             )}
                         </Avatar>
-                        <span>{badge.ownerName}</span>
+                        <span>{creator.name}</span>
                     </div>
                 )}
             </div>
             <div className="text-right">
                 <div className="flex items-center justify-end gap-1 font-semibold text-lg">
                     <Users className="h-5 w-5" />
-                    <span>{badge.followers.length.toLocaleString()}</span>
+                    <span>{badge.followerCount.toLocaleString()}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">{badgesLeft.toLocaleString()} / {badge.tokens.toLocaleString()} left</p>
             </div>
@@ -51,27 +58,20 @@ function TrendingBadgeItem({ badge, index }: { badge: TrendingBadge, index: numb
 
 
 export function TrendingBadges() {
-  const [badges] = useAtom(badgesAtom);
-  const [users] = useAtom(usersAtom);
-  const [loading, setLoading] = useState(true);
+    const firestore = useFirestore();
 
-  useEffect(() => {
-    setTimeout(() => setLoading(false), 300);
-  }, []);
+    // This is not easily doable with firestore without duplicating follower counts on the badge doc.
+    // For now, we will fetch all badges and then fetch their follower counts.
+    // This is inefficient and not scalable. A better data model would store counts on the document.
+    // Let's sort by creation date for now as a placeholder for "trending".
+    const trendingQuery = useMemo(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'badges'), orderBy('createdAt', 'desc'), limit(5));
+    }, [firestore]);
 
-  const trendingBadges: TrendingBadge[] = Object.values(badges)
-    .sort((a,b) => b.followers.length - a.followers.length)
-    .slice(0, 5)
-    .map(badge => {
-        const creator = users[badge.creatorId];
-        return {
-            ...badge,
-            ownerName: creator?.name,
-            ownerEmoji: creator?.emojiAvatar,
-        }
-    });
+    const { data: badges, loading } = useCollection<Badge>(trendingQuery);
 
-  if (loading) {
+    if (loading) {
       return (
         <div>
             <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
@@ -83,7 +83,7 @@ export function TrendingBadges() {
             </div>
         </div>
       )
-  }
+    }
 
   return (
     <div>
@@ -92,8 +92,8 @@ export function TrendingBadges() {
         Trending Badges
       </h2>
       <div className="space-y-4">
-        {trendingBadges.map((badge, index) => (
-            <TrendingBadgeItem key={badge.id} badge={badge} index={index} />
+        {badges?.map((badge, index) => (
+            <TrendingBadgeItem key={badge.id} badge={{...badge, followerCount: 0, ownerCount: 0}} index={index} />
         ))}
       </div>
     </div>

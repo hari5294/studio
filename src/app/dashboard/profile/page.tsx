@@ -1,16 +1,15 @@
 'use client';
 
 import { redirect } from 'next/navigation';
-import { useAtom } from 'jotai';
-import { currentUserIdAtom } from '@/lib/mock-data';
+import { useAuth } from '@/hooks/use-auth';
 import { useIsClient } from '@/hooks/use-is-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
-    const [currentUserId] = useAtom(currentUserIdAtom);
+    const { user, loading } = useAuth();
     const isClient = useIsClient();
 
-    if (!isClient) {
+    if (loading || !isClient) {
         return (
              <div className="flex-1 space-y-6 p-4 md:p-6">
               <Skeleton className="h-48 w-full lg:w-2/3" />
@@ -19,10 +18,11 @@ export default function ProfilePage() {
         );
     }
     
-    if (currentUserId) {
-        redirect(`/dashboard/profile/${currentUserId}`);
+    if (user) {
+        redirect(`/dashboard/profile/${user.id}`);
+    } else {
+        redirect('/login');
     }
 
-    // Fallback or loading state if needed, though redirect is fast
     return null;
 }

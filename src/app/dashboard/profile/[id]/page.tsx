@@ -1,11 +1,10 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { notFound } from 'next/navigation';
-import { useAtom } from 'jotai';
 import { Header } from '@/components/layout/header';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { BadgeCard } from '@/components/badges/badge-card';
 import { Badge, User as UserIcon, Users, Edit } from 'lucide-react';
@@ -14,53 +13,62 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { EditProfileDialog } from '@/components/profile/edit-profile-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { usersAtom, badgesAtom, currentUserIdAtom, User } from '@/lib/mock-data';
+import { User, Badge as BadgeType } from '@/lib/mock-data';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
+import { useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
+import { doc, collection, query, where, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
 
 function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurrentUserProfile: boolean }) {
     const { toast } = useToast();
-    const [currentUserId] = useAtom(currentUserIdAtom);
-    const [users, setUsers] = useAtom(usersAtom);
-    const currentUser = users[currentUserId];
+    const { user: currentUser } = useAuth();
+    const firestore = useFirestore();
 
     const [isEditProfileOpen, setEditProfileOpen] = useState(false);
     const [burstEmoji, setBurstEmoji] = useState<string | null>(null);
 
-    
-    if (!currentUser) return null; // Should not happen if there's a current user
+    if (!currentUser || !firestore) return null;
 
     const isFollowing = currentUser.following.includes(user.id);
     
-    const handleFollowToggle = () => {
+    const handleFollowToggle = async () => {
         if (user.id === currentUser.id) return; // Can't follow self
-        const isNowFollowing = !isFollowing;
         
-        setUsers(prev => {
-            const updatedUser = {
-                ...prev[currentUser.id],
-                following: isNowFollowing
-                    ? [...prev[currentUser.id].following, user.id]
-                    : prev[currentUser.id].following.filter(id => id !== user.id)
-            };
-            return { ...prev, [currentUser.id]: updatedUser };
-        });
+        const isNowFollowing = !isFollowing;
+        const currentUserRef = doc(firestore, 'users', currentUser.id);
 
-        if (isNowFollowing && user.emojiAvatar) {
-            setBurstEmoji(user.emojiAvatar);
-            setTimeout(() => setBurstEmoji(null), 2000);
+        try {
+            const newFollowing = isNowFollowing
+                ? [...currentUser.following, user.id]
+                : currentUser.following.filter(id => id !== user.id);
+            
+            await writeBatch(firestore).update(currentUserRef, { following: newFollowing }).commit();
+
+            if (isNowFollowing && user.emojiAvatar) {
+                setBurstEmoji(user.emojiAvatar);
+                setTimeout(() => setBurstEmoji(null), 2000);
+            }
+
+            toast({
+                title: isNowFollowing ? 'Followed!' : 'Unfollowed.',
+                description: `You are now ${isNowFollowing ? 'following' : 'no longer following'} ${user.name}.`
+            });
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
         }
-
-        toast({
-            title: isNowFollowing ? 'Followed!' : 'Unfollowed.',
-            description: `You are now ${isNowFollowing ? 'following' : 'no longer following'} ${user.name}.`
-        });
     }
 
-    const handleUpdateUser = (updatedUser: Partial<User>) => {
-        setUsers(prev => ({
-            ...prev,
-            [user.id]: { ...prev[user.id], ...updatedUser }
-        }));
+    const handleUpdateUser = async (updatedUser: Partial<User>) => {
+        if (!firestore) return;
+        const userRef = doc(firestore, 'users', user.id);
+        try {
+            await writeBatch(firestore).update(userRef, updatedUser).commit();
+            toast({
+                title: "Avatar Updated!",
+                description: `Your profile picture has been updated.`,
+            });
+        } catch (error: any) {
+            toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+        }
     };
 
     return (
@@ -113,14 +121,34 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurre
 }
 
 function OwnedBadges({ userId }: { userId: string}) {
-    const [badges] = useAtom(badgesAtom);
+    const firestore = useFirestore();
+
+    const [ownedBadges, setOwnedBadges] = useState<BadgeType[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setTimeout(() => setLoading(false), 300);
-    }, []);
+        if (!firestore) return;
+        const fetchOwnedBadges = async () => {
+            setLoading(true);
+            const badgesRef = collection(firestore, 'badges');
+            const q = query(badgesRef);
+            const querySnapshot = await getDocs(q);
+            const badges: BadgeType[] = [];
 
-    const ownedBadges = Object.values(badges).filter(b => b.owners.includes(userId));
+            for(const badgeDoc of querySnapshot.docs) {
+                const ownersRef = collection(firestore, `badges/${badgeDoc.id}/owners`);
+                const ownerDoc = await getDoc(doc(ownersRef, userId));
+                if(ownerDoc.exists()){
+                     badges.push({ id: badgeDoc.id, ...badgeDoc.data() } as BadgeType);
+                }
+            }
+            setOwnedBadges(badges);
+            setLoading(false);
+        };
+
+        fetchOwnedBadges();
+
+    }, [firestore, userId]);
     
     if (loading) {
         return <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -148,8 +176,15 @@ function OwnedBadges({ userId }: { userId: string}) {
 }
 
 function FollowingList({ user }: { user: User }) {
-    const [allUsers] = useAtom(usersAtom);
-    const followingUsers = user.following.map(id => allUsers[id]).filter(Boolean);
+    const firestore = useFirestore();
+    
+    const followingQuery = useMemo(() => {
+        if (!firestore || !user.following || user.following.length === 0) return null;
+        return query(collection(firestore, 'users'), where('id', 'in', user.following));
+    }, [firestore, user.following]);
+
+    const { data: followingUsers, loading } = useCollection<User>(followingQuery);
+
 
     return (
         <Card>
@@ -161,7 +196,7 @@ function FollowingList({ user }: { user: User }) {
             </CardHeader>
             <CardContent>
             <div className="space-y-4">
-                {followingUsers.length > 0 ? followingUsers.map((followedUser) => (
+                {loading ? <Skeleton className="h-16 w-full" /> : followingUsers && followingUsers.length > 0 ? followingUsers.map((followedUser) => (
                 <Link href={`/dashboard/profile/${followedUser.id}`} key={followedUser.id}>
                     <div className="flex items-center gap-4 p-2 rounded-md hover:bg-muted">
                     <Avatar>
@@ -185,15 +220,15 @@ function FollowingList({ user }: { user: User }) {
 
 
 export default function UserProfilePage({ params }: { params: { id:string } }) {
-  const [users] = useAtom(usersAtom);
-  const [currentUserId] = useAtom(currentUserIdAtom);
-  const [loading, setLoading] = useState(true);
+  const { user: currentUser } = useAuth();
+  const firestore = useFirestore();
 
-  const user = users[params.id];
+  const userRef = useMemo(() => {
+    if (!firestore) return null;
+    return doc(firestore, 'users', params.id);
+  }, [firestore, params.id]);
 
-  useEffect(() => {
-      setTimeout(() => setLoading(false), 300);
-  }, []);
+  const { data: user, loading } = useDoc<User>(userRef);
 
   if (loading) {
       return (
@@ -211,7 +246,7 @@ export default function UserProfilePage({ params }: { params: { id:string } }) {
     notFound();
   }
   
-  const isCurrentUserProfile = user.id === currentUserId;
+  const isCurrentUserProfile = user.id === currentUser?.id;
 
   return (
     <>

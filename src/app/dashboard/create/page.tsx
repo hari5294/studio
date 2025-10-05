@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAtom } from 'jotai';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,21 +10,23 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Smile } from 'lucide-react';
 import { isOnlyEmojis } from '@/lib/utils';
-import { badgesAtom, currentUserIdAtom, shareLinksAtom, ShareLink, Badge } from '@/lib/mock-data';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
 import { useSound } from '@/components/providers/sound-provider';
+import { useAuth, useFirestore } from '@/firebase';
+import { addDoc, collection, doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
+import { Badge, ShareLink } from '@/lib/mock-data';
 
 export default function CreateBadgePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { playSound } = useSound();
+  const { user } = useAuth();
+  const firestore = useFirestore();
+  
   const [emojis, setEmojis] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [currentUserId] = useAtom(currentUserIdAtom);
-  const [, setBadges] = useAtom(badgesAtom);
-  const [, setShareLinks] = useAtom(shareLinksAtom);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
 
   const handleEmojiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +54,7 @@ export default function CreateBadgePage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!currentUserId) {
+    if (!user || !firestore) {
         toast({ title: 'Error', description: 'You must be logged in to create a badge.', variant: 'destructive'});
         return;
     }
@@ -85,58 +86,63 @@ export default function CreateBadgePage() {
         return;
     }
 
-    // Mock API call
-    setTimeout(() => {
-        try {
-            const newBadgeId = crypto.randomUUID();
-            const newBadge: Badge = {
-                id: newBadgeId,
-                name: badgeName,
-                emojis: submittedEmojis,
-                tokens: tokens,
-                creatorId: currentUserId,
-                owners: [currentUserId],
-                followers: [currentUserId],
+    try {
+        const newBadgeRef = doc(collection(firestore, 'badges'));
+        const newBadgeId = newBadgeRef.id;
+
+        const newBadge: Omit<Badge, 'id'> = {
+            name: badgeName,
+            emojis: submittedEmojis,
+            tokens: tokens,
+            creatorId: user.id,
+            createdAt: Date.now(),
+        };
+
+        const batch = writeBatch(firestore);
+        
+        batch.set(newBadgeRef, newBadge);
+
+        // Add creator as the first owner
+        const ownerRef = doc(firestore, 'badges', newBadgeId, 'owners', user.id);
+        batch.set(ownerRef, { userId: user.id, badgeId: newBadgeId, claimedAt: Date.now() });
+
+        // Add creator as the first follower
+        const followerRef = doc(firestore, 'badges', newBadgeId, 'followers', user.id);
+        batch.set(followerRef, { userId: user.id, badgeId: newBadgeId, followedAt: Date.now() });
+        
+        // Create initial 3 share links
+        for (let i = 0; i < 3; i++) {
+            const newLinkRef = doc(collection(firestore, 'shareLinks'));
+            const newLink: Omit<ShareLink, 'linkId'> = {
+                badgeId: newBadgeId,
+                ownerId: user.id,
+                used: false,
+                claimedBy: null,
                 createdAt: Date.now(),
             };
-            
-            setBadges(prev => ({ ...prev, [newBadgeId]: newBadge }));
-            
-            setShareLinks(prev => {
-              const newLinks: Record<string, ShareLink> = {};
-              for (let i = 0; i < 3; i++) {
-                const newLinkId = crypto.randomUUID();
-                newLinks[newLinkId] = {
-                  linkId: newLinkId,
-                  badgeId: newBadgeId,
-                  ownerId: currentUserId,
-                  used: false,
-                  claimedBy: null,
-                  createdAt: Date.now(),
-                };
-              }
-              return { ...prev, ...newLinks };
-            });
-
-            toast({
-                title: 'Badge Created!',
-                description: `Your badge "${badgeName}" has been successfully created.`,
-            });
-            
-            playSound('claim');
-            setBurstEmojis(submittedEmojis);
-
-            setTimeout(() => handleAnimationComplete(newBadgeId), 2000); // Wait for burst to finish
-
-        } catch (error: any) {
-            toast({
-                title: 'Creation Failed',
-                description: error.message,
-                variant: 'destructive',
-            });
-            setIsLoading(false);
+            batch.set(newLinkRef, newLink);
         }
-    }, 1000);
+
+        await batch.commit();
+
+        toast({
+            title: 'Badge Created!',
+            description: `Your badge "${badgeName}" has been successfully created.`,
+        });
+        
+        playSound('claim');
+        setBurstEmojis(submittedEmojis);
+
+        setTimeout(() => handleAnimationComplete(newBadgeId), 2000);
+
+    } catch (error: any) {
+        toast({
+            title: 'Creation Failed',
+            description: error.message,
+            variant: 'destructive',
+        });
+        setIsLoading(false);
+    }
   };
 
   return (
@@ -193,7 +199,7 @@ export default function CreateBadgePage() {
                   Initial amount of badges available to claim.
                 </p>
               </div>
-              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !currentUserId}>
+              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !user}>
                 {isLoading ? 'Creating...' : 'Create Badge'}
               </Button>
             </form>

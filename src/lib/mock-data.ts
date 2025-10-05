@@ -1,7 +1,6 @@
-import { atom } from 'jotai';
 
-// This file is now deprecated for data storage but the types are still used.
-// The data is now fetched from Firebase.
+
+// Data is now fetched from Firebase. The types are still used across the app.
 
 export type User = { 
     id: string; 
@@ -51,6 +50,3 @@ export type Notification = {
     read: boolean; 
     shareLinkId?: string;
 };
-
-// This atom represents the currently logged-in Firebase user's UID.
-export const currentUserIdAtom = atom<string | null>(null);

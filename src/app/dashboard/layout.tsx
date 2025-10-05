@@ -6,7 +6,11 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 
-function DashboardContent({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, loading } = useAuth({ required: true });
 
   if (loading || !user) {
@@ -37,13 +41,4 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       </div>
     </SidebarProvider>
   );
-}
-
-
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return <DashboardContent>{children}</DashboardContent>;
 }

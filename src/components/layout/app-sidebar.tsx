@@ -3,7 +3,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAtom } from 'jotai';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -39,20 +38,27 @@ import {
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
-import { badgesAtom, currentUserIdAtom, notificationsAtom, usersAtom } from '@/lib/mock-data';
 import { useAuth } from '@/hooks/use-auth';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { useMemo } from 'react';
+import { Badge, Notification } from '@/lib/mock-data';
 
 function OwnedBadges() {
     const pathname = usePathname();
-    const [currentUserId] = useAtom(currentUserIdAtom);
-    const [allBadges] = useAtom(badgesAtom);
+    const { user } = useAuth();
+    const firestore = useFirestore();
+
+    const ownedBadgesQuery = useMemo(() => {
+        if (!firestore || !user?.id) return null;
+        return query(collection(firestore, 'badges'), where('creatorId', '==', user.id));
+    }, [firestore, user?.id]);
+
+    const { data: ownedBadges } = useCollection<Badge>(ownedBadgesQuery);
+
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
-
-    if (!currentUserId) return null;
-
-    const ownedBadges = Object.values(allBadges).filter(b => b.owners.includes(currentUserId));
     
-    if (ownedBadges.length === 0) return null;
+    if (!ownedBadges || ownedBadges.length === 0) return null;
 
     return (
         <div className="mt-4 flex flex-col gap-2 p-2 pt-0">
@@ -146,13 +152,18 @@ function UserMenu() {
 
 function InboxMenuLink() {
     const pathname = usePathname();
-    const [allNotifications] = useAtom(notificationsAtom);
-    const [currentUserId] = useAtom(currentUserIdAtom);
+    const { user } = useAuth();
+    const firestore = useFirestore();
+
+    const notificationsQuery = useMemo(() => {
+        if (!firestore || !user?.id) return null;
+        return query(collection(firestore, 'users', user.id, 'notifications'), where('read', '==', false));
+    }, [firestore, user?.id]);
+
+    const { data: unreadNotifications } = useCollection<Notification>(notificationsQuery);
+    
+    const unreadCount = unreadNotifications?.length ?? 0;
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
-    
-    if (!currentUserId) return null;
-    
-    const unreadCount = Object.values(allNotifications).filter(n => n.userId === currentUserId && !n.read).length;
 
     return (
         <SidebarMenuItem>
@@ -179,7 +190,7 @@ function InboxMenuLink() {
 export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
-  const [currentUserId] = useAtom(currentUserIdAtom);
+  const { user } = useAuth();
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -223,7 +234,7 @@ export function AppSidebar() {
               asChild
               isActive={isActive('/dashboard/redeem')}
               tooltip="Redeem Code"
-              disabled={!currentUserId}
+              disabled={!user}
             >
               <Link href="/dashboard/redeem">
                 <Gift />
@@ -237,9 +248,9 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
                 asChild
-                isActive={isActive(`/dashboard/profile/${currentUserId}`)}
+                isActive={isActive(`/dashboard/profile/${user?.id}`)}
                 tooltip="My Profile"
-                disabled={!currentUserId}
+                disabled={!user}
             >
                 <Link href={`/dashboard/profile`}>
                     <User />
@@ -252,7 +263,7 @@ export function AppSidebar() {
               asChild
               isActive={isActive('/dashboard/create')}
               tooltip="Create Badge"
-               disabled={!currentUserId}
+               disabled={!user}
             >
               <Link href="/dashboard/create">
                 <PlusCircle />
