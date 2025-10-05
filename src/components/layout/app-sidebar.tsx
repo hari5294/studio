@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -43,6 +44,7 @@ import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { Badge, Notification } from '@/lib/mock-data';
+import { SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 
 function OwnedBadges() {
     const pathname = usePathname();
@@ -100,7 +102,7 @@ function UserMenu() {
               asChild
             >
                 <Link href="/login">
-                    <LogIn className="h-4 w-4 shrink-0"/>
+                    <LogIn className="mr-2 h-4 w-4 shrink-0"/>
                     <span className="group-data-[collapsible=icon]:hidden">Login</span>
                 </Link>
             </Button>
@@ -196,6 +198,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" side="left" variant="sidebar">
+       {isMobile && (
+        <SheetHeader className="sr-only">
+          <SheetTitle>Navigation Menu</SheetTitle>
+          <SheetDescription>
+            Main navigation links for the application.
+          </SheetDescription>
+        </SheetHeader>
+      )}
       <SidebarHeader className="h-16 justify-between border-b px-3">
         <Link href="/dashboard" className="flex items-center gap-2">
           <EmojiBadgeLogo className="size-8 text-primary" />
