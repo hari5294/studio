@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter, useSearchParams, notFound } from 'next/navigation';
 import { useAtom } from 'jotai';
 import { Header } from '@/components/layout/header';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowLeft, Users, Share2, ArrowRightLeft, Crown, Send } from 'lucide-react';
