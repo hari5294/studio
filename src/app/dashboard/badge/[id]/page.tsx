@@ -12,17 +12,32 @@ import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { TransferBadgeDialog } from '@/components/badges/transfer-badge-dialog';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, User } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { useMockData, User, Badge } from '@/lib/mock-data';
+
+// Placeholder Data
+const allBadges = [
+    { id: 'b1', name: 'Galactic Pioneer', emojis: '🌌🚀✨', tokens: 50, creatorId: 'u3', owners: ['u3', 'u2'], followers: ['u3', 'u2', 'u1'] },
+    { id: 'b2', name: 'Pixel Perfect', emojis: '🎨🖼️🖌️', tokens: 250, creatorId: 'u2', owners: ['u2'], followers: ['u2', 'u1'] },
+    { id: 'b3', name: 'Code Ninja', emojis: '💻🥋🥷', tokens: 1000, creatorId: 'u1', owners: ['u1'], followers: ['u1', 'u2'] },
+    { id: 'b4', name: 'Super Squad', emojis: '🦸‍♀️🦸‍♂️💥', tokens: 100, creatorId: 'u4', owners: ['u4'], followers: ['u4'] },
+];
+const allUsers = [
+    { id: 'u1', name: 'Alice', email: 'alice@example.com', emojiAvatar: '👩‍💻', following: ['u2'] },
+    { id: 'u2', name: 'Bob', email: 'bob@example.com', emojiAvatar: '👨‍🎨', following: ['u1', 'u3'] },
+    { id: 'u3', name: 'Charlie', email: 'charlie@example.com', emojiAvatar: '👨‍🚀', following: ['u2'] },
+    { id: 'u4', name: 'Diana', email: 'diana@example.com', emojiAvatar: '🦸‍♀️', following: [] },
+];
+type Badge = typeof allBadges[0];
+
 
 function BadgeOwners({ badge }: { badge: Badge }) {
-    const { users, loading } = useMockData();
+    const loading = false;
 
     if (loading) return <Skeleton className="h-32 w-full" />;
 
-    const owners = users.filter(u => badge.owners.includes(u.id));
+    const owners = allUsers.filter(u => badge.owners.includes(u.id));
 
     return (
         <Card>
@@ -58,11 +73,11 @@ function BadgeOwners({ badge }: { badge: Badge }) {
 }
 
 function BadgeFollowers({ badge }: { badge: Badge }) {
-    const { users, loading } = useMockData();
+    const loading = false;
     
     if (loading) return <Skeleton className="h-48 w-full" />;
 
-    const followers = users.filter(u => badge.followers.includes(u.id));
+    const followers = allUsers.filter(u => badge.followers.includes(u.id));
 
     return (
         <Card>
@@ -99,17 +114,17 @@ function BadgeDetailContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { user: currentUser } = useAuth();
-  const { badges, users, createShareLink, followBadge, unfollowBadge, addNotification, transferBadgeOwnership, loading } = useMockData();
+  const { user: currentUser, loading: authLoading } = useAuth();
 
   const id = params.id as string;
-  const badge = badges.find(b => b.id === id);
-  const creator = users.find(u => u.id === badge?.creatorId);
+  const badge = allBadges.find(b => b.id === id);
+  const creator = allUsers.find(u => u.id === badge?.creatorId);
   
   const [isShareOpen, setShareOpen] = useState(searchParams.get('showShare') === 'true');
   const [isTransferOpen, setTransferOpen] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(currentUser && badge ? badge.followers.includes(currentUser.id) : false);
 
-  if (loading) {
+  if (authLoading) {
       return (
            <div className="flex-1 space-y-6 p-4 md:p-6">
                 <Skeleton className="h-10 w-32" />
@@ -132,31 +147,20 @@ function BadgeDetailContent() {
   
   const isCreator = currentUser && badge.creatorId === currentUser.id;
   const isOwner = currentUser && badge.owners.includes(currentUser.id);
-  const isFollowing = currentUser && badge.followers.includes(currentUser.id);
   
   const badgesLeft = badge.tokens - badge.owners.length;
 
   const handleFollow = () => {
     if (!currentUser) return;
-    if(isFollowing) {
-        unfollowBadge(badge.id, currentUser.id);
-    } else {
-        followBadge(badge.id, currentUser.id);
-    }
+    setIsFollowing(!isFollowing);
     toast({
-        title: isFollowing ? 'Unfollowed.' : 'Followed!',
-        description: `You are now ${isFollowing ? 'no longer following' : 'following'} "${badge.name}".`
+        title: !isFollowing ? 'Followed!' : 'Unfollowed.',
+        description: `You are now ${!isFollowing ? 'following' : 'no longer following'} "${badge.name}".`
     });
   }
 
   const handleRequestCode = () => {
      if (!currentUser) return;
-     addNotification({
-         userId: badge.creatorId,
-         fromUserId: currentUser.id,
-         badgeId: badge.id,
-         type: 'BADGE_REQUEST',
-     });
     toast({
         title: 'Request Sent!',
         description: `Your request for a code for "${badge.name}" has been sent to the creator.`,
@@ -164,7 +168,10 @@ function BadgeDetailContent() {
   }
 
   const handleTransfer = async (newOwnerId: string) => {
-    transferBadgeOwnership(badge.id, newOwnerId);
+    toast({
+        title: "Transfer Complete!",
+        description: `Ownership of "${badge.name}" has been transferred.`,
+    });
   };
   
   return (
@@ -259,7 +266,6 @@ function BadgeDetailContent() {
           onOpenChange={setShareOpen} 
           badge={badge} 
           user={currentUser} 
-          createShareLink={createShareLink}
         />
       )}
       {currentUser && isCreator && (
@@ -268,7 +274,7 @@ function BadgeDetailContent() {
             onOpenChange={setTransferOpen} 
             badge={badge} 
             onTransfer={handleTransfer}
-            users={users.filter(u => badge.owners.includes(u.id))}
+            users={allUsers.filter(u => badge.owners.includes(u.id))}
         />
       )}
     </>

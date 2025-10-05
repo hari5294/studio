@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Smile } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { getFirstEmoji, isOnlyEmojis } from '@/lib/utils';
-import { User } from '@/lib/mock-data';
+import type { User } from '@/hooks/use-auth';
 
 type EditProfileDialogProps = {
   open: boolean;

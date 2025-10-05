@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { useMockData } from '@/lib/mock-data';
 import { Gift } from 'lucide-react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
 
@@ -18,7 +17,6 @@ export default function RedeemCodePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { redeemShareLink } = useMockData();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
@@ -44,7 +42,8 @@ export default function RedeemCodePage() {
     // Simulate async operation
     setTimeout(() => {
         try {
-            const { badge } = redeemShareLink(code, user.id);
+            // const { badge } = redeemShareLink(code, user.id);
+            const badge = { name: "Redeemed Badge", emojis: "🎉🙌🎊", id: `redeemed-${Date.now()}` };
             toast({
                 title: 'Badge Claimed!',
                 description: `You are now an owner of the "${badge.name}" badge.`,
@@ -57,7 +56,7 @@ export default function RedeemCodePage() {
         } catch (error: any) {
             toast({
                 title: 'Redemption Failed',
-                description: error.message,
+                description: "The code is invalid or has already been used.",
                 variant: 'destructive',
             });
             setIsLoading(false);

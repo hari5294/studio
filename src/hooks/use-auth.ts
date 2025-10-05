@@ -1,9 +1,19 @@
 
 'use client';
 
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { User, useMockData } from '@/lib/mock-data';
+
+// TEMPORARY MOCK USER DATA - to be replaced by Firebase Auth
+export type User = { id: string; name: string; email: string; emojiAvatar?: string; following: string[]; };
+
+const mockUsers: User[] = [
+    { id: 'u1', name: 'Alice', email: 'alice@example.com', emojiAvatar: '👩‍💻', following: ['u2'] },
+    { id: 'u2', name: 'Bob', email: 'bob@example.com', emojiAvatar: '👨‍🎨', following: ['u1', 'u3'] },
+    { id: 'u3', name: 'Charlie', email: 'charlie@example.com', emojiAvatar: '👨‍🚀', following: ['u2'] },
+    { id: 'u4', name: 'Diana', email: 'diana@example.com', emojiAvatar: '🦸‍♀️', following: [] },
+];
+// END TEMPORARY MOCK
 
 type AuthContextType = {
   user: User | null;
@@ -12,36 +22,27 @@ type AuthContextType = {
   logout: () => void;
 };
 
-const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
-
-type UseAuthOptions = {
-  required?: boolean;
-};
-
-export function useAuth(options: UseAuthOptions = {}) {
+export function useAuth(options: { required?: boolean } = {}) {
   const router = useRouter();
   const pathname = usePathname();
-  const { users, loading: mockDataLoading } = useMockData();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    // In a real app, you'd check a token in localStorage, etc.
-    // For this mock, we'll see if a user is "logged in" via localStorage
     const loggedInUserEmail = typeof window !== 'undefined' ? localStorage.getItem('loggedInUser') : null;
     
     if (loggedInUserEmail) {
-      const foundUser = users.find(u => u.email === loggedInUserEmail);
+      const foundUser = mockUsers.find(u => u.email === loggedInUserEmail);
       setUser(foundUser || null);
     } else {
       setUser(null);
     }
     setLoading(false);
-  }, [users]);
+  }, []);
 
   useEffect(() => {
-    if (loading || mockDataLoading) return;
+    if (loading) return;
 
     const isAuthPage = ['/login', '/signup'].includes(pathname);
 
@@ -52,16 +53,15 @@ export function useAuth(options: UseAuthOptions = {}) {
     if (user && (isAuthPage || pathname === '/')) {
       router.push('/dashboard');
     }
-  }, [user, loading, mockDataLoading, pathname, router, options.required]);
+  }, [user, loading, pathname, router, options.required]);
 
   const login = (email: string) => {
-    const foundUser = users.find(u => u.email === email);
+    const foundUser = mockUsers.find(u => u.email === email);
     if(foundUser) {
         localStorage.setItem('loggedInUser', email);
         setUser(foundUser);
         router.push('/dashboard');
     } else {
-        // In a real app, you'd show an error. Here we'll just fail silently for simplicity.
         console.error("User not found in mock data");
     }
   };
@@ -72,7 +72,5 @@ export function useAuth(options: UseAuthOptions = {}) {
     router.push('/login');
   };
 
-  return { user, loading: loading || mockDataLoading, login, logout };
+  return { user, loading, login, logout };
 }
-
-    

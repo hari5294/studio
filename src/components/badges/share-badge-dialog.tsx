@@ -12,28 +12,33 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Copy, QrCode } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useMockData } from '@/lib/mock-data';
 import Image from 'next/image';
 import { Skeleton } from '../ui/skeleton';
-import { Badge, ShareLink, User } from '@/lib/mock-data';
+import type { User } from '@/hooks/use-auth';
+
+// Placeholder Types
+type Badge = { id: string; name: string; emojis: string; };
+type ShareLink = { id: string; };
+
 
 type ShareBadgeDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   badge: Badge;
   user: User;
-  createShareLink: (data: { badgeId: string; ownerId: string }) => ShareLink;
   links?: ShareLink[];
 };
 
-export function ShareBadgeDialog({ open, onOpenChange, badge, user, createShareLink, links: initialLinks }: ShareBadgeDialogProps) {
-    const { shareLinks: allLinks, loading } = useMockData();
+export function ShareBadgeDialog({ open, onOpenChange, badge, user, links: initialLinks }: ShareBadgeDialogProps) {
     const { toast } = useToast();
-    const [qrError, setQrError] = React.useState(false);
-
-    const userLinks = allLinks.filter(link => link.badgeId === badge.id && link.ownerId === user.id && !link.used);
-    const links = initialLinks ?? userLinks;
-    const isLoading = loading && !initialLinks;
+    
+    // Placeholder links
+    const links = initialLinks ?? [
+        { id: `link-1`},
+        { id: `link-2`},
+        { id: `link-3`},
+    ];
+    const isLoading = false;
 
     const copyToClipboard = (text: string) => {
         if (typeof window === 'undefined') return;

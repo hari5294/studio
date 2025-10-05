@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Smile } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { useMockData } from '@/lib/mock-data';
 import { isOnlyEmojis } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
@@ -20,7 +19,6 @@ export default function CreateBadgePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { createBadge } = useMockData();
   const [emojis, setEmojis] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
@@ -82,12 +80,8 @@ export default function CreateBadgePage() {
     // Simulate async operation
     setTimeout(() => {
         try {
-            const newBadge = createBadge({
-                name: badgeName,
-                emojis: submittedEmojis,
-                tokens,
-                creatorId: user.id,
-            });
+            // const newBadge = createBadge({ ... });
+            const newBadgeId = `new-badge-${Date.now()}`;
 
             toast({
                 title: 'Badge Created!',
@@ -96,7 +90,7 @@ export default function CreateBadgePage() {
             
             setBurstEmojis(submittedEmojis);
 
-            setTimeout(() => handleAnimationComplete(newBadge.id), 2000);
+            setTimeout(() => handleAnimationComplete(newBadgeId), 2000);
 
         } catch (error: any) {
             toast({

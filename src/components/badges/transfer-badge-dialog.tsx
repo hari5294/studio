@@ -13,9 +13,10 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowRightLeft } from 'lucide-react';
 import React, { useState } from 'react';
-import { Badge, User, useMockData } from '@/lib/mock-data';
 import { Combobox } from '@/components/ui/combobox';
+import type { User } from '@/hooks/use-auth';
 
+type Badge = { id: string; name: string; creatorId: string; };
 
 type TransferBadgeDialogProps = {
   open: boolean;

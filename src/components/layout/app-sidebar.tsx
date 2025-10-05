@@ -40,18 +40,19 @@ import { EmojiBadgeLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
-import { useMockData, Badge, Notification } from '@/lib/mock-data';
 import { SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+
+// Placeholder data
+const ownedBadges = [
+    { id: 'b3', name: 'Code Ninja', emojis: '💻🥋🥷' },
+];
 
 function OwnedBadges() {
     const pathname = usePathname();
     const { user } = useAuth();
-    const { badges } = useMockData();
-    const ownedBadges = badges.filter(b => b.creatorId === user?.id);
-
-    const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
     
     if (ownedBadges.length === 0) return null;
+    const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
     return (
         <div className="mt-4 flex flex-col gap-2 p-2 pt-0">
@@ -145,9 +146,7 @@ function UserMenu() {
 
 function InboxMenuLink() {
     const pathname = usePathname();
-    const { user } = useAuth();
-    const { notifications } = useMockData();
-    const unreadCount = notifications.filter(n => n.userId === user?.id && !n.read).length;
+    const unreadCount = 1; // Placeholder
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
     return (

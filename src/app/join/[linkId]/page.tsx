@@ -6,37 +6,37 @@ import { EmojiBadgeLogo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
-import { useMockData, ShareLink } from '@/lib/mock-data';
+import { useAuth, User } from '@/hooks/use-auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
 
+// Placeholder Data
+const shareLinks = [
+    { id: 'sl1', badgeId: 'b1', ownerId: 'u3', used: false, claimedBy: null },
+    { id: 'sl2', badgeId: 'b2', ownerId: 'u2', used: true, claimedBy: 'u1' },
+];
+const badges = [
+    { id: 'b1', name: 'Galactic Pioneer', emojis: '🌌🚀✨', owners: ['u3', 'u2'] },
+    { id: 'b2', name: 'Pixel Perfect', emojis: '🎨🖼️🖌️', owners: ['u2'] },
+];
 
 export default function JoinPage({ params }: { params: { linkId: string } }) {
   const router = useRouter();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
-  const {
-    badges,
-    shareLinks,
-    users,
-    redeemShareLink,
-    createShareLink,
-    loading,
-  } = useMockData();
   
   const linkId = params.linkId;
-  const [shareLink, setShareLink] = useState<ShareLink | undefined>(undefined);
+  const [shareLink, setShareLink] = useState<any>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClaiming, setIsClaiming] = useState(false);
   const [isShareOpen, setShareOpen] = useState(false);
-  const [newShareLinks, setNewShareLinks] = useState<ShareLink[]>([]);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
   
+  const badge = badges.find(b => b.id === shareLink?.badgeId);
 
   useEffect(() => {
     const link = shareLinks.find(l => l.id === linkId);
@@ -63,9 +63,8 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
     
     setIsLoading(false);
 
-  }, [linkId, shareLinks, badges, currentUser]);
+  }, [linkId, currentUser]);
 
-  const badge = badges.find(b => b.id === shareLink?.badgeId);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,19 +72,11 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
 
     setIsClaiming(true);
     try {
-        redeemShareLink(linkId, currentUser.id);
+        // redeemShareLink(linkId, currentUser.id);
         toast({
             title: 'Badge Claimed!',
             description: `You are now an owner of the "${badge.name}" badge.`,
         });
-        
-        // Create new links for sharing
-        const newLinks: ShareLink[] = [];
-        for (let i = 0; i < 3; i++) {
-           const newLink = createShareLink({badgeId: badge.id, ownerId: currentUser.id});
-           newLinks.push(newLink);
-        }
-        setNewShareLinks(newLinks);
         
         setBurstEmojis(badge.emojis);
 
@@ -113,7 +104,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
   }
 
   const renderContent = () => {
-    if (isLoading || loading) {
+    if (isLoading) {
       return (
         <div className="text-center space-y-4 pt-6">
             <div className="mb-4 flex justify-center">
@@ -198,8 +189,6 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
             onOpenChange={handleShareDialogClose} 
             badge={badge}
             user={currentUser}
-            createShareLink={createShareLink}
-            links={newShareLinks}
           />
       )}
     </div>

@@ -8,26 +8,40 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge as BadgeIcon, Users, Search as SearchIcon } from 'lucide-react';
 import { BadgeCard } from '@/components/badges/badge-card';
-import { useMockData } from '@/lib/mock-data';
 import { Skeleton } from '@/components/ui/skeleton';
+
+// Placeholder Data
+const allBadges = [
+    { id: 'b1', name: 'Galactic Pioneer', emojis: '🌌🚀✨', tokens: 50, owners: {length: 2}, followers: {length: 3}},
+    { id: 'b2', name: 'Pixel Perfect', emojis: '🎨🖼️🖌️', tokens: 250, owners: {length: 1}, followers: {length: 2}},
+    { id: 'b3', name: 'Code Ninja', emojis: '💻🥋🥷', tokens: 1000, owners: {length: 1}, followers: {length: 2}},
+    { id: 'b4', name: 'Super Squad', emojis: '🦸‍♀️🦸‍♂️💥', tokens: 100, owners: {length: 1}, followers: {length: 1}},
+];
+const allUsers = [
+    { id: 'u1', name: 'Alice', email: 'alice@example.com', emojiAvatar: '👩‍💻' },
+    { id: 'u2', name: 'Bob', email: 'bob@example.com', emojiAvatar: '👨‍🎨' },
+    { id: 'u3', name: 'Charlie', email: 'charlie@example.com', emojiAvatar: '👨‍🚀' },
+    { id: 'u4', name: 'Diana', email: 'diana@example.com', emojiAvatar: '🦸‍♀️' },
+];
+
 
 function SearchResults() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
-  const { users, badges, loading } = useMockData();
-  const [badgeResults, setBadgeResults] = useState(badges);
-  const [userResults, setUserResults] = useState(users);
+  const loading = false;
+  const [badgeResults, setBadgeResults] = useState(allBadges as any[]);
+  const [userResults, setUserResults] = useState(allUsers as any[]);
 
   useEffect(() => {
     if (query) {
       const lowerCaseQuery = query.toLowerCase();
-      setBadgeResults(badges.filter(b => b.name.toLowerCase().includes(lowerCaseQuery)));
-      setUserResults(users.filter(u => u.name.toLowerCase().includes(lowerCaseQuery)));
+      setBadgeResults(allBadges.filter(b => b.name.toLowerCase().includes(lowerCaseQuery)));
+      setUserResults(allUsers.filter(u => u.name.toLowerCase().includes(lowerCaseQuery)));
     } else {
       setBadgeResults([]);
       setUserResults([]);
     }
-  }, [query, users, badges]);
+  }, [query]);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">

@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,16 +10,31 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Mail, Gift, Inbox as InboxIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, User } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { useMockData, User, Badge, Notification } from '@/lib/mock-data';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Placeholder Data
+type Badge = { id: string; name: string; };
+type Notification = { id: string; type: 'BADGE_REQUEST' | 'BADGE_RECEIVED' | 'OWNERSHIP_TRANSFER'; fromUserId: string; badgeId: string; createdAt: number; read: boolean; shareLinkId?: string; };
 type EnrichedNotification = Notification & { fromUser: User; badge: Badge };
 
+const allUsers: User[] = [
+    { id: 'u1', name: 'Alice', email: 'alice@example.com', emojiAvatar: '👩‍💻', following: ['u2'] },
+    { id: 'u2', name: 'Bob', email: 'bob@example.com', emojiAvatar: '👨‍🎨', following: ['u1', 'u3'] },
+];
+const allBadges: Badge[] = [
+    { id: 'b1', name: 'Galactic Pioneer'},
+    { id: 'b2', name: 'Pixel Perfect' },
+];
+const notifications: Notification[] = [
+    { id: 'n1', type: 'BADGE_REQUEST', fromUserId: 'u1', badgeId: 'b2', createdAt: Date.now() - 1 * 3600000, read: false },
+    { id: 'n2', type: 'BADGE_RECEIVED', fromUserId: 'u2', badgeId: 'b1', createdAt: Date.now() - 2 * 3600000, read: true, shareLinkId: 'sl1' },
+    { id: 'n3', type: 'OWNERSHIP_TRANSFER', fromUserId: 'u2', badgeId: 'b1', createdAt: Date.now() - 4 * 3600000, read: true },
+];
+
+
 function NotificationItem({ notification, onSendCode }: { notification: EnrichedNotification, onSendCode: (badgeId: string, fromUserId: string, fromUserName: string) => void }) {
-    const { markNotificationAsRead } = useMockData();
-    const router = useRouter();
 
     const handleSendCode = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -29,15 +43,6 @@ function NotificationItem({ notification, onSendCode }: { notification: Enriched
             onSendCode(notification.badge.id, notification.fromUser.id, notification.fromUser.name);
         }
     }
-
-    useEffect(() => {
-        if (!notification.read) {
-            const timer = setTimeout(() => {
-                markNotificationAsRead(notification.id);
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [notification.id, notification.read, markNotificationAsRead]);
 
     const itemContent = {
         'BADGE_REQUEST': {
@@ -122,16 +127,15 @@ function NotificationList({ notifications, onSendCode }: { notifications: Enrich
 }
 
 export default function InboxPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
-  const { users, badges, notifications, addNotification, createShareLink, loading } = useMockData();
   const [key, setKey] = useState(Date.now()); // to force re-render
 
   const enrichNotifications = (notifs: Notification[]) => {
     return notifs
         .map(n => {
-            const fromUser = users.find(u => u.id === n.fromUserId);
-            const badge = badges.find(b => b.id === n.badgeId);
+            const fromUser = allUsers.find(u => u.id === n.fromUserId);
+            const badge = allBadges.find(b => b.id === n.badgeId);
             return fromUser && badge ? { ...n, fromUser, badge } : null;
         })
         .filter((n): n is EnrichedNotification => n !== null)
@@ -140,17 +144,9 @@ export default function InboxPage() {
 
   const handleSendCode = (badgeId: string, fromUserId: string, fromUserName: string) => {
     if (!user) return;
-    const badge = badges.find(b => b.id === badgeId);
+    const badge = allBadges.find(b => b.id === badgeId);
     if (!badge) return;
 
-    const link = createShareLink({ badgeId, ownerId: user.id });
-    addNotification({
-        userId: fromUserId,
-        fromUserId: user.id,
-        badgeId,
-        type: 'BADGE_RECEIVED',
-        shareLinkId: link.id,
-    });
     toast({
         title: 'Code Sent!',
         description: `A share code for "${badge.name}" has been sent to ${fromUserName}.`
@@ -168,15 +164,14 @@ export default function InboxPage() {
       )
   }
 
-  const userNotifications = notifications.filter(n => n.userId === user?.id);
-  const requests = enrichNotifications(userNotifications.filter(n => n.type === 'BADGE_REQUEST'));
-  const received = enrichNotifications(userNotifications.filter(n => n.type === 'BADGE_RECEIVED' || n.type === 'OWNERSHIP_TRANSFER'));
+  const requests = enrichNotifications(notifications.filter(n => n.type === 'BADGE_REQUEST'));
+  const received = enrichNotifications(notifications.filter(n => n.type === 'BADGE_RECEIVED' || n.type === 'OWNERSHIP_TRANSFER'));
 
   return (
     <>
       <Header title="Inbox" />
       <div className="flex-1 p-4 md:p-6">
-        {userNotifications.length > 0 ? (
+        {notifications.length > 0 ? (
             <Tabs defaultValue="requests" className="w-full max-w-4xl mx-auto" key={key}>
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="requests">

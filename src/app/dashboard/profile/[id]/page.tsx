@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -11,38 +11,42 @@ import { Badge, User as UserIcon, Users, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, User } from '@/hooks/use-auth';
 import { EditProfileDialog } from '@/components/profile/edit-profile-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMockData, User } from '@/lib/mock-data';
+
+// Placeholder Data
+const allUsers: User[] = [
+    { id: 'u1', name: 'Alice', email: 'alice@example.com', emojiAvatar: '👩‍💻', following: ['u2'] },
+    { id: 'u2', name: 'Bob', email: 'bob@example.com', emojiAvatar: '👨‍🎨', following: ['u1', 'u3'] },
+    { id: 'u3', name: 'Charlie', email: 'charlie@example.com', emojiAvatar: '👨‍🚀', following: ['u2'] },
+    { id: 'u4', name: 'Diana', email: 'diana@example.com', emojiAvatar: '🦸‍♀️', following: [] },
+];
+const allBadges = [
+    { id: 'b1', name: 'Galactic Pioneer', emojis: '🌌🚀✨', tokens: 50, owners: ['u3', 'u2'], followers: {length: 3} },
+    { id: 'b2', name: 'Pixel Perfect', emojis: '🎨🖼️🖌️', tokens: 250, owners: ['u2'], followers: {length: 2} },
+    { id: 'b3', name: 'Code Ninja', emojis: '💻🥋🥷', tokens: 1000, owners: ['u1'], followers: {length: 2} },
+];
 
 function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurrentUserProfile: boolean }) {
     const { toast } = useToast();
     const { user: currentUser } = useAuth();
-    const { followUser, unfollowUser, updateUser } = useMockData();
+    const [isFollowing, setIsFollowing] = useState(currentUser?.following.includes(user.id) || false);
     const [isEditProfileOpen, setEditProfileOpen] = useState(false);
 
     if (!currentUser) return null;
 
-    const isFollowing = currentUser.following.includes(user.id);
-    
     const handleFollowToggle = () => {
         if (user.id === currentUser.id) return; // Can't follow self
-        
-        const isNowFollowing = !isFollowing;
-        if (isNowFollowing) {
-            followUser(currentUser.id, user.id);
-        } else {
-            unfollowUser(currentUser.id, user.id);
-        }
+        setIsFollowing(!isFollowing);
         toast({
-            title: isNowFollowing ? 'Followed!' : 'Unfollowed.',
-            description: `You are now ${isNowFollowing ? 'following' : 'no longer following'} ${user.name}.`
+            title: !isFollowing ? 'Followed!' : 'Unfollowed.',
+            description: `You are now ${!isFollowing ? 'following' : 'no longer following'} ${user.name}.`
         });
     }
 
     const handleUpdateUser = async (updatedUser: Partial<User>) => {
-        updateUser(user.id, updatedUser);
+        // In a real app, this would be an API call
         toast({
             title: "Avatar Updated!",
             description: `Your profile picture has been updated.`,
@@ -98,7 +102,7 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurre
 }
 
 function OwnedBadges({ userId }: { userId: string}) {
-    const { badges, loading } = useMockData();
+    const loading = false;
     
     if (loading) {
         return <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -106,7 +110,7 @@ function OwnedBadges({ userId }: { userId: string}) {
         </div>
     }
 
-    const ownedBadges = badges.filter(b => b.owners.includes(userId));
+    const ownedBadges = allBadges.filter(b => b.owners.includes(userId));
 
     return (
         <div>
@@ -128,8 +132,8 @@ function OwnedBadges({ userId }: { userId: string}) {
 }
 
 function FollowingList({ user }: { user: User }) {
-    const { users, loading } = useMockData();
-    const followingUsers = users.filter(u => user.following.includes(u.id));
+    const loading = false;
+    const followingUsers = allUsers.filter(u => user.following.includes(u.id));
 
     return (
         <Card>
@@ -165,10 +169,8 @@ function FollowingList({ user }: { user: User }) {
 
 
 export default function UserProfilePage({ params }: { params: { id:string } }) {
-  const { user: currentUser } = useAuth();
-  const { users, loading } = useMockData();
-
-  const user = users.find(u => u.id === params.id);
+  const { user: currentUser, loading } = useAuth();
+  const user = allUsers.find(u => u.id === params.id);
 
   if (loading) {
       return (

@@ -9,14 +9,13 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Users } from 'lucide-react';
-import { Badge } from '@/lib/mock-data';
 
 type BadgeCardProps = {
-  badge: Badge;
+  badge: any;
 };
 
 export function BadgeCard({ badge }: BadgeCardProps) {
-  const badgesLeft = badge.tokens - badge.owners.length;
+  const badgesLeft = badge.tokens - (badge.owners?.length || 0);
 
   return (
     <Card className="flex flex-col transition-all hover:shadow-md">
@@ -25,7 +24,7 @@ export function BadgeCard({ badge }: BadgeCardProps) {
           <div className="text-4xl">{badge.emojis}</div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Users className="h-4 w-4" />
-            <span className="text-sm font-medium">{badge.followers.length}</span>
+            <span className="text-sm font-medium">{badge.followers?.length || 0}</span>
           </div>
         </div>
         <CardTitle className="pt-2 font-headline">{badge.name}</CardTitle>

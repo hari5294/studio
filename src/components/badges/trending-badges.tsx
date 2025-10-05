@@ -1,15 +1,18 @@
 import Link from 'next/link';
-import { useMockData, User, Badge } from '@/lib/mock-data';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { TrendingUp, Flame, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-type TrendingBadge = Badge & {
-    ownerName?: string;
-    ownerEmoji?: string;
-};
+// Placeholder Data
+const trendingBadges = [
+    { id: 'b1', name: 'Galactic Pioneer', emojis: '🌌🚀✨', tokens: 50, owners: {length: 2}, followers: {length: 3}, creator: { name: 'Charlie', emojiAvatar: '👨‍🚀' } },
+    { id: 'b2', name: 'Pixel Perfect', emojis: '🎨🖼️🖌️', tokens: 250, owners: {length: 1}, followers: {length: 2}, creator: { name: 'Bob', emojiAvatar: '👨‍🎨' } },
+    { id: 'b3', name: 'Code Ninja', emojis: '💻🥋🥷', tokens: 1000, owners: {length: 1}, followers: {length: 2}, creator: { name: 'Alice', emojiAvatar: '👩‍💻' } },
+    { id: 'b4', name: 'Super Squad', emojis: '🦸‍♀️🦸‍♂️💥', tokens: 100, owners: {length: 1}, followers: {length: 1}, creator: { name: 'Diana', emojiAvatar: '🦸‍♀️' } },
+].sort((a,b) => b.followers.length - a.followers.length).slice(0, 5);
 
-function TrendingBadgeItem({ badge, creator, index }: { badge: TrendingBadge, creator?: User, index: number }) {
+
+function TrendingBadgeItem({ badge, creator, index }: { badge: any, creator?: any, index: number }) {
     const badgesLeft = badge.tokens - badge.owners.length;
 
     return (
@@ -49,7 +52,7 @@ function TrendingBadgeItem({ badge, creator, index }: { badge: TrendingBadge, cr
 
 
 export function TrendingBadges() {
-    const { badges, users, loading } = useMockData();
+    const loading = false; // no more loading from mock
 
     if (loading) {
       return (
@@ -65,10 +68,6 @@ export function TrendingBadges() {
       )
     }
 
-    const trendingBadges = [...badges]
-        .sort((a, b) => b.followers.length - a.followers.length)
-        .slice(0, 5);
-
   return (
     <div>
       <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
@@ -77,9 +76,8 @@ export function TrendingBadges() {
       </h2>
       <div className="space-y-4">
         {trendingBadges.map((badge, index) => {
-            const creator = users.find(u => u.id === badge.creatorId);
             return (
-                <TrendingBadgeItem key={badge.id} badge={badge} creator={creator} index={index} />
+                <TrendingBadgeItem key={badge.id} badge={badge} creator={badge.creator} index={index} />
             )
         })}
       </div>

@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { Home, Search, User, Gift, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
-import { useMockData } from '@/lib/mock-data';
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Home', exact: true },
@@ -18,9 +17,7 @@ const navItems = [
 export function BottomNavBar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { notifications } = useMockData();
-
-  const unreadCount = notifications.filter(n => n.userId === user?.id && !n.read).length;
+  const unreadCount = 1; // Placeholder
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t bg-card/95 backdrop-blur-sm z-40">
