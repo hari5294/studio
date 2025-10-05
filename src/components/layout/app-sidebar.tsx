@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -31,18 +32,22 @@ import {
   MoreHorizontal,
   Search,
   Gift,
-  Inbox
+  Inbox,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
-import { usersAtom, badgesAtom, currentUserIdAtom, notificationsAtom } from '@/lib/mock-data';
+import { usersAtom, badgesAtom, currentUserIdAtom, notificationsAtom, login, logout } from '@/lib/mock-data';
 
 function OwnedBadges() {
     const pathname = usePathname();
     const [currentUserId] = useAtom(currentUserIdAtom);
     const [allBadges] = useAtom(badgesAtom);
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
+
+    if (!currentUserId) return null;
 
     const ownedBadges = Object.values(allBadges).filter(b => b.owners.includes(currentUserId));
     
@@ -76,9 +81,29 @@ function OwnedBadges() {
 function UserMenu() {
     const [currentUserId, setCurrentUserId] = useAtom(currentUserIdAtom);
     const [users] = useAtom(usersAtom);
-    const currentUser = users[currentUserId];
+    
+    const handleLogout = () => {
+      setCurrentUserId(logout());
+    };
 
-    if (!currentUser) return null;
+    const handleLogin = () => {
+      setCurrentUserId(login('user1'));
+    }
+
+    const currentUser = currentUserId ? users[currentUserId] : null;
+
+    if (!currentUser) {
+        return (
+            <Button
+              variant="ghost"
+              className='w-full justify-start'
+              onClick={handleLogin}
+            >
+                <LogIn className="mr-2 h-4 w-4" />
+                <span className="group-data-[collapsible=icon]:hidden">Login</span>
+            </Button>
+        )
+    };
 
     return (
         <DropdownMenu>
@@ -112,6 +137,11 @@ function UserMenu() {
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </Link>
+            </DropdownMenuItem>
+             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -210,6 +240,7 @@ export function AppSidebar() {
                 asChild
                 isActive={isActive(`/dashboard/profile/${currentUserId}`)}
                 tooltip="My Profile"
+                disabled={!currentUserId}
             >
                 <Link href={`/dashboard/profile`}>
                     <User />
@@ -222,6 +253,7 @@ export function AppSidebar() {
               asChild
               isActive={isActive('/dashboard/create')}
               tooltip="Create Badge"
+               disabled={!currentUserId}
             >
               <Link href="/dashboard/create">
                 <PlusCircle />
@@ -240,3 +272,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+    

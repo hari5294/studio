@@ -73,4 +73,14 @@ export const shareLinksAtom = atom<Record<string, ShareLink>>(initialShareLinks)
 export const notificationsAtom = atom<Record<string, Notification>>(initialNotifications);
 
 // This will represent the currently "logged in" user.
-export const currentUserIdAtom = atom('user1');
+export const currentUserIdAtom = atom<string | null>(null);
+
+// Mock auth functions
+export const login = (userId: string) => {
+    return userId;
+}
+export const logout = () => {
+    return null;
+}
+
+    
