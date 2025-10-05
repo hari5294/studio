@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -39,7 +40,7 @@ export default function LoginPage() {
   
   const handleGoogleLogin = () => {
     // For now, we just log in the first mock user
-    login('johndoe@example.com');
+    login('alice@example.com');
   }
 
   return (
@@ -87,3 +88,5 @@ export default function LoginPage() {
     </AuthLayout>
   );
 }
+
+    

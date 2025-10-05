@@ -9,27 +9,31 @@ export type Badge = { id: string; name: string; emojis: string; tokens: number; 
 export type ShareLink = { id: string; badgeId: string; ownerId: string; used: boolean; claimedBy: string | null; };
 export type Notification = { id: string; type: 'BADGE_REQUEST' | 'BADGE_RECEIVED' | 'OWNERSHIP_TRANSFER'; userId: string; fromUserId: string; badgeId: string; createdAt: number; read: boolean; shareLinkId?: string; };
 
-// MOCK DATA
+// NEW MOCK DATA
 const initialUsers: User[] = [
-    { id: '1', name: 'John Doe', email: 'johndoe@example.com', emojiAvatar: '👨‍🚀', following: ['2', '3'] },
-    { id: '2', name: 'Jane Smith', email: 'janesmith@example.com', emojiAvatar: '🎨', following: ['1'] },
-    { id: '3', name: 'Cosmo Kramer', email: 'cosmo@example.com', emojiAvatar: '🤪', following: [] },
+    { id: 'u1', name: 'Alice', email: 'alice@example.com', emojiAvatar: '👩‍💻', following: ['u2'] },
+    { id: 'u2', name: 'Bob', email: 'bob@example.com', emojiAvatar: '👨‍🎨', following: ['u1', 'u3'] },
+    { id: 'u3', name: 'Charlie', email: 'charlie@example.com', emojiAvatar: '👨‍🚀', following: ['u2'] },
+    { id: 'u4', name: 'Diana', email: 'diana@example.com', emojiAvatar: '🦸‍♀️', following: [] },
 ];
 
 const initialBadges: Badge[] = [
-    { id: '101', name: 'Early Adopter', emojis: '🥇🚀🌟', tokens: 100, creatorId: '1', createdAt: Date.now() - 86400000, owners: ['1', '2'], followers: ['1', '2', '3'] },
-    { id: '102', name: 'Bug Squasher', emojis: '🐞💥🔨', tokens: 500, creatorId: '2', createdAt: Date.now() - 172800000, owners: ['2'], followers: ['1', '2'] },
-    { id: '103', name: 'Community Helper', emojis: '🤝❤️😊', tokens: 1000, creatorId: '1', createdAt: Date.now(), owners: ['1'], followers: ['1', '3'] },
+    { id: 'b1', name: 'Galactic Pioneer', emojis: '🌌🚀✨', tokens: 50, creatorId: 'u3', createdAt: Date.now() - 2 * 86400000, owners: ['u3', 'u2'], followers: ['u3', 'u2', 'u1'] },
+    { id: 'b2', name: 'Pixel Perfect', emojis: '🎨🖼️🖌️', tokens: 250, creatorId: 'u2', createdAt: Date.now() - 5 * 86400000, owners: ['u2'], followers: ['u2', 'u1'] },
+    { id: 'b3', name: 'Code Ninja', emojis: '💻🥋🥷', tokens: 1000, creatorId: 'u1', createdAt: Date.now() - 1 * 86400000, owners: ['u1'], followers: ['u1', 'u2'] },
+    { id: 'b4', name: 'Super Squad', emojis: '🦸‍♀️🦸‍♂️💥', tokens: 100, creatorId: 'u4', createdAt: Date.now(), owners: ['u4'], followers: ['u4'] },
 ];
 
 const initialShareLinks: ShareLink[] = [
-    { id: 'xyz789', badgeId: '101', ownerId: '1', used: false, claimedBy: null },
-    { id: 'abc123', badgeId: '102', ownerId: '2', used: true, claimedBy: '1' },
+    { id: 'sl1', badgeId: 'b1', ownerId: 'u3', used: false, claimedBy: null },
+    { id: 'sl2', badgeId: 'b2', ownerId: 'u2', used: true, claimedBy: 'u1' },
+    { id: 'sl3', badgeId: 'b3', ownerId: 'u1', used: false, claimedBy: null },
 ];
 
 const initialNotifications: Notification[] = [
-    { id: '201', type: 'BADGE_REQUEST', userId: '1', fromUserId: '3', badgeId: '101', createdAt: Date.now() - 3600000, read: false },
-    { id: '202', type: 'BADGE_RECEIVED', userId: '3', fromUserId: '1', badgeId: '103', createdAt: Date.now() - 7200000, read: true, shareLinkId: 'def456' },
+    { id: 'n1', type: 'BADGE_REQUEST', userId: 'u2', fromUserId: 'u1', badgeId: 'b2', createdAt: Date.now() - 1 * 3600000, read: false },
+    { id: 'n2', type: 'BADGE_RECEIVED', userId: 'u1', fromUserId: 'u2', badgeId: 'b2', createdAt: Date.now() - 2 * 3600000, read: true, shareLinkId: 'sl2' },
+    { id: 'n3', type: 'OWNERSHIP_TRANSFER', userId: 'u2', fromUserId: 'u3', badgeId: 'b1', createdAt: Date.now() - 4 * 3600000, read: true },
 ];
 
 // CONTEXT & PROVIDER

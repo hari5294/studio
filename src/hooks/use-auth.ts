@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useContext } from 'react';
@@ -73,3 +74,5 @@ export function useAuth(options: UseAuthOptions = {}) {
 
   return { user, loading: loading || mockDataLoading, login, logout };
 }
+
+    
