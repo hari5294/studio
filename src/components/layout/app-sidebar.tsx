@@ -39,7 +39,7 @@ import {
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
-import { badgesAtom, currentUserIdAtom, notificationsAtom, usersAtom, login as loginUser } from '@/lib/mock-data';
+import { badgesAtom, currentUserIdAtom, notificationsAtom, usersAtom } from '@/lib/mock-data';
 import { useAuth } from '@/hooks/use-auth';
 
 function OwnedBadges() {
@@ -81,16 +81,6 @@ function OwnedBadges() {
 
 function UserMenu() {
     const { user, logout, loading } = useAuth();
-    const [users] = useAtom(usersAtom);
-    const [, setCurrentUserId] = useAtom(currentUserIdAtom);
-
-    const handleLogin = () => {
-        // Log in the first user as a mock
-        const firstUserId = Object.keys(users)[0];
-        if (firstUserId) {
-            loginUser(firstUserId);
-        }
-    }
     
     if (loading) {
         return null;
@@ -98,13 +88,15 @@ function UserMenu() {
 
     if (!user) {
         return (
-            <Button
+             <Button
               variant="ghost"
               className='flex h-auto w-full items-center justify-start gap-2 p-2 text-left'
-              onClick={handleLogin}
+              asChild
             >
-                <LogIn className="h-4 w-4 shrink-0"/>
-                <span className="group-data-[collapsible=icon]:hidden">Login</span>
+                <Link href="/login">
+                    <LogIn className="h-4 w-4 shrink-0"/>
+                    <span className="group-data-[collapsible=icon]:hidden">Login</span>
+                </Link>
             </Button>
         )
     }
