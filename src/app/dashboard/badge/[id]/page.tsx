@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -15,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { badgesAtom, usersAtom, notificationsAtom, currentUserIdAtom, Badge, ShareLink, shareLinksAtom } from '@/lib/mock-data';
+import { EmojiBurst } from '@/components/effects/emoji-burst';
 
 function BadgeOwners({ badgeId }: { badgeId: string }) {
     const [users] = useAtom(usersAtom);
@@ -113,6 +115,8 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
 
   const [isShareOpen, setShareOpen] = useState(searchParams.get('showShare') === 'true');
   const [isTransferOpen, setTransferOpen] = useState(false);
+  const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
+
 
   if (!badge) {
     notFound();
@@ -138,6 +142,11 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
                 : prev[badge.id].followers.filter(id => id !== currentUser.id),
         }
     }));
+
+    if (isNowFollowing) {
+        setBurstEmojis(badge.emojis);
+        setTimeout(() => setBurstEmojis(null), 2000);
+    }
 
     toast({
         title: isNowFollowing ? 'Followed!' : 'Unfollowed.',
@@ -178,6 +187,7 @@ function BadgeDetailContent({ params }: { params: { id: string } }) {
   return (
     <>
       <Header title="Badge Details" />
+      {burstEmojis && <EmojiBurst emojis={burstEmojis} />}
       <div className="flex-1 space-y-6 p-4 md:p-6">
         <Button variant="ghost" onClick={() => router.push('/dashboard')} className="mb-2">
           <ArrowLeft className="mr-2 h-4 w-4" />

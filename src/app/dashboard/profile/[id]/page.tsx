@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -14,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { EditProfileDialog } from '@/components/profile/edit-profile-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usersAtom, badgesAtom, currentUserIdAtom, User } from '@/lib/mock-data';
+import { EmojiBurst } from '@/components/effects/emoji-burst';
 
 function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurrentUserProfile: boolean }) {
     const { toast } = useToast();
@@ -22,6 +24,8 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurre
     const currentUser = users[currentUserId];
 
     const [isEditProfileOpen, setEditProfileOpen] = useState(false);
+    const [burstEmoji, setBurstEmoji] = useState<string | null>(null);
+
     
     if (!currentUser) return null; // Should not happen if there's a current user
 
@@ -41,6 +45,11 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurre
             return { ...prev, [currentUser.id]: updatedUser };
         });
 
+        if (isNowFollowing && user.emojiAvatar) {
+            setBurstEmoji(user.emojiAvatar);
+            setTimeout(() => setBurstEmoji(null), 2000);
+        }
+
         toast({
             title: isNowFollowing ? 'Followed!' : 'Unfollowed.',
             description: `You are now ${isNowFollowing ? 'following' : 'no longer following'} ${user.name}.`
@@ -56,6 +65,7 @@ function ProfileHeaderCard({ user, isCurrentUserProfile }: { user: User, isCurre
 
     return (
         <>
+            {burstEmoji && <EmojiBurst emojis={burstEmoji} />}
             <Card>
               <CardContent className="pt-6 flex flex-col items-center text-center gap-4">
                  <div className="relative group">
