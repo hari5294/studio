@@ -1,21 +1,9 @@
 'use client';
-import { useAtom } from 'jotai';
-import { currentUserIdAtom } from '@/lib/mock-data';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode } from 'react';
 
-// This component ensures a default user is "logged in" on initial load
-// for the mock data setup. In a real app, this would be handled by a
-// session check with a real authentication provider.
+// This component is a placeholder for any app-wide state providers.
+// The automatic login logic has been removed to fix the logout loop.
+// Authentication is now handled by the useAuth hook and login/signup pages.
 export function AppStateProvider({ children }: { children: ReactNode }) {
-    const [currentUserId, setCurrentUserId] = useAtom(currentUserIdAtom);
-
-    useEffect(() => {
-        // Set a default logged-in user if none is set.
-        // This simulates a user session.
-        if (currentUserId === null) {
-            setCurrentUserId('user1'); // Default to John Doe
-        }
-    }, [currentUserId, setCurrentUserId]);
-    
     return <>{children}</>;
 }
