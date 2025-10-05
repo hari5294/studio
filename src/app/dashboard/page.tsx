@@ -1,14 +1,16 @@
 
 'use client';
 
+import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { BadgeCard } from '@/components/badges/badge-card';
 import { TrendingBadges } from '@/components/badges/trending-badges';
 import { useAuth } from '@/hooks/use-auth';
-import { Badge as BadgeIcon } from 'lucide-react';
+import { Badge as BadgeIcon, Gift } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMockData } from '@/hooks/use-mock-data';
 import { useMemo } from 'react';
+import { Button } from '@/components/ui/button';
 
 function MyBadges() {
   const { user, loading: authLoading } = useAuth();
@@ -55,11 +57,18 @@ export default function DashboardPage() {
     <>
       <Header title="Dashboard" />
       <div className="flex-1 space-y-8 p-4 md:p-6">
+        <div className="flex justify-between items-center mb-4">
+            <h2 className="flex items-center gap-2 text-xl font-semibold font-headline">
+                <BadgeIcon className="h-6 w-6" />
+                My Badges
+            </h2>
+             <Button asChild variant="outline">
+                <Link href="/dashboard/redeem">
+                    <Gift className="mr-2 h-4 w-4" /> Redeem Code
+                </Link>
+            </Button>
+        </div>
         <div>
-          <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
-            <BadgeIcon className="h-6 w-6" />
-            My Badges
-          </h2>
           <MyBadges />
         </div>
         <TrendingBadges />

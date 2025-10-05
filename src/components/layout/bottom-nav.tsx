@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, User, Gift, Inbox } from 'lucide-react';
+import { Home, Search, User, Gift, Inbox, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { useMockData } from '@/hooks/use-mock-data';
@@ -12,7 +12,7 @@ import { useMemo } from 'react';
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Home', exact: true },
   { href: '/dashboard/search', icon: Search, label: 'Search' },
-  { href: '/dashboard/redeem', icon: Gift, label: 'Redeem' },
+  { href: '/dashboard/create', icon: PlusCircle, label: 'Create' },
   { href: '/dashboard/inbox', icon: Inbox, label: 'Inbox', requiresNotification: true },
   { href: '/dashboard/profile', icon: User, label: 'Profile', isProfile: true },
 ];
