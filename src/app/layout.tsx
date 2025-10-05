@@ -4,7 +4,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { SoundProvider } from '@/components/providers/sound-provider';
-import { FirebaseClientProvider } from '@/firebase';
+import { AppStateProvider } from '@/components/providers/state-provider';
+
 
 const fontPoppins = Poppins({
   subsets: ['latin'],
@@ -37,12 +38,12 @@ export default function RootLayout({
           fontPtSans.variable
         )}
       >
-        <FirebaseClientProvider>
+        <AppStateProvider>
           <SoundProvider>
             {children}
             <Toaster />
           </SoundProvider>
-        </FirebaseClientProvider>
+        </AppStateProvider>
       </body>
     </html>
   );

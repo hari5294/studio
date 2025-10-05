@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAtom } from 'jotai';
 import { useRouter, usePathname } from 'next/navigation';
-import { currentUserIdAtom, usersAtom, User } from '@/lib/mock-data';
-import { useUser } from '@/firebase'; // Using firebase hook
+import { currentUserIdAtom, usersAtom, User, logout as logoutUser } from '@/lib/mock-data';
 
 type UseAuthOptions = {
   required?: boolean; // Does the page require authentication?
@@ -13,11 +12,22 @@ type UseAuthOptions = {
 export function useAuth(options: UseAuthOptions = {}) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user: firebaseUser, loading: firebaseLoading } = useUser();
+  const [currentUserId] = useAtom(currentUserIdAtom);
   const [users] = useAtom(usersAtom);
+  
+  // Use a local loading state to simulate async behavior
+  const [loading, setLoading] = useState(true);
 
-  const user = firebaseUser ? users[firebaseUser.uid] : null;
-  const loading = firebaseLoading;
+  const user = currentUserId ? users[currentUserId] : null;
+
+  useEffect(() => {
+    // Simulate loading delay
+    const timer = setTimeout(() => {
+        setLoading(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [currentUserId]);
 
   useEffect(() => {
     // This effect handles redirection based on auth state
@@ -29,25 +39,55 @@ export function useAuth(options: UseAuthOptions = {}) {
       // If user is logged in and tries to access login/signup, redirect to dashboard
       router.push('/dashboard');
     } else if (options.required && !user && !isAuthPage) {
-      // If page requires auth and user is not logged in, they will be handled by the anon sign-in
-      // No redirect to login needed for now with anonymous auth
+      // If page requires auth and user is not logged in, redirect to login
+      router.push('/login');
     }
   }, [user, loading, pathname, router, options.required]);
 
-
-  const login = (): Promise<User> => {
-    throw new Error("Login function is not implemented for anonymous authentication.");
+  const login = (email: string): Promise<User> => {
+    return new Promise((resolve, reject) => {
+        setLoading(true);
+        setTimeout(() => {
+            const foundUser = Object.values(users).find(u => u.email === email);
+            if (foundUser) {
+                // In a real app, you'd set a token/session here
+                resolve(foundUser);
+            } else {
+                reject(new Error('User not found'));
+            }
+            setLoading(false);
+        }, 500);
+    });
   };
 
-  const signup = (): Promise<User> => {
-    throw new Error("Signup function is not implemented for anonymous authentication.");
+  const signup = (name: string, email: string): Promise<User> => {
+     return new Promise((resolve, reject) => {
+         setLoading(true);
+        setTimeout(() => {
+            if (Object.values(users).some(u => u.email === email)) {
+                reject(new Error('User with this email already exists'));
+                setLoading(false);
+                return;
+            }
+            // Create a new user (in real app, this would be an API call)
+            const newUser: User = {
+                id: `user${Object.keys(users).length + 1}`,
+                name,
+                email,
+                emojiAvatar: '😀',
+                following: []
+            };
+            // This part is tricky with mock data and Jotai from a hook...
+            // It's better to handle state updates in the component.
+            // For now, we just resolve the new user.
+            resolve(newUser);
+            setLoading(false);
+        }, 500);
+    });
   };
   
   const logout = () => {
-    // With anonymous auth, "logout" might mean creating a new anonymous user.
-    // For now, we'll just refresh, which will trigger a new anonymous session if needed.
-     console.log("Logout triggered");
-     router.refresh();
+    logoutUser();
   };
 
   return { user, loading, login, signup, logout };

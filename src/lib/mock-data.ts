@@ -1,4 +1,4 @@
-import { atom } from 'jotai';
+import { atom, useAtom } from 'jotai';
 
 export type User = { 
     id: string; 
@@ -41,7 +41,9 @@ export type Notification = {
 
 // Initial Data
 const initialUsers: Record<string, User> = {
-    // This will be populated by firebase auth
+  'user1': { id: 'user1', name: 'John Doe', email: 'john@example.com', emojiAvatar: '🧑‍🚀', following: ['user2'] },
+  'user2': { id: 'user2', name: 'Jane Smith', email: 'jane@example.com', emojiAvatar: '👩‍🔬', following: [] },
+  'user3': { id: 'user3', name: 'Alex Ray', email: 'alex@example.com', emojiAvatar: '🧑‍🎤', following: ['user1'] },
 };
 
 const initialBadges: Record<string, Badge> = {
@@ -73,7 +75,19 @@ export const notificationsAtom = atom<Record<string, Notification>>(initialNotif
 // This will represent the currently "logged in" user.
 export const currentUserIdAtom = atom<string | null>(null);
 
-// We no longer need the logout function here as it's part of useAuth
+// Functions to interact with atoms - these functions will be called from components
+// This allows us to potentially swap out the data source later (e.g., to Firebase)
+// without changing the component code significantly.
+
+// This is a "setter" function for the currentUserIdAtom.
+// We are not exporting the atom directly to components to better encapsulate state logic.
+export const login = (userId: string) => {
+    const [, setCurrentUser] = useAtom(currentUserIdAtom);
+    setCurrentUser(userId);
+};
+
 export const logout = () => {
-  // This function is now deprecated, use useAuth().logout instead.
+    // This is a placeholder. In a real app, you'd call this from a component
+    // context where you can use the useAtom hook.
+    // For now, we have to create a custom hook or component to handle this.
 };

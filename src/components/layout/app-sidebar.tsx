@@ -33,12 +33,13 @@ import {
   Search,
   Gift,
   Inbox,
+  LogIn,
   LogOut,
 } from 'lucide-react';
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
-import { badgesAtom, currentUserIdAtom, notificationsAtom } from '@/lib/mock-data';
+import { badgesAtom, currentUserIdAtom, notificationsAtom, usersAtom, login as loginUser } from '@/lib/mock-data';
 import { useAuth } from '@/hooks/use-auth';
 
 function OwnedBadges() {
@@ -80,10 +81,33 @@ function OwnedBadges() {
 
 function UserMenu() {
     const { user, logout, loading } = useAuth();
+    const [users] = useAtom(usersAtom);
+    const [, setCurrentUserId] = useAtom(currentUserIdAtom);
+
+    const handleLogin = () => {
+        // Log in the first user as a mock
+        const firstUserId = Object.keys(users)[0];
+        if (firstUserId) {
+            loginUser(firstUserId);
+        }
+    }
     
-    if (loading || !user) {
+    if (loading) {
         return null;
     };
+
+    if (!user) {
+        return (
+            <Button
+              variant="ghost"
+              className='flex h-auto w-full items-center justify-start gap-2 p-2 text-left'
+              onClick={handleLogin}
+            >
+                <LogIn className="h-4 w-4 shrink-0"/>
+                <span className="group-data-[collapsible=icon]:hidden">Login</span>
+            </Button>
+        )
+    }
 
     return (
         <DropdownMenu>
@@ -164,7 +188,6 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
   const [currentUserId] = useAtom(currentUserIdAtom);
-  const { user, loading } = useAuth();
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -208,7 +231,7 @@ export function AppSidebar() {
               asChild
               isActive={isActive('/dashboard/redeem')}
               tooltip="Redeem Code"
-              disabled={!user}
+              disabled={!currentUserId}
             >
               <Link href="/dashboard/redeem">
                 <Gift />
@@ -256,5 +279,3 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
-
-    

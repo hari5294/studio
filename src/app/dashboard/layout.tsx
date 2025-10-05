@@ -2,7 +2,6 @@
 
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { BottomNavBar } from '@/components/layout/bottom-nav';
-import { AppStateProvider } from '@/components/providers/state-provider';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
