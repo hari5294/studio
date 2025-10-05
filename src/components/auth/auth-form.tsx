@@ -48,14 +48,13 @@ type AuthLayoutProps = {
     children: React.ReactNode;
     title: string;
     description: string;
-    footerText: string;
-    footerLink: string;
-    footerLinkText: string;
-    onGoogleSignIn?: (() => void) | null;
+    footerText?: string;
+    footerLink?: string;
+    footerLinkText?: string;
     isLoading?: boolean;
 }
 
-export function AuthLayout({ children, title, description, footerText, footerLink, footerLinkText, onGoogleSignIn, isLoading }: AuthLayoutProps) {
+export function AuthLayout({ children, title, description, footerText, footerLink, footerLinkText, isLoading }: AuthLayoutProps) {
     return (
         <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
             <Card className="mx-auto w-full max-w-sm">
@@ -70,12 +69,14 @@ export function AuthLayout({ children, title, description, footerText, footerLin
                     <div className="grid gap-4">
                         {children}
                     </div>
-                     <div className="mt-4 text-center text-sm">
-                        {footerText}{' '}
-                        <Link href={footerLink} className="underline">
-                            {footerLinkText}
-                        </Link>
-                    </div>
+                     {footerText && footerLink && footerLinkText && (
+                        <div className="mt-4 text-center text-sm">
+                            {footerText}{' '}
+                            <Link href={footerLink} className="underline">
+                                {footerLinkText}
+                            </Link>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

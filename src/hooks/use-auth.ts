@@ -5,9 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   onAuthStateChanged,
   User as FirebaseUser,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink,
+  GoogleAuthProvider,
+  signInWithPopup,
   signOut,
 } from 'firebase/auth';
 import { useAuth as useFirebaseAuth } from '@/firebase';
@@ -20,8 +19,6 @@ import { emitPermissionError } from '@/lib/error-emitter';
 type UseAuthOptions = {
   required?: boolean;
 };
-
-const EMAIL_FOR_SIGN_IN_KEY = 'emailForSignIn';
 
 export function useAuth(options: UseAuthOptions = {}) {
   const router = useRouter();
@@ -50,7 +47,20 @@ export function useAuth(options: UseAuthOptions = {}) {
         if (userSnap.exists()) {
           setUser({ id: userSnap.id, ...userSnap.data() } as User);
         } else {
-          // This case will be handled on sign-in completion now
+           // If user doesn't exist, create them
+           const userProfile: User = {
+                id: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                name: firebaseUser.displayName || 'Anonymous User',
+                emojiAvatar: '😀',
+                following: [],
+            };
+            try {
+                await setDoc(userRef, userProfile);
+                setUser(userProfile);
+            } catch (e) {
+                emitPermissionError(e, userRef, 'create', userProfile);
+            }
         }
       } else {
         setUser(null);
@@ -65,7 +75,7 @@ export function useAuth(options: UseAuthOptions = {}) {
   useEffect(() => {
     if (loading) return;
 
-    const isAuthPage = ['/login', '/signup', '/verify-email', '/finish-signin'].includes(pathname);
+    const isAuthPage = ['/login'].includes(pathname);
 
     if (options.required && !user && !isAuthPage) {
       router.push('/login');
@@ -74,52 +84,27 @@ export function useAuth(options: UseAuthOptions = {}) {
     }
   }, [user, loading, pathname, router, options.required]);
 
-  const sendLoginLink = async (email: string) => {
-    if (!auth) throw new Error('Auth not initialized.');
+  const loginWithGoogle = async (): Promise<User | null> => {
+    if (!auth || !firestore) throw new Error('Auth not initialized.');
     setLoading(true);
-    const actionCodeSettings = {
-      url: `${window.location.origin}/finish-signin`,
-      handleCodeInApp: true,
-    };
-    try {
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      window.localStorage.setItem(EMAIL_FOR_SIGN_IN_KEY, email);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const completeLogin = async (href: string): Promise<User | null> => {
-     if (!auth || !firestore || !isSignInWithEmailLink(auth, href)) {
-      throw new Error('Invalid sign-in link.');
-    }
-    setLoading(true);
-    let email = window.localStorage.getItem(EMAIL_FOR_SIGN_I_KEY);
-    if (!email) {
-      // User opened the link on a different device. To prevent session fixation
-      // attacks, ask the user to provide the email again. For simplicity,
-      // we'll throw an error here. A real app would prompt for it.
-      setLoading(false);
-      throw new Error('Sign-in email not found. Please try signing in on the same device.');
-    }
-
+    const provider = new GoogleAuthProvider();
+    
     try {
-      const userCredential = await signInWithEmailLink(auth, email, href);
+      const userCredential = await signInWithPopup(auth, provider);
       const firebaseUser = userCredential.user;
-      window.localStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
-
+      
       const userRef = doc(firestore, 'users', firebaseUser.uid);
       const userSnap = await getDoc(userRef);
-
+      
       let userProfile: User;
-
       if (userSnap.exists()) {
         userProfile = { id: userSnap.id, ...userSnap.data() } as User;
       } else {
         userProfile = {
           id: firebaseUser.uid,
           email: firebaseUser.email || '',
-          name: firebaseUser.displayName || email.split('@')[0] || 'Anonymous User',
+          name: firebaseUser.displayName || 'New User',
           emojiAvatar: '😀',
           following: [],
         };
@@ -127,16 +112,16 @@ export function useAuth(options: UseAuthOptions = {}) {
       }
       
       setUser(userProfile);
+      router.push('/dashboard');
       return userProfile;
-    } catch(e) {
-      // Let's assume errors here could be permission related during get/set
-      emitPermissionError(e, null, 'create', null);
-      throw e;
+    } catch (error) {
+        console.error("Google sign-in error:", error);
+        throw error;
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  }
-  
+  };
+
   const logout = async () => {
     if (!auth) return;
     await signOut(auth);
@@ -144,5 +129,5 @@ export function useAuth(options: UseAuthOptions = {}) {
     router.push('/login');
   };
 
-  return { user, loading, sendLoginLink, completeLogin, logout };
+  return { user, loading, loginWithGoogle, logout };
 }
