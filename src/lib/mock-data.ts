@@ -41,9 +41,7 @@ export type Notification = {
 
 // Initial Data
 const initialUsers: Record<string, User> = {
-    'user1': { id: 'user1', name: 'John Doe', email: 'john.doe@example.com', emojiAvatar: '😀', following: ['user2'] },
-    'user2': { id: 'user2', name: 'Jane Smith', email: 'jane.smith@example.com', emojiAvatar: '👩‍💻', following: [] },
-    'user3': { id: 'user3', name: 'Alex Ray', email: 'alex.ray@example.com', following: [] },
+    // This will be populated by firebase auth
 };
 
 const initialBadges: Record<string, Badge> = {
@@ -75,4 +73,7 @@ export const notificationsAtom = atom<Record<string, Notification>>(initialNotif
 // This will represent the currently "logged in" user.
 export const currentUserIdAtom = atom<string | null>(null);
 
-    
+// We no longer need the logout function here as it's part of useAuth
+export const logout = () => {
+  // This function is now deprecated, use useAuth().logout instead.
+};

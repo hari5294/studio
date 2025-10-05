@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAtom } from 'jotai';
 import { useRouter, usePathname } from 'next/navigation';
 import { currentUserIdAtom, usersAtom, User } from '@/lib/mock-data';
+import { useUser } from '@/firebase'; // Using firebase hook
 
 type UseAuthOptions = {
   required?: boolean; // Does the page require authentication?
@@ -12,15 +13,15 @@ type UseAuthOptions = {
 export function useAuth(options: UseAuthOptions = {}) {
   const router = useRouter();
   const pathname = usePathname();
-  const [currentUserId, setCurrentUserId] = useAtom(currentUserIdAtom);
-  const [users, setUsers] = useAtom(usersAtom);
-  const [loading, setLoading] = useState(true);
+  const { user: firebaseUser, loading: firebaseLoading } = useUser();
+  const [users] = useAtom(usersAtom);
 
-  const user = currentUserId ? users[currentUserId] : null;
+  const user = firebaseUser ? users[firebaseUser.uid] : null;
+  const loading = firebaseLoading;
 
   useEffect(() => {
     // This effect handles redirection based on auth state
-    if (typeof window === 'undefined') return;
+    if (loading || typeof window === 'undefined') return;
 
     const isAuthPage = pathname === '/login' || pathname === '/signup';
 
@@ -28,57 +29,25 @@ export function useAuth(options: UseAuthOptions = {}) {
       // If user is logged in and tries to access login/signup, redirect to dashboard
       router.push('/dashboard');
     } else if (options.required && !user && !isAuthPage) {
-      // If page requires auth and user is not logged in, redirect to login
-      router.push('/login');
-    } else {
-      setLoading(false);
+      // If page requires auth and user is not logged in, they will be handled by the anon sign-in
+      // No redirect to login needed for now with anonymous auth
     }
-  }, [user, pathname, router, options.required]);
+  }, [user, loading, pathname, router, options.required]);
 
 
-  const login = (email: string, password?: string): Promise<User> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const existingUser = Object.values(users).find(u => u.email === email);
-        if (existingUser) {
-          // In a real app, you would verify the password here
-          setCurrentUserId(existingUser.id);
-          resolve(existingUser);
-        } else {
-          reject(new Error('No user found with that email address.'));
-        }
-      }, 500);
-    });
+  const login = (): Promise<User> => {
+    throw new Error("Login function is not implemented for anonymous authentication.");
   };
 
-  const signup = (name: string, email: string, password?: string): Promise<User> => {
-    return new Promise((resolve, reject) => {
-       setTimeout(() => {
-        const existingUser = Object.values(users).find(u => u.email === email);
-        if (existingUser) {
-          reject(new Error('A user with that email already exists.'));
-          return;
-        }
-
-        const newUserId = `user${Object.keys(users).length + 1}`;
-        const newUser: User = {
-          id: newUserId,
-          name,
-          email,
-          emojiAvatar: '🙂',
-          following: [],
-        };
-        
-        setUsers(prev => ({ ...prev, [newUserId]: newUser }));
-        setCurrentUserId(newUserId);
-        resolve(newUser);
-       }, 500);
-    });
+  const signup = (): Promise<User> => {
+    throw new Error("Signup function is not implemented for anonymous authentication.");
   };
   
   const logout = () => {
-    setCurrentUserId(null);
-    router.push('/login');
+    // With anonymous auth, "logout" might mean creating a new anonymous user.
+    // For now, we'll just refresh, which will trigger a new anonymous session if needed.
+     console.log("Logout triggered");
+     router.refresh();
   };
 
   return { user, loading, login, signup, logout };

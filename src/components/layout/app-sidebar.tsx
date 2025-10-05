@@ -38,7 +38,7 @@ import {
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
-import { usersAtom, badgesAtom, currentUserIdAtom, notificationsAtom, logout } from '@/lib/mock-data';
+import { badgesAtom, currentUserIdAtom, notificationsAtom } from '@/lib/mock-data';
 import { useAuth } from '@/hooks/use-auth';
 
 function OwnedBadges() {
@@ -134,6 +134,8 @@ function InboxMenuLink() {
     const [currentUserId] = useAtom(currentUserIdAtom);
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
     
+    if (!currentUserId) return null;
+    
     const unreadCount = Object.values(allNotifications).filter(n => n.userId === currentUserId && !n.read).length;
 
     return (
@@ -162,6 +164,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
   const [currentUserId] = useAtom(currentUserIdAtom);
+  const { user, loading } = useAuth();
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -205,6 +208,7 @@ export function AppSidebar() {
               asChild
               isActive={isActive('/dashboard/redeem')}
               tooltip="Redeem Code"
+              disabled={!user}
             >
               <Link href="/dashboard/redeem">
                 <Gift />

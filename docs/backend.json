@@ -1,0 +1,144 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's public profile.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "emojiAvatar": {
+          "type": "string",
+          "description": "An emoji representing the user's avatar."
+        },
+        "following": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "A list of user IDs that this user is following."
+        }
+      },
+      "required": ["name", "email"]
+    },
+    "Badge": {
+      "title": "Badge",
+      "description": "Represents a collectible badge.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the badge."
+        },
+        "emojis": {
+          "type": "string",
+          "description": "A string of 3 emojis representing the badge."
+        },
+        "tokens": {
+          "type": "number",
+          "description": "The total number of tokens available for this badge."
+        },
+        "creatorId": {
+          "type": "string",
+          "description": "The ID of the user who created the badge."
+        },
+        "createdAt": {
+            "type": "number",
+            "description": "The timestamp when the badge was created."
+        }
+      },
+      "required": ["name", "emojis", "tokens", "creatorId", "createdAt"]
+    },
+    "BadgeOwner": {
+      "title": "Badge Owner",
+      "description": "A document indicating a user owns a badge.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "badgeId": {
+          "type": "string"
+        },
+        "claimedAt": {
+          "type": "number"
+        }
+      },
+      "required": ["userId", "badgeId", "claimedAt"]
+    },
+    "BadgeFollower": {
+        "title": "Badge Follower",
+        "description": "A document indicating a user follows a badge.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "badgeId": { "type": "string" },
+            "followedAt": { "type": "number" }
+        },
+        "required": ["userId", "badgeId", "followedAt"]
+    },
+    "ShareLink": {
+        "title": "Share Link",
+        "description": "A one-time use link to claim a badge.",
+        "type": "object",
+        "properties": {
+            "badgeId": { "type": "string" },
+            "ownerId": { "type": "string" },
+            "used": { "type": "boolean" },
+            "claimedBy": { "type": "string" },
+            "createdAt": { "type": "number" }
+        },
+        "required": ["badgeId", "ownerId", "used", "createdAt"]
+    },
+    "Notification": {
+        "title": "Notification",
+        "description": "A notification for a user.",
+        "type": "object",
+        "properties": {
+            "type": { "type": "string", "enum": ["BADGE_REQUEST", "BADGE_RECEIVED", "OWNERSHIP_TRANSFER"] },
+            "fromUserId": { "type": "string" },
+            "badgeId": { "type": "string" },
+            "createdAt": { "type": "number" },
+            "read": { "type": "boolean" },
+            "shareLinkId": { "type": "string" }
+        },
+        "required": ["type", "fromUserId", "badgeId", "createdAt", "read"]
+    }
+  },
+  "auth": {
+    "providers": ["anonymous"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores public information about users."
+    },
+    "/badges/{badgeId}": {
+      "schema": { "$ref": "#/entities/Badge" },
+      "description": "Stores the details of each badge."
+    },
+    "/badges/{badgeId}/owners/{userId}": {
+        "schema": { "$ref": "#/entities/BadgeOwner" },
+        "description": "Sub-collection to track owners of a badge."
+    },
+    "/badges/{badgeId}/followers/{userId}": {
+        "schema": { "$ref": "#/entities/BadgeFollower" },
+        "description": "Sub-collection to track followers of a badge."
+    },
+    "/shareLinks/{linkId}": {
+        "schema": { "$ref": "#/entities/ShareLink" },
+        "description": "Stores the one-time use share links for badges."
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "A user's notifications."
+    }
+  }
+}
