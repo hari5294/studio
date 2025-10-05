@@ -11,6 +11,7 @@ import { Firestore, getFirestore } from 'firebase/firestore';
 import { FirebaseProvider, useAuth, useFirestore } from '.';
 import { User } from '@/lib/mock-data';
 import { firebaseConfig } from './config';
+import { emitPermissionError } from '@/lib/error-emitter';
 
 
 function initializeClientFirebase(): {
@@ -55,9 +56,15 @@ function AuthWrapper({ children }: { children: ReactNode }) {
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        // This creates or updates a user profile document in Firestore upon login.
         const userRef = doc(firestore, 'users', firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
+        let userSnap;
+
+        try {
+            userSnap = await getDoc(userRef);
+        } catch (e) {
+            emitPermissionError(e, userRef, 'get', null);
+            return;
+        }
 
         if (!userSnap.exists()) {
             const userProfile: User = {
@@ -68,10 +75,9 @@ function AuthWrapper({ children }: { children: ReactNode }) {
                 following: [],
             };
             try {
-                // Use setDoc here to ensure the document is created with the UID as the ID
                 await setDoc(userRef, userProfile);
             } catch (e) {
-                console.error("Error creating user document:", e);
+                emitPermissionError(e, userRef, 'create', userProfile);
             }
         }
       }

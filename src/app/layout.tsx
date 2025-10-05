@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { SoundProvider } from '@/components/providers/sound-provider';
 import { FirebaseClientProvider } from '@/firebase';
+import { FirebaseErrorListener } from '@/firebase/firebase-error-listener';
 
 
 const fontPoppins = Poppins({
@@ -40,6 +41,7 @@ export default function RootLayout({
       >
         <FirebaseClientProvider>
           <SoundProvider>
+            <FirebaseErrorListener />
             {children}
             <Toaster />
           </SoundProvider>

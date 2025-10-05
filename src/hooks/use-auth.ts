@@ -17,6 +17,7 @@ import { useFirestore } from '@/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { User } from '@/lib/mock-data';
+import { emitPermissionError } from '@/lib/error-emitter';
 
 type UseAuthOptions = {
   required?: boolean;
@@ -37,7 +38,15 @@ export function useAuth(options: UseAuthOptions = {}) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         const userRef = doc(firestore, 'users', firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
+        let userSnap;
+        try {
+          userSnap = await getDoc(userRef);
+        } catch (e) {
+          emitPermissionError(e, userRef, 'get', null);
+          setLoading(false);
+          return;
+        }
+
         if (userSnap.exists()) {
           setUser({ id: userSnap.id, ...userSnap.data() } as User);
         } else {
@@ -49,7 +58,11 @@ export function useAuth(options: UseAuthOptions = {}) {
             emojiAvatar: '😀',
             following: [],
           };
-          await setDoc(userRef, newUserProfile);
+          try {
+            await setDoc(userRef, newUserProfile);
+          } catch(e) {
+            emitPermissionError(e, userRef, 'create', newUserProfile);
+          }
           setUser(newUserProfile);
         }
       } else {
@@ -94,6 +107,10 @@ export function useAuth(options: UseAuthOptions = {}) {
          throw new Error('User profile not found.');
       }
 
+    } catch (e) {
+      // Assuming getDoc would be the failing point here if rules are wrong
+      emitPermissionError(e, null, 'get', null); // ref is unknown here but good to have
+      throw e;
     } finally {
       setLoading(false);
     }
@@ -121,7 +138,6 @@ export function useAuth(options: UseAuthOptions = {}) {
         setUser(userData);
         return userData;
       } else {
-        // This case is handled by onAuthStateChanged, but we can do it here too for immediate UI update
         const newUserProfile: User = {
             id: firebaseUser.uid,
             email: firebaseUser.email || '',
@@ -129,11 +145,19 @@ export function useAuth(options: UseAuthOptions = {}) {
             emojiAvatar: '😀',
             following: [],
         };
-        await setDoc(userRef, newUserProfile);
+        try {
+            await setDoc(userRef, newUserProfile);
+        } catch (e) {
+            emitPermissionError(e, userRef, 'create', newUserProfile);
+        }
         setUser(newUserProfile);
         return newUserProfile;
       }
-    } finally {
+    } catch(e) {
+        emitPermissionError(e, null, 'get', null);
+        throw e;
+    }
+    finally {
       setLoading(false);
     }
   };
@@ -156,13 +180,22 @@ export function useAuth(options: UseAuthOptions = {}) {
             emojiAvatar: '😀',
             following: [],
         };
+        
+        const userRef = doc(firestore, 'users', firebaseUser.uid);
+        try {
+            await setDoc(userRef, newUser);
+        } catch(e) {
+            emitPermissionError(e, userRef, 'create', newUser);
+        }
 
-        // The user document is created by onAuthStateChanged listener in provider
-        // but we set it here to update the UI immediately
         setUser(newUser);
         return newUser;
 
-    } finally {
+    } catch(e) {
+        emitPermissionError(e, null, 'create', { name, email });
+        throw e;
+    }
+    finally {
         setLoading(false);
     }
   };
