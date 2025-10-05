@@ -296,3 +296,5 @@ export default function BadgeDetailPage({ params }: { params: { id: string } }) 
       <BadgeDetailContent params={params} />
   );
 }
+
+    

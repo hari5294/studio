@@ -231,3 +231,5 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
     </div>
   );
 }
+
+    
