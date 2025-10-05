@@ -128,18 +128,6 @@ export const MockDataProvider = ({ children }: { children: ReactNode }) => {
             currentUsers.map(u => (u.id === userId ? { ...u, ...updates } : u))
         );
     }, []);
-
-    const createBadge = useCallback((badgeData: Omit<Badge, 'id' | 'createdAt'>): Badge => {
-        const newBadge: Badge = {
-            ...badgeData,
-            id: `b${Date.now()}`,
-            createdAt: Date.now(),
-        };
-        setBadges(prev => [...prev, newBadge]);
-        setBadgeOwners(prev => [...prev, { userId: newBadge.creatorId, badgeId: newBadge.id, claimedAt: newBadge.createdAt }]);
-        setBadgeFollowers(prev => [...prev, { userId: newBadge.creatorId, badgeId: newBadge.id, followedAt: newBadge.createdAt }]);
-        return newBadge;
-    }, []);
     
     const createShareLinks = useCallback((badgeId: string, ownerId: string, count: number): ShareLink[] => {
         const newLinks: ShareLink[] = [];
@@ -156,6 +144,19 @@ export const MockDataProvider = ({ children }: { children: ReactNode }) => {
         setShareLinks(prev => [...prev, ...newLinks]);
         return newLinks;
     }, []);
+
+    const createBadge = useCallback((badgeData: Omit<Badge, 'id' | 'createdAt'>): Badge => {
+        const newBadge: Badge = {
+            ...badgeData,
+            id: `b${Date.now()}`,
+            createdAt: Date.now(),
+        };
+        setBadges(prev => [...prev, newBadge]);
+        setBadgeOwners(prev => [...prev, { userId: newBadge.creatorId, badgeId: newBadge.id, claimedAt: newBadge.createdAt }]);
+        setBadgeFollowers(prev => [...prev, { userId: newBadge.creatorId, badgeId: newBadge.id, followedAt: newBadge.createdAt }]);
+        createShareLinks(newBadge.id, newBadge.creatorId, 5); // Automatically create 5 share links
+        return newBadge;
+    }, [createShareLinks]);
 
     const redeemShareLink = useCallback((linkId: string, claimingUserId: string): { badge: Badge, link: ShareLink } => {
         const link = shareLinks.find(l => l.id === linkId);
@@ -321,3 +322,5 @@ export const MockDataProvider = ({ children }: { children: ReactNode }) => {
 
     return <MockDataContext.Provider value={value}>{children}</MockDataContext.Provider>;
 };
+
+    

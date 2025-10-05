@@ -90,7 +90,8 @@ export default function CreateBadgePage() {
         
         setBurstEmojis(submittedEmojis);
 
-        setTimeout(() => handleAnimationComplete(newBadge.id), 2000);
+        // Immediately redirect to show the share dialog
+        setTimeout(() => handleAnimationComplete(newBadge.id), 1500);
 
     } catch (error: any) {
         toast({
@@ -167,3 +168,5 @@ export default function CreateBadgePage() {
     </>
   );
 }
+
+    
