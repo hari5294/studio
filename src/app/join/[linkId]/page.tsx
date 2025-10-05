@@ -11,7 +11,6 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
-import { useSound } from '@/components/providers/sound-provider';
 import { useAuth, useDoc, useFirestore } from '@/firebase';
 import { Badge, ShareLink } from '@/lib/mock-data';
 import { doc, getDoc, runTransaction, collection } from 'firebase/firestore';
@@ -21,7 +20,6 @@ const EXPIRY_HOURS = 24;
 export default function JoinPage({ params }: { params: { linkId: string } }) {
   const router = useRouter();
   const { toast } = useToast();
-  const { playSound } = useSound();
   const { user: currentUser } = useAuth();
   const firestore = useFirestore();
 
@@ -120,7 +118,6 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
             description: `You are now an owner of the "${badge.name}" badge.`,
         });
         
-        playSound('claim');
         setBurstEmojis(badge.emojis);
         setNewShareLinks(generatedLinks);
         setTimeout(() => setShareOpen(true), 1500);

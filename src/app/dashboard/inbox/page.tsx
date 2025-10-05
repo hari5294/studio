@@ -14,7 +14,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { User, Badge, Notification } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
-import { useSound } from '@/components/providers/sound-provider';
 import { useAuth, useDoc, useFirestore, useCollection } from '@/firebase';
 import { doc, collection, query, updateDoc, addDoc, writeBatch } from 'firebase/firestore';
 
@@ -23,7 +22,6 @@ type EnrichedNotification = Notification & { fromUser?: User; badge?: Badge };
 
 function NotificationItem({ notification, onUpdate }: { notification: EnrichedNotification, onUpdate: () => void }) {
     const { toast } = useToast();
-    const { playSound } = useSound();
     const { user: currentUser } = useAuth();
     const firestore = useFirestore();
     
@@ -62,7 +60,6 @@ function NotificationItem({ notification, onUpdate }: { notification: EnrichedNo
                 title: 'Code Sent!',
                 description: `A share code for "${notification.badge.name}" has been sent to ${notification.fromUser.name}.`
             });
-            playSound('notification');
         }
     }
 

@@ -13,7 +13,6 @@ import { isOnlyEmojis } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
-import { useSound } from '@/components/providers/sound-provider';
 import { useAuth, useFirestore } from '@/firebase';
 import { addDoc, collection, doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
 import { Badge, ShareLink } from '@/lib/mock-data';
@@ -21,7 +20,6 @@ import { Badge, ShareLink } from '@/lib/mock-data';
 export default function CreateBadgePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { playSound } = useSound();
   const { user } = useAuth();
   const firestore = useFirestore();
   
@@ -130,7 +128,6 @@ export default function CreateBadgePage() {
             description: `Your badge "${badgeName}" has been successfully created.`,
         });
         
-        playSound('claim');
         setBurstEmojis(submittedEmojis);
 
         setTimeout(() => handleAnimationComplete(newBadgeId), 2000);

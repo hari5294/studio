@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useEffect } from 'react';
-import { useSound } from '../providers/sound-provider';
 
 type EmojiBurstProps = {
   emojis: string;
@@ -11,11 +10,6 @@ type EmojiBurstProps = {
 const PARTICLE_COUNT = 100; 
 
 export function EmojiBurst({ emojis }: EmojiBurstProps) {
-  const { playSound } = useSound();
-  
-  useEffect(() => {
-    playSound('pop');
-  }, [playSound]);
   
   const particles = useMemo(() => {
     const emojiArray = [...emojis];

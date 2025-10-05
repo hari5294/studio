@@ -2,7 +2,6 @@
 
 // Inspired by react-hot-toast library
 import * as React from "react"
-import { useSound } from "@/components/providers/sound-provider"
 
 import type {
   ToastActionElement,
@@ -143,14 +142,6 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-// This is a global state that holds the playSound function.
-// It's a bit of a hack, but it allows us to play sounds from the toast function.
-let globalPlaySound: (sound: 'claim' | 'pop' | 'notification' | 'error') => void = () => {};
-
-export const setGlobalPlaySound = (playSound: typeof globalPlaySound) => {
-    globalPlaySound = playSound;
-};
-
 
 function toast({ ...props }: Toast) {
   const id = genId()
@@ -161,10 +152,6 @@ function toast({ ...props }: Toast) {
       toast: { ...props, id },
     })
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
-
-  if (props.variant === 'destructive') {
-      globalPlaySound('error');
-  }
 
   dispatch({
     type: "ADD_TOAST",
@@ -187,11 +174,6 @@ function toast({ ...props }: Toast) {
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
-  const { playSound } = useSound();
-
-  React.useEffect(() => {
-    setGlobalPlaySound(playSound);
-  }, [playSound]);
 
   React.useEffect(() => {
     listeners.push(setState)

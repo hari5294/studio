@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Gift } from 'lucide-react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
-import { useSound } from '@/components/providers/sound-provider';
 import { useAuth, useDoc, useFirestore } from '@/firebase';
 import { doc, writeBatch, collection, getDoc, runTransaction } from 'firebase/firestore';
 import { Badge, ShareLink } from '@/lib/mock-data';
@@ -21,7 +20,6 @@ const EXPIRY_HOURS = 24;
 export default function RedeemCodePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { playSound } = useSound();
   const { user } = useAuth();
   const firestore = useFirestore();
 
@@ -106,7 +104,6 @@ export default function RedeemCodePage() {
                 description: `You are now an owner of the "${badgeToClaim.name}" badge.`,
             });
             
-            playSound('claim');
             setBurstEmojis(badgeToClaim.emojis);
             setTimeout(() => handleRedeemComplete(link.badgeId), 2000);
         });
