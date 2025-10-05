@@ -5,12 +5,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   onAuthStateChanged,
   User as FirebaseUser,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
   signOut,
-  updateProfile,
-  GoogleAuthProvider,
-  signInWithPopup,
 } from 'firebase/auth';
 import { useAuth as useFirebaseAuth } from '@/firebase';
 import { useFirestore } from '@/firebase';
@@ -22,6 +20,8 @@ import { emitPermissionError } from '@/lib/error-emitter';
 type UseAuthOptions = {
   required?: boolean;
 };
+
+const EMAIL_FOR_SIGN_IN_KEY = 'emailForSignIn';
 
 export function useAuth(options: UseAuthOptions = {}) {
   const router = useRouter();
@@ -50,20 +50,7 @@ export function useAuth(options: UseAuthOptions = {}) {
         if (userSnap.exists()) {
           setUser({ id: userSnap.id, ...userSnap.data() } as User);
         } else {
-          // If user doc doesn't exist (e.g., first Google login), create it
-          const newUserProfile: User = {
-            id: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            name: firebaseUser.displayName || 'Anonymous User',
-            emojiAvatar: '😀',
-            following: [],
-          };
-          try {
-            await setDoc(userRef, newUserProfile);
-          } catch(e) {
-            emitPermissionError(e, userRef, 'create', newUserProfile);
-          }
-          setUser(newUserProfile);
+          // This case will be handled on sign-in completion now
         }
       } else {
         setUser(null);
@@ -78,117 +65,77 @@ export function useAuth(options: UseAuthOptions = {}) {
   useEffect(() => {
     if (loading) return;
 
-    const isAuthPage = pathname === '/login' || pathname === '/signup';
+    const isAuthPage = ['/login', '/signup', '/verify-email', '/finish-signin'].includes(pathname);
 
     if (options.required && !user && !isAuthPage) {
       router.push('/login');
-    } else if (user && isAuthPage) {
+    } else if (user && (isAuthPage || pathname === '/')) {
       router.push('/dashboard');
     }
   }, [user, loading, pathname, router, options.required]);
 
-  const login = async (email: string, password?: string): Promise<User> => {
-    if (!auth || !firestore || !password) {
-      throw new Error('Auth not initialized or password missing.');
-    }
+  const sendLoginLink = async (email: string) => {
+    if (!auth) throw new Error('Auth not initialized.');
     setLoading(true);
+    const actionCodeSettings = {
+      url: `${window.location.origin}/finish-signin`,
+      handleCodeInApp: true,
+    };
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      
-      const userRef = doc(firestore, 'users', firebaseUser.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (userSnap.exists()) {
-        const userData = { id: userSnap.id, ...userSnap.data() } as User;
-        setUser(userData);
-        return userData;
-      } else {
-         throw new Error('User profile not found.');
-      }
-
-    } catch (e) {
-      // Assuming getDoc would be the failing point here if rules are wrong
-      emitPermissionError(e, null, 'get', null); // ref is unknown here but good to have
-      throw e;
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      window.localStorage.setItem(EMAIL_FOR_SIGN_IN_KEY, email);
     } finally {
       setLoading(false);
     }
   };
 
-  const loginWithGoogle = async (): Promise<User> => {
-    if (!auth || !firestore) {
-      throw new Error('Auth not initialized.');
+  const completeLogin = async (href: string): Promise<User | null> => {
+     if (!auth || !firestore || !isSignInWithEmailLink(auth, href)) {
+      throw new Error('Invalid sign-in link.');
     }
     setLoading(true);
-    const provider = new GoogleAuthProvider();
+    let email = window.localStorage.getItem(EMAIL_FOR_SIGN_I_KEY);
+    if (!email) {
+      // User opened the link on a different device. To prevent session fixation
+      // attacks, ask the user to provide the email again. For simplicity,
+      // we'll throw an error here. A real app would prompt for it.
+      setLoading(false);
+      throw new Error('Sign-in email not found. Please try signing in on the same device.');
+    }
+
     try {
-      const userCredential = await signInWithPopup(auth, provider);
+      const userCredential = await signInWithEmailLink(auth, email, href);
       const firebaseUser = userCredential.user;
+      window.localStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
+
       const userRef = doc(firestore, 'users', firebaseUser.uid);
       const userSnap = await getDoc(userRef);
 
+      let userProfile: User;
+
       if (userSnap.exists()) {
-        const userData = { id: userSnap.id, ...userSnap.data() } as User;
-        setUser(userData);
-        return userData;
+        userProfile = { id: userSnap.id, ...userSnap.data() } as User;
       } else {
-        const newUserProfile: User = {
+        userProfile = {
           id: firebaseUser.uid,
           email: firebaseUser.email || '',
-          name: firebaseUser.displayName || 'Anonymous User',
+          name: firebaseUser.displayName || email.split('@')[0] || 'Anonymous User',
           emojiAvatar: '😀',
           following: [],
         };
-        await setDoc(userRef, newUserProfile);
-        setUser(newUserProfile);
-        return newUserProfile;
+        await setDoc(userRef, userProfile);
       }
+      
+      setUser(userProfile);
+      return userProfile;
     } catch(e) {
-      emitPermissionError(e, null, 'get', null);
+      // Let's assume errors here could be permission related during get/set
+      emitPermissionError(e, null, 'create', null);
       throw e;
     } finally {
       setLoading(false);
     }
   }
-
-  const signup = async (name: string, email: string, password?: string): Promise<User> => {
-    if (!auth || !firestore || !password) {
-      throw new Error('Auth not initialized or password missing.');
-    }
-    setLoading(true);
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const firebaseUser = userCredential.user;
-
-        await updateProfile(firebaseUser, { displayName: name });
-        
-        const newUser: User = {
-            id: firebaseUser.uid,
-            name: name,
-            email: email,
-            emojiAvatar: '😀',
-            following: [],
-        };
-        
-        const userRef = doc(firestore, 'users', firebaseUser.uid);
-        try {
-            await setDoc(userRef, newUser);
-        } catch(e) {
-            emitPermissionError(e, userRef, 'create', newUser);
-        }
-
-        setUser(newUser);
-        return newUser;
-
-    } catch(e) {
-        emitPermissionError(e, null, 'create', { name, email });
-        throw e;
-    }
-    finally {
-        setLoading(false);
-    }
-  };
   
   const logout = async () => {
     if (!auth) return;
@@ -197,5 +144,5 @@ export function useAuth(options: UseAuthOptions = {}) {
     router.push('/login');
   };
 
-  return { user, loading, login, signup, logout, loginWithGoogle };
+  return { user, loading, sendLoginLink, completeLogin, logout };
 }

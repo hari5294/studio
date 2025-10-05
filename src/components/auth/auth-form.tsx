@@ -51,7 +51,7 @@ type AuthLayoutProps = {
     footerText: string;
     footerLink: string;
     footerLinkText: string;
-    onGoogleSignIn?: () => void;
+    onGoogleSignIn?: (() => void) | null;
     isLoading?: boolean;
 }
 
@@ -68,20 +68,6 @@ export function AuthLayout({ children, title, description, footerText, footerLin
                 </CardHeader>
                 <CardContent>
                     <div className="grid gap-4">
-                        <Button variant="outline" onClick={onGoogleSignIn} disabled={isLoading}>
-                          <GoogleIcon className="mr-2 h-4 w-4" />
-                          Sign in with Google
-                        </Button>
-                        <div className="relative">
-                          <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                          </div>
-                          <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">
-                              Or continue with
-                            </span>
-                          </div>
-                        </div>
                         {children}
                     </div>
                      <div className="mt-4 text-center text-sm">

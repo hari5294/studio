@@ -4,48 +4,16 @@ import { useRouter } from 'next/navigation';
 import { AuthLayout, AuthForm } from '@/components/auth/auth-form';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { User } from '@/lib/mock-data';
-import { useState } from 'react';
-import { EmojiBurst } from '@/components/effects/emoji-burst';
 
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { signup, loginWithGoogle, loading } = useAuth();
-  const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
+  const { sendLoginLink, loading } = useAuth();
 
-
-  const handleSignupComplete = (newUser: User) => {
-    toast({
-      title: 'Account Created!',
-      description: `Welcome, ${newUser.name}!`,
-    });
-
-    setBurstEmojis('👋');
-    setTimeout(() => router.push('/dashboard'), 1500);
-  }
-
-  const handleSubmit = async (email: string, password?: string, name?: string) => {
-    if (!name || !password) {
-       toast({ title: 'Name and password are required for sign up.', variant: 'destructive'});
-       return;
-    }
+  const handleSubmit = async (email: string) => {
     try {
-      const newUser = await signup(name, email, password);
-      handleSignupComplete(newUser);
-    } catch (error: any) {
-      toast({
-        title: 'Sign Up Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      const user = await loginWithGoogle();
-      handleSignupComplete(user);
+      await sendLoginLink(email);
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch (error: any) {
       toast({
         title: 'Sign Up Failed',
@@ -57,21 +25,19 @@ export default function SignupPage() {
 
   return (
     <>
-      {burstEmojis && <EmojiBurst emojis={burstEmojis} />}
       <AuthLayout
         title="Create an Account"
-        description="Enter your details to create a new account."
+        description="Enter your email to get started. We'll send you a magic link to sign in."
         footerText="Already have an account?"
         footerLink="/login"
         footerLinkText="Login"
-        onGoogleSignIn={handleGoogleLogin}
         isLoading={loading}
       >
         <AuthForm
           buttonText="Sign Up"
           onSubmit={handleSubmit}
-          includeName={true}
-          includePassword={true}
+          includeName={false}
+          includePassword={false}
           isLoading={loading}
         />
       </AuthLayout>
