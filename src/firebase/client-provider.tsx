@@ -1,35 +1,23 @@
 
 'use client';
 
-import {
-  Auth,
-  onAuthStateChanged
-} from 'firebase/auth';
-import {
-  ReactNode,
-  useEffect,
-} from 'react';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { ReactNode, useEffect } from 'react';
 import { useAtom } from 'jotai';
+import { doc, setDoc } from 'firebase/firestore';
 
-import { FirebaseProvider, initializeFirebase, useAuth } from '.';
-import { currentUserIdAtom, usersAtom, User } from '@/lib/mock-data';
-
+import { FirebaseProvider, initializeFirebase, useAuth, useFirestore } from '.';
+import { currentUserIdAtom, User } from '@/lib/mock-data';
 
 export interface FirebaseClientProviderProps {
   children: React.ReactNode;
 }
 
-export function FirebaseClientProvider({
-  children,
-}: FirebaseClientProviderProps) {
+export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
   const { app, firestore, auth } = initializeFirebase();
 
   return (
-    <FirebaseProvider
-      firebaseApp={app}
-      firestore={firestore}
-      auth={auth}
-    >
+    <FirebaseProvider firebaseApp={app} firestore={firestore} auth={auth}>
       <AuthWrapper>{children}</AuthWrapper>
     </FirebaseProvider>
   );
@@ -37,22 +25,42 @@ export function FirebaseClientProvider({
 
 function AuthWrapper({ children }: { children: ReactNode }) {
   const auth = useAuth();
+  const firestore = useFirestore();
   const [, setCurrentUserId] = useAtom(currentUserIdAtom);
-  const [users, setUsers] = useAtom(usersAtom);
-
 
   useEffect(() => {
-    // This is a placeholder for real Firebase Auth.
-    // In a real app, you might not need this if your useAuth hook
-    // and route protection are sufficient.
-    // This simply syncs the mock user ID with a placeholder user.
-    if (!auth) {
-        const storedUserId = localStorage.getItem('currentUserId');
-        if (storedUserId) {
-            setCurrentUserId(storedUserId);
+    if (!auth || !firestore) return;
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        setCurrentUserId(firebaseUser.uid);
+        localStorage.setItem('currentUserId', firebaseUser.uid);
+
+        // This creates or updates a user profile document in Firestore upon login.
+        const userRef = doc(firestore, 'users', firebaseUser.uid);
+        const userProfile: Partial<User> = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email || '',
+        };
+        // Add display name if it exists and it's the first time
+        if (firebaseUser.displayName) {
+          userProfile.name = firebaseUser.displayName;
         }
-    }
-  }, [auth, setCurrentUserId, setUsers, users]);
+
+        try {
+          await setDoc(userRef, userProfile, { merge: true });
+        } catch (e) {
+          console.error("Error creating/updating user document:", e);
+        }
+        
+      } else {
+        setCurrentUserId(null);
+        localStorage.removeItem('currentUserId');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth, firestore, setCurrentUserId]);
 
   return <>{children}</>;
 }
