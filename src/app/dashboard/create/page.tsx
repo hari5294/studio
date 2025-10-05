@@ -9,9 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Smile } from 'lucide-react';
 import { isOnlyEmojis } from '@/lib/utils';
-import { badgesAtom, currentUserIdAtom, shareLinksAtom } from '@/lib/mock-data';
+import { badgesAtom, currentUserIdAtom, shareLinksAtom, ShareLink } from '@/lib/mock-data';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
 export default function CreateBadgePage() {
   const router = useRouter();
@@ -19,17 +21,26 @@ export default function CreateBadgePage() {
   const [emojis, setEmojis] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserId] = useAtom(currentUserIdAtom);
-  const [badges, setBadges] = useAtom(badgesAtom);
+  const [, setBadges] = useAtom(badgesAtom);
   const [, setShareLinks] = useAtom(shareLinksAtom);
 
   const handleEmojiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    // Use spread syntax on the string to correctly count emojis, including multi-character ones
     const emojiArray = [...value];
     if (value === '' || (isOnlyEmojis(value) && emojiArray.length <= 3)) {
       setEmojis(value);
     }
   };
+
+  const onEmojiClick = (emojiData: EmojiClickData) => {
+    setEmojis(prev => {
+        const currentEmojis = [...prev];
+        if (currentEmojis.length < 3) {
+            return prev + emojiData.emoji;
+        }
+        return prev;
+    });
+  }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -65,17 +76,6 @@ export default function CreateBadgePage() {
         return;
     }
 
-    const existingBadge = Object.values(badges).find(b => b.emojis === submittedEmojis);
-    if (existingBadge) {
-        toast({
-            title: 'Emojis Already Used',
-            description: `The emoji combination "${submittedEmojis}" is already used for the "${existingBadge.name}" badge. Please choose a unique set of emojis.`,
-            variant: 'destructive',
-        });
-        setIsLoading(false);
-        return;
-    }
-    
     // Mock API call
     setTimeout(() => {
         try {
@@ -97,7 +97,7 @@ export default function CreateBadgePage() {
             
             // Create 3 share links for the creator
             setShareLinks(prev => {
-              const newLinks: Record<string, any> = {};
+              const newLinks: Record<string, ShareLink> = {};
               for (let i = 0; i < 3; i++) {
                 const newLinkId = crypto.randomUUID();
                 newLinks[newLinkId] = {
@@ -153,15 +153,28 @@ export default function CreateBadgePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emojis">Emojis</Label>
-                <Input 
-                  id="emojis" 
-                  name="emojis" 
-                  placeholder="🚀✨🪐" 
-                  required 
-                  value={emojis}
-                  onChange={handleEmojiChange}
-                  disabled={isLoading}
-                />
+                <div className="flex gap-2">
+                  <Input 
+                    id="emojis" 
+                    name="emojis" 
+                    placeholder="🚀✨🪐" 
+                    required 
+                    value={emojis}
+                    onChange={handleEmojiChange}
+                    disabled={isLoading}
+                    className="flex-grow"
+                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" size="icon" type="button" disabled={isLoading}>
+                            <Smile />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 border-0">
+                        <EmojiPicker onEmojiClick={onEmojiClick} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Choose exactly 3 emojis that represent your badge.
                 </p>
