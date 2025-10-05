@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -52,10 +53,11 @@ type AuthFormProps = {
     buttonText: string;
     onSubmit: (email: string, password?: string, name?: string) => void;
     includeName?: boolean;
+    includePassword?: boolean;
     isLoading?: boolean;
 }
 
-export function AuthForm({ buttonText, onSubmit, includeName = false, isLoading = false }: AuthFormProps) {
+export function AuthForm({ buttonText, onSubmit, includeName = false, includePassword = false, isLoading = false }: AuthFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -93,17 +95,19 @@ export function AuthForm({ buttonText, onSubmit, includeName = false, isLoading 
             disabled={isLoading}
             />
         </div>
-        <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-            id="password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={isLoading}
-            />
-        </div>
+        {includePassword && (
+          <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+              />
+          </div>
+        )}
         <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Processing...' : buttonText}
         </Button>
