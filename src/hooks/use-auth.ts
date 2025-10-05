@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -15,23 +16,20 @@ export function useAuth(options: UseAuthOptions = {}) {
   const [currentUserId, setCurrentUserId] = useAtom(currentUserIdAtom);
   const [users] = useAtom(usersAtom);
   
-  // Use a local loading state to simulate async behavior
   const [loading, setLoading] = useState(true);
 
   const user = currentUserId ? users[currentUserId] : null;
 
   useEffect(() => {
-    // Simulate loading delay
-    const timer = setTimeout(() => {
-        setLoading(false);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [currentUserId]);
+    const storedUserId = localStorage.getItem('currentUserId');
+    if (storedUserId) {
+        setCurrentUserId(storedUserId);
+    }
+    setLoading(false);
+  }, [setCurrentUserId]);
 
   useEffect(() => {
     if (loading) return;
-    if (typeof window === 'undefined') return;
 
     const isAuthPage = pathname === '/login' || pathname === '/signup';
 
@@ -48,9 +46,8 @@ export function useAuth(options: UseAuthOptions = {}) {
         setTimeout(() => {
             const foundUser = Object.values(users).find(u => u.email === email);
             if (foundUser) {
-                // In a real app, you'd verify the password here.
-                // For mock data, we just check if it exists.
                 setCurrentUserId(foundUser.id);
+                localStorage.setItem('currentUserId', foundUser.id);
                 resolve(foundUser);
             } else {
                 reject(new Error('User not found or password incorrect.'));
@@ -77,8 +74,7 @@ export function useAuth(options: UseAuthOptions = {}) {
                 emojiAvatar: '😀',
                 following: []
             };
-            // The component handles adding the user to the atom state.
-            // In a real app, you'd save the new user to the database here.
+            // The calling component handles adding the user to the atom state.
             resolve(newUser);
             setLoading(false);
         }, 500);
@@ -87,6 +83,7 @@ export function useAuth(options: UseAuthOptions = {}) {
   
   const logout = () => {
     setCurrentUserId(null);
+    localStorage.removeItem('currentUserId');
     router.push('/login');
   };
 

@@ -23,6 +23,7 @@ export default function SignupPage() {
      // Add the new user to our mock data
     setUsers(prev => ({...prev, [newUser.id]: newUser}));
     setCurrentUserId(newUser.id);
+    localStorage.setItem('currentUserId', newUser.id);
 
     toast({
       title: 'Account Created!',
