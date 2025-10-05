@@ -13,12 +13,14 @@ import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { useAtom } from 'jotai';
 import { shareLinksAtom, badgesAtom, currentUserIdAtom, ShareLink, Badge } from '@/lib/mock-data';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
+import { useSound } from '@/components/providers/sound-provider';
 
 const EXPIRY_HOURS = 24;
 
 export default function JoinPage({ params }: { params: { linkId: string } }) {
   const router = useRouter();
   const { toast } = useToast();
+  const { playSound } = useSound();
 
   const [shareLinks, setShareLinks] = useAtom(shareLinksAtom);
   const [badges, setBadges] = useAtom(badgesAtom);
@@ -101,6 +103,7 @@ export default function JoinPage({ params }: { params: { linkId: string } }) {
                 description: `You are now an owner of the "${badge.name}" badge.`,
             });
             
+            playSound('claim');
             setBurstEmojis(badge.emojis);
 
             // Create 3 new share links for the new owner

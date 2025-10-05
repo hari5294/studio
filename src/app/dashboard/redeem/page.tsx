@@ -13,12 +13,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Gift } from 'lucide-react';
 import { badgesAtom, currentUserIdAtom, shareLinksAtom, ShareLink } from '@/lib/mock-data';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
+import { useSound } from '@/components/providers/sound-provider';
 
 const EXPIRY_HOURS = 24;
 
 export default function RedeemCodePage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { playSound } = useSound();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
@@ -98,6 +100,7 @@ export default function RedeemCodePage() {
                 description: `You are now an owner of the "${badgeToClaim.name}" badge.`,
             });
             
+            playSound('claim');
             setBurstEmojis(badgeToClaim.emojis);
             setTimeout(() => handleRedeemComplete(link.badgeId), 2000);
 

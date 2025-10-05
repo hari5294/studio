@@ -15,11 +15,13 @@ import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { notificationsAtom, usersAtom, badgesAtom, currentUserIdAtom, User, Badge, Notification, shareLinksAtom } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
+import { useSound } from '@/components/providers/sound-provider';
 
 type EnrichedNotification = Notification & { fromUser?: User; badge?: Badge };
 
 function NotificationItem({ notification, onUpdate }: { notification: EnrichedNotification, onUpdate: () => void }) {
     const { toast } = useToast();
+    const { playSound } = useSound();
     const [, setNotifications] = useAtom(notificationsAtom);
     const [, setShareLinks] = useAtom(shareLinksAtom);
     const [currentUserId] = useAtom(currentUserIdAtom);
@@ -59,6 +61,7 @@ function NotificationItem({ notification, onUpdate }: { notification: EnrichedNo
                 title: 'Code Sent!',
                 description: `A share code for "${notification.badge.name}" has been sent to ${notification.fromUser.name}.`
              });
+             playSound('notification');
         }
     }
 

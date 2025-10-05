@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { AppStateProvider } from '@/components/providers/state-provider';
+import { SoundProvider } from '@/components/providers/sound-provider';
 
 const fontPoppins = Poppins({
   subsets: ['latin'],
@@ -37,8 +38,10 @@ export default function RootLayout({
         )}
       >
         <AppStateProvider>
-          {children}
-          <Toaster />
+          <SoundProvider>
+            {children}
+            <Toaster />
+          </SoundProvider>
         </AppStateProvider>
       </body>
     </html>
