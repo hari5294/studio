@@ -9,10 +9,12 @@ import {
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { useAuth as useFirebaseAuth } from '@/firebase';
 import { useFirestore } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { User } from '@/lib/mock-data';
 
@@ -39,8 +41,16 @@ export function useAuth(options: UseAuthOptions = {}) {
         if (userSnap.exists()) {
           setUser({ id: userSnap.id, ...userSnap.data() } as User);
         } else {
-          // This case can happen for a brief moment after signup before the doc is created
-          setUser(null);
+          // If user doc doesn't exist (e.g., first Google login), create it
+          const newUserProfile: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            name: firebaseUser.displayName || 'Anonymous User',
+            emojiAvatar: '😀',
+            following: [],
+          };
+          await setDoc(userRef, newUserProfile);
+          setUser(newUserProfile);
         }
       } else {
         setUser(null);
@@ -89,6 +99,41 @@ export function useAuth(options: UseAuthOptions = {}) {
     }
   };
 
+  const loginWithGoogle = async (): Promise<User> => {
+    if (!auth || !firestore) {
+      throw new Error('Auth not initialized.');
+    }
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const firebaseUser = userCredential.user;
+
+      const userRef = doc(firestore, 'users', firebaseUser.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const userData = { id: userSnap.id, ...userSnap.data() } as User;
+        setUser(userData);
+        return userData;
+      } else {
+        // This case is handled by onAuthStateChanged, but we can do it here too for immediate UI update
+        const newUserProfile: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            name: firebaseUser.displayName || 'Google User',
+            emojiAvatar: '😀',
+            following: [],
+        };
+        await setDoc(userRef, newUserProfile);
+        setUser(newUserProfile);
+        return newUserProfile;
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signup = async (name: string, email: string, password?: string): Promise<User> => {
     if (!auth || !firestore || !password) {
       throw new Error('Auth not initialized or password missing.');
@@ -125,5 +170,5 @@ export function useAuth(options: UseAuthOptions = {}) {
     router.push('/login');
   };
 
-  return { user, loading, login, signup, logout };
+  return { user, loading, login, signup, logout, loginWithGoogle };
 }
