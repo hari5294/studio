@@ -280,8 +280,21 @@ export const MockDataProvider = ({ children }: { children: ReactNode }) => {
         const badge = badges.find(b => b.id === badgeId);
         if (!badge) return;
 
+        // 1. Update the creatorId on the badge
         setBadges(prev => prev.map(b => b.id === badgeId ? { ...b, creatorId: newCreatorId } : b));
         
+        // 2. Add the new creator to the owners list if they aren't already an owner
+        const isAlreadyOwner = badgeOwners.some(bo => bo.badgeId === badgeId && bo.userId === newCreatorId);
+        if (!isAlreadyOwner) {
+            const newOwnerEntry: BadgeOwner = {
+                badgeId: badgeId,
+                userId: newCreatorId,
+                claimedAt: Date.now(),
+            };
+            setBadgeOwners(prev => [...prev, newOwnerEntry]);
+        }
+
+        // 3. Send a notification to the new owner
         const newNotification: Notification = {
             id: `n-${Date.now()}`,
             type: 'OWNERSHIP_TRANSFER',
@@ -292,7 +305,7 @@ export const MockDataProvider = ({ children }: { children: ReactNode }) => {
             read: false,
         };
         setNotifications(prev => [newNotification, ...prev]);
-    }, [badges]);
+    }, [badges, badgeOwners]);
 
     const markNotificationAsRead = useCallback((notificationId: string) => {
         setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
@@ -322,5 +335,3 @@ export const MockDataProvider = ({ children }: { children: ReactNode }) => {
 
     return <MockDataContext.Provider value={value}>{children}</MockDataContext.Provider>;
 };
-
-    
