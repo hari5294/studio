@@ -10,18 +10,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Smile } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser, firestore } from '@/firebase';
 import { isOnlyEmojis } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
-import { useMockData } from '@/hooks/use-mock-data';
+import { collection, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
 
 export default function CreateBadgePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
-  const { createBadge } = useMockData();
+  const { user } = useUser();
   const [emojis, setEmojis] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
@@ -81,22 +80,55 @@ export default function CreateBadgePage() {
     }
 
     try {
-        const newBadge = createBadge({ name, emojis: submittedEmojis, tokens, creatorId: user.id });
-        
-        toast({
-            title: 'Badge Created!',
-            description: `Your badge "${name}" has been successfully created.`,
-        });
-        
-        setBurstEmojis(submittedEmojis);
+      const batch = writeBatch(firestore);
+      const badgeRef = doc(collection(firestore, 'badges'));
+      
+      // 1. Create the badge
+      batch.set(badgeRef, {
+        name,
+        emojis: submittedEmojis,
+        tokens,
+        creatorId: user.uid,
+        createdAt: serverTimestamp(),
+      });
 
-        // Immediately redirect to show the share dialog
-        setTimeout(() => handleAnimationComplete(newBadge.id), 1500);
+      // 2. Add the creator as the first owner
+      const ownerRef = doc(collection(firestore, `badges/${badgeRef.id}/owners`));
+      batch.set(ownerRef, {
+        userId: user.uid,
+        badgeId: badgeRef.id,
+        claimedAt: serverTimestamp()
+      });
+
+      // 3. Create 5 share links
+      for (let i = 0; i < 5; i++) {
+        const shareLinkRef = doc(collection(firestore, 'shareLinks'));
+        batch.set(shareLinkRef, {
+          badgeId: badgeRef.id,
+          ownerId: user.uid,
+          used: false,
+          claimedBy: null,
+          createdAt: serverTimestamp(),
+        });
+      }
+      
+      await batch.commit();
+        
+      toast({
+          title: 'Badge Created!',
+          description: `Your badge "${name}" has been successfully created.`,
+      });
+      
+      setBurstEmojis(submittedEmojis);
+
+      // Immediately redirect to show the share dialog
+      setTimeout(() => handleAnimationComplete(badgeRef.id), 1500);
 
     } catch (error: any) {
+        console.error("Error creating badge: ", error);
         toast({
             title: 'Creation Failed',
-            description: error.message,
+            description: "There was an issue creating your badge. Please try again.",
             variant: 'destructive',
         });
         setIsLoading(false);
@@ -168,5 +200,3 @@ export default function CreateBadgePage() {
     </>
   );
 }
-
-    
