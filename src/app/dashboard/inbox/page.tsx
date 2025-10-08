@@ -70,8 +70,9 @@ function NotificationItem({ notification, onSendCode, onNewBadgeReceived }: { no
     setIsSending(true);
     try {
         await onSendCode(badge.id, fromUser.id!, fromUser.name || 'User');
-    } finally {
-        // We don't set isSending back to false, so the button remains disabled.
+    } catch {
+        // If there's an error (e.g. no badges left), re-enable the button
+        setIsSending(false);
     }
   };
 
@@ -316,3 +317,5 @@ export default function InboxPage() {
     </>
   );
 }
+
+    
