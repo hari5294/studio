@@ -16,13 +16,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Smile } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { getFirstEmoji, isOnlyEmojis } from '@/lib/utils';
-import { User } from 'firebase/auth';
+import { AppUser } from '@/firebase/auth/use-user';
 
 type EditProfileDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: User & { emojiAvatar?: string }; // User from firebase/auth + custom field
-  onUpdate: (updatedUser: { emojiAvatar?: string }) => void;
+  user: AppUser;
+  onUpdate: (updatedUser: { emojiAvatar?: string }) => Promise<void>;
 };
 
 export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditProfileDialogProps) {
@@ -38,33 +38,24 @@ export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditPr
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        if (emoji && !isOnlyEmojis(emoji)) {
+             toast({
+                title: 'Invalid Input',
+                description: 'Please enter only an emoji to use as your avatar.',
+                variant: 'destructive',
+            });
+            return;
+        }
+        
         setIsLoading(true);
+        const cleanEmoji = getFirstEmoji(emoji);
         
         try {
-            if (emoji && !isOnlyEmojis(emoji)) {
-                 toast({
-                    title: 'Invalid Input',
-                    description: 'Please enter only an emoji to use as your avatar.',
-                    variant: 'destructive',
-                });
-                setIsLoading(false);
-                return;
-            }
-            const cleanEmoji = getFirstEmoji(emoji);
-            
-            onUpdate({ emojiAvatar: cleanEmoji });
-
-            toast({
-                title: "Avatar Updated!",
-                description: `Your profile picture is now ${cleanEmoji}.`,
-            });
+            await onUpdate({ emojiAvatar: cleanEmoji });
             onOpenChange(false);
         } catch (error: any) {
-             toast({
-                title: "Update Failed",
-                description: error.message,
-                variant: "destructive",
-            });
+             // Toast is handled by the parent component
         } finally {
             setIsLoading(false);
         }

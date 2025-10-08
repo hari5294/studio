@@ -2,12 +2,12 @@
 'use client';
 
 import { redirect } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser } from '@/firebase';
 import { useIsClient } from '@/hooks/use-is-client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
-    const { user, loading } = useAuth();
+    const { user, loading } = useUser();
     const isClient = useIsClient();
 
     if (loading || !isClient) {
@@ -20,12 +20,10 @@ export default function ProfilePage() {
     }
     
     if (user) {
-        redirect(`/dashboard/profile/${user.id}`);
+        redirect(`/dashboard/profile/${user.uid}`);
     } else {
         redirect('/login');
     }
 
     return null;
 }
-
-    

@@ -38,21 +38,39 @@ import {
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
-import { useUser, useCollection } from '@/firebase';
+import { useUser, useCollection, firestore } from '@/firebase';
 import { SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { getAuth } from 'firebase/auth';
-import { collection, query, where } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
 
 
 function OwnedBadges() {
     const pathname = usePathname();
     const { user } = useUser();
-    const firestore = useFirestore();
     const { isMobile, setOpenMobile } = useSidebar();
+    const [ownedBadges, setOwnedBadges] = useState<any[]>([]);
     
-    const userBadgesQuery = user ? query(collection(firestore, 'badges'), where('ownerIds', 'array-contains', user.uid)) : null;
-    const { data: ownedBadges } = useCollection(userBadgesQuery);
+    useEffect(() => {
+        if (!user) return;
+        
+        const fetchOwnedBadges = async () => {
+            const ownersQuery = query(collection(firestore, 'badgeOwners'), where('userId', '==', user.uid));
+            const ownersSnap = await getDocs(ownersQuery);
+            const badgeIds = ownersSnap.docs.map(doc => doc.data().badgeId);
+            
+            if (badgeIds.length > 0) {
+                const badgesQuery = query(collection(firestore, 'badges'), where('__name__', 'in', badgeIds));
+                const badgesSnap = await getDocs(badgesQuery);
+                const badges = badgesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setOwnedBadges(badges);
+            }
+        };
+
+        fetchOwnedBadges();
+        // This is not a real-time listener for simplicity in the sidebar.
+        // A full implementation might use onSnapshot.
+    }, [user]);
 
     if (!ownedBadges || ownedBadges.length === 0) return null;
 
@@ -127,11 +145,11 @@ function UserMenu() {
                 {user.emojiAvatar ? (
                   <span className="flex h-full w-full items-center justify-center text-xl">{user.emojiAvatar}</span>
                 ) : (
-                  <AvatarFallback>{user.displayName?.charAt(0) ?? '?'}</AvatarFallback>
+                  <AvatarFallback>{user.name?.charAt(0) ?? '?'}</AvatarFallback>
                 )}
               </Avatar>
               <div className="flex-grow truncate group-data-[collapsible=icon]:hidden">
-                <p className="text-sm font-medium">{user.displayName}</p>
+                <p className="text-sm font-medium">{user.name}</p>
                 <p className="text-xs text-muted-foreground">{user.email}</p>
               </div>
               <MoreHorizontal className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:hidden" />
@@ -159,7 +177,6 @@ function UserMenu() {
 function InboxMenuLink() {
     const pathname = usePathname();
     const { user } = useUser();
-    const firestore = useFirestore();
     const { isMobile, setOpenMobile } = useSidebar();
     
     const notificationsQuery = user ? query(collection(firestore, `users/${user.uid}/notifications`), where('read', '==', false)) : null;
@@ -273,7 +290,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
                 asChild
-                isActive={isActive(`/dashboard/profile/${user?.uid}`)}
+                isActive={isActive(`/dashboard/profile`)}
                 tooltip="My Profile"
                 disabled={!user}
                 onClick={handleClick}
