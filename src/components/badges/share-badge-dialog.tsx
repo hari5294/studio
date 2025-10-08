@@ -16,33 +16,56 @@ import { Copy, QrCode, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Skeleton } from '../ui/skeleton';
-import type { User } from '@/hooks/use-auth';
-import type { Badge, ShareLink } from '@/lib/mock-data';
-import { useMockData } from '@/hooks/use-mock-data';
+import { useCollection, firestore, useUser } from '@/firebase';
+import { AppUser } from '@/firebase/auth/use-user';
+import { collection, query, where, addDoc, serverTimestamp, writeBatch, doc } from 'firebase/firestore';
 
+
+type Badge = { id: string; name: string; };
 
 type ShareBadgeDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   badge: Badge;
-  user: User;
+  user: AppUser;
 };
 
 export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadgeDialogProps) {
     const { toast } = useToast();
-    const { shareLinks, createShareLinks } = useMockData();
-    const [isLoading, setIsLoading] = React.useState(false);
+    const [isCreating, setIsCreating] = React.useState(false);
 
-    const availableLinks = shareLinks.filter(l => l.badgeId === badge.id && l.ownerId === user.id && !l.used);
+    const linksQuery = user ? query(
+        collection(firestore, 'shareLinks'),
+        where('badgeId', '==', badge.id),
+        where('ownerId', '==', user.uid),
+        where('used', '==', false)
+    ) : null;
+    
+    const { data: availableLinks, loading: loadingLinks } = useCollection(linksQuery);
 
-    const handleCreateLinks = () => {
-        setIsLoading(true);
-        // Simulate async operation
-        setTimeout(() => {
-            createShareLinks(badge.id, user.id, 5);
+    const handleCreateLinks = async () => {
+        if (!user) return;
+        setIsCreating(true);
+        try {
+            const batch = writeBatch(firestore);
+            for (let i = 0; i < 5; i++) {
+                const shareLinkRef = doc(collection(firestore, 'shareLinks'));
+                batch.set(shareLinkRef, {
+                    badgeId: badge.id,
+                    ownerId: user.uid,
+                    used: false,
+                    claimedBy: null,
+                    createdAt: serverTimestamp(),
+                });
+            }
+            await batch.commit();
             toast({ title: "5 new codes created!" });
-            setIsLoading(false);
-        }, 500);
+        } catch (error) {
+            console.error("Error creating share links:", error);
+            toast({ title: "Failed to create codes", variant: "destructive" });
+        } finally {
+            setIsCreating(false);
+        }
     }
 
     const getFullUrl = (linkId: string) => {
@@ -74,14 +97,14 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadge
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4 min-h-[150px]">
-          {isLoading && (
+          {loadingLinks && (
              <div className="flex flex-col items-center justify-center gap-4">
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
              </div>
           )}
-          {!isLoading && availableLinks.length > 0 && (
+          {!loadingLinks && availableLinks && availableLinks.length > 0 && (
               <div className="space-y-3">
                 {availableLinks.map(link => (
                     <div key={link.id} className="flex items-center gap-2 w-full">
@@ -102,7 +125,7 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadge
                 ))}
               </div>
           )}
-           {!isLoading && availableLinks.length === 0 && (
+           {!loadingLinks && (!availableLinks || availableLinks.length === 0) && (
             <div className="flex flex-col justify-center items-center h-full text-center py-4">
                 <p className="text-sm text-muted-foreground mb-4">
                     You have no more unique codes to share for this badge.
@@ -111,12 +134,14 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadge
           )}
         </div>
         <DialogFooter>
-            <Button variant="outline" onClick={handleCreateLinks} disabled={isLoading}>
+            <Button variant="outline" onClick={handleCreateLinks} disabled={isCreating}>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                {isLoading ? "Generating..." : "Generate 5 More"}
+                {isCreating ? "Generating..." : "Generate 5 More"}
             </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+    
