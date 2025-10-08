@@ -17,6 +17,7 @@ import { AppUser } from '@/firebase/auth/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { doc, collection, writeBatch, serverTimestamp, deleteDoc, setDoc, addDoc, query, where, getDocs, getDoc } from 'firebase/firestore';
+import { EmojiBurst } from '@/components/effects/emoji-burst';
 
 type BadgeType = {
   id: string;
@@ -199,6 +200,17 @@ function BadgeDetailContent() {
   const [isShareOpen, setShareOpen] = useState(searchParams.get('showShare') === 'true');
   const [isTransferOpen, setTransferOpen] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
+  const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get('burst') === 'true' && badge) {
+      setBurstEmojis(badge.emojis);
+      // Clean up the URL
+      const newUrl = `/dashboard/badge/${id}`;
+      window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
+      setTimeout(() => setBurstEmojis(null), 2000);
+    }
+  }, [searchParams, badge, id]);
 
   const isLoading = authLoading || badgeLoading || ownersLoading || followersLoading || creatorLoading;
 
@@ -427,6 +439,7 @@ function BadgeDetailContent() {
             ownerUserIds={owners.map(o => o.userId).filter(uid => uid !== currentUser.uid)}
         />
       )}
+      {burstEmojis && <EmojiBurst emojis={burstEmojis} />}
     </>
   );
 }

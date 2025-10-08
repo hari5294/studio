@@ -43,7 +43,7 @@ export function BadgeCard({ badge }: BadgeCardProps) {
       <CardContent className="flex-grow" />
       <CardFooter>
         <Button asChild variant="ghost" className="w-full justify-start text-primary hover:text-primary">
-          <Link href={`/dashboard/badge/${badge.id}`}>
+          <Link href={`/dashboard/badge/${badge.id}?burst=true`}>
             View Badge <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>

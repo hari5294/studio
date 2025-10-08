@@ -13,7 +13,7 @@ function TrendingBadgeItem({ badge, index }: { badge: any, index: number }) {
     const badgesLeft = badge.tokens - (badge.owners?.length || 0);
 
     return (
-        <Link href={`/dashboard/badge/${badge.id}`} className="block">
+        <Link href={`/dashboard/badge/${badge.id}?burst=true`} className="block">
             <div className="grid grid-cols-[auto_auto_1fr_auto] items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-muted/50">
             <div className="flex items-center gap-2 text-lg font-bold text-muted-foreground">
                 <Flame className="h-5 w-5 text-accent" />
