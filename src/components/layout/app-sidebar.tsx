@@ -49,14 +49,19 @@ function OwnedBadges() {
     const pathname = usePathname();
     const { user } = useUser();
     const { isMobile, setOpenMobile } = useSidebar();
+    
     const [ownedBadges, setOwnedBadges] = useState<any[]>([]);
     
+    const badgeOwnersQuery = user ? query(collection(firestore, 'badgeOwners'), where('userId', '==', user.uid)) : null;
+
     useEffect(() => {
-        if (!user) return;
-        
-        const fetchOwnedBadges = async () => {
-            const ownersQuery = query(collection(firestore, 'badgeOwners'), where('userId', '==', user.uid));
-            const ownersSnap = await getDocs(ownersQuery);
+        if (!badgeOwnersQuery) {
+            setOwnedBadges([]);
+            return;
+        };
+
+        const fetchBadges = async () => {
+            const ownersSnap = await getDocs(badgeOwnersQuery);
             const badgeIds = ownersSnap.docs.map(doc => doc.data().badgeId);
             
             if (badgeIds.length > 0) {
@@ -64,13 +69,14 @@ function OwnedBadges() {
                 const badgesSnap = await getDocs(badgesQuery);
                 const badges = badgesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setOwnedBadges(badges);
+            } else {
+                setOwnedBadges([]);
             }
         };
 
-        fetchOwnedBadges();
-        // This is not a real-time listener for simplicity in the sidebar.
-        // A full implementation might use onSnapshot.
-    }, [user]);
+        fetchBadges();
+    }, [badgeOwnersQuery]);
+
 
     if (!ownedBadges || ownedBadges.length === 0) return null;
 
@@ -326,3 +332,5 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
+    

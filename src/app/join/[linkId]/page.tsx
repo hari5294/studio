@@ -6,25 +6,65 @@ import { EmojiBadgeLogo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser, firestore } from '@/firebase';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
-import { useMockData } from '@/hooks/use-mock-data';
-import type { ShareLink, Badge } from '@/lib/mock-data';
+import { getDoc, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import type { ShareLink, Badge } from '@/docs/backend-schema';
+import { AppUser } from '@/firebase/auth/use-user';
+
+
+async function redeemShareLink(linkId: string, userId: string): Promise<{ badge: Badge & { id: string }}> {
+    const linkRef = doc(firestore, 'shareLinks', linkId);
+    const linkSnap = await getDoc(linkRef);
+
+    if (!linkSnap.exists() || linkSnap.data().used) {
+        throw new Error("This code is invalid or has already been used.");
+    }
+    
+    const linkData = linkSnap.data();
+    const badgeId = linkData.badgeId;
+
+    const batch = writeBatch(firestore);
+    
+    // Mark link as used
+    batch.update(linkRef, {
+        used: true,
+        claimedBy: userId,
+    });
+    
+    // Add new owner
+    const ownerRef = doc(firestore, `badges/${badgeId}/owners`, userId);
+    batch.set(ownerRef, {
+        badgeId: badgeId,
+        userId: userId,
+        claimedAt: serverTimestamp()
+    });
+
+    await batch.commit();
+
+    const badgeRef = doc(firestore, 'badges', badgeId);
+    const badgeSnap = await getDoc(badgeRef);
+    if (!badgeSnap.exists()) {
+        throw new Error("Could not find the claimed badge.");
+    }
+    const badge = { id: badgeSnap.id, ...badgeSnap.data() } as Badge & { id: string };
+
+    return { badge };
+}
 
 export default function JoinPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
-  const { user: currentUser } = useAuth();
-  const { shareLinks, badges, redeemShareLink } = useMockData();
+  const { user: currentUser } = useUser();
   
   const linkId = params.linkId as string;
-  const [link, setLink] = useState<ShareLink | undefined>(undefined);
-  const [badge, setBadge] = useState<Badge | undefined>(undefined);
+  const [link, setLink] = useState<ShareLink & {id: string} | null>(null);
+  const [badge, setBadge] = useState<Badge & {id: string} | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -32,36 +72,47 @@ export default function JoinPage() {
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsLoading(true);
-    const foundLink = shareLinks.find(l => l.id === linkId);
-    setLink(foundLink);
+    if (!linkId) return;
 
-    if (!foundLink) {
-        setError("This invitation code is invalid or has already been used.");
+    const fetchLinkData = async () => {
+        setIsLoading(true);
+        const linkRef = doc(firestore, 'shareLinks', linkId);
+        const linkSnap = await getDoc(linkRef);
+
+        if (!linkSnap.exists()) {
+            setError("This invitation code is invalid or has already been used.");
+            setIsLoading(false);
+            return;
+        }
+
+        const linkData = {id: linkSnap.id, ...linkSnap.data()} as ShareLink & { id: string };
+        setLink(linkData);
+
+        if (linkData.used) {
+            const claimedByUser = currentUser?.uid === linkData.claimedBy;
+            const message = claimedByUser 
+                ? "You have already claimed this badge."
+                : "This invitation code has already been used by someone else.";
+            setError(message);
+            setIsLoading(false);
+            return;
+        }
+        
+        const badgeRef = doc(firestore, 'badges', linkData.badgeId);
+        const badgeSnap = await getDoc(badgeRef);
+
+        if (!badgeSnap.exists()) {
+            setError("The badge associated with this code could not be found.");
+        } else {
+            setBadge({id: badgeSnap.id, ...badgeSnap.data()} as Badge & { id: string });
+        }
+        
         setIsLoading(false);
-        return;
-    }
+    };
 
-    if (foundLink.used) {
-        const claimedByUser = currentUser?.id === foundLink.claimedBy;
-        const message = claimedByUser 
-            ? "You have already claimed this badge."
-            : "This invitation code has already been used by someone else.";
-        setError(message);
-        setIsLoading(false);
-        return;
-    }
-    
-    const foundBadge = badges.find(b => b.id === foundLink.badgeId);
-    setBadge(foundBadge);
+    fetchLinkData();
 
-    if (!foundBadge) {
-        setError("The badge associated with this code could not be found.");
-    }
-    
-    setIsLoading(false);
-
-  }, [linkId, shareLinks, badges, currentUser]);
+  }, [linkId, currentUser]);
 
 
   const handleJoin = async (e: React.FormEvent) => {
@@ -70,7 +121,7 @@ export default function JoinPage() {
 
     setIsClaiming(true);
     try {
-        redeemShareLink(link.id, currentUser.id);
+        await redeemShareLink(link.id, currentUser.uid);
         toast({
             title: 'Badge Claimed!',
             description: `You are now an owner of the "${badge.name}" badge.`,
@@ -185,9 +236,11 @@ export default function JoinPage() {
             open={isShareOpen} 
             onOpenChange={handleShareDialogClose} 
             badge={badge}
-            user={currentUser}
+            user={currentUser as AppUser}
           />
       )}
     </div>
   );
 }
+
+    

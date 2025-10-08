@@ -9,16 +9,56 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser, firestore } from '@/firebase';
 import { Gift } from 'lucide-react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
-import { useMockData } from '@/hooks/use-mock-data';
+import { getDoc, doc, writeBatch, serverTimestamp, collection } from 'firebase/firestore';
+import type { Badge } from '@/docs/backend-schema';
+
+async function redeemShareLink(linkId: string, userId: string): Promise<{ badge: Badge & { id: string }}> {
+    const linkRef = doc(firestore, 'shareLinks', linkId);
+    const linkSnap = await getDoc(linkRef);
+
+    if (!linkSnap.exists() || linkSnap.data().used) {
+        throw new Error("This code is invalid or has already been used.");
+    }
+    
+    const linkData = linkSnap.data();
+    const badgeId = linkData.badgeId;
+
+    const batch = writeBatch(firestore);
+    
+    // Mark link as used
+    batch.update(linkRef, {
+        used: true,
+        claimedBy: userId,
+    });
+    
+    // Add new owner
+    const ownerRef = doc(firestore, `badges/${badgeId}/owners`, userId);
+    batch.set(ownerRef, {
+        badgeId: badgeId,
+        userId: userId,
+        claimedAt: serverTimestamp()
+    });
+
+    await batch.commit();
+
+    const badgeRef = doc(firestore, 'badges', badgeId);
+    const badgeSnap = await getDoc(badgeRef);
+    if (!badgeSnap.exists()) {
+        throw new Error("Could not find the claimed badge.");
+    }
+    const badge = { id: badgeSnap.id, ...badgeSnap.data() } as Badge & { id: string };
+
+    return { badge };
+}
+
 
 export default function RedeemCodePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
-  const { redeemShareLink } = useMockData();
+  const { user } = useUser();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
@@ -42,7 +82,7 @@ export default function RedeemCodePage() {
     setIsLoading(true);
 
     try {
-        const { badge } = redeemShareLink(code.trim(), user.id);
+        const { badge } = await redeemShareLink(code.trim(), user.uid);
         toast({
             title: 'Badge Claimed!',
             description: `You are now an owner of the "${badge.name}" badge.`,
@@ -103,3 +143,5 @@ export default function RedeemCodePage() {
     </>
   );
 }
+
+    
