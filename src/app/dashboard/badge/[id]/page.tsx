@@ -365,7 +365,7 @@ function BadgeDetailContent() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-start gap-2">
                     <Button 
                         onClick={() => setShareOpen(true)} 
                         className={cn({ 'invisible': !isOwner })}
@@ -449,3 +449,5 @@ export default function BadgeDetailPage() {
       <BadgeDetailContent />
   );
 }
+
+    

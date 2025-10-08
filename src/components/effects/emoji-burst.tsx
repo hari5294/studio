@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 
 type EmojiBurstProps = {
   emojis: string;
@@ -26,7 +27,7 @@ export function EmojiBurst({ emojis }: EmojiBurstProps) {
   }, [emojis]);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-50 animate-container-fade-out">
+    <div className="pointer-events-none fixed inset-0 z-[1000] animate-container-fade-out">
       <div className="relative h-full w-full">
         {particles.map(({ tx, ty, delay, emoji, key }) => (
           <div
@@ -45,3 +46,5 @@ export function EmojiBurst({ emojis }: EmojiBurstProps) {
     </div>
   );
 }
+
+    
