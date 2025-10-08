@@ -34,6 +34,7 @@ import {
   Inbox,
   LogIn,
   LogOut,
+  Sparkles,
 } from 'lucide-react';
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,7 @@ import { SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet
 import { getAuth } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
+import { CreditsDialog } from './credits-dialog';
 
 
 function OwnedBadges() {
@@ -224,6 +226,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
   const { user } = useUser();
+  const [isCreditsOpen, setCreditsOpen] = useState(false);
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -234,6 +237,7 @@ export function AppSidebar() {
   };
 
   return (
+    <>
     <Sidebar collapsible="icon" side="left" variant="sidebar">
       {isMobile && (
         <SheetHeader className="p-4 border-b">
@@ -326,11 +330,19 @@ export function AppSidebar() {
         <OwnedBadges />
 
       </SidebarContent>
-      <SidebarFooter className="border-t p-2">
+      <SidebarFooter className="border-t p-2 space-y-1">
+        <Button
+            variant="ghost"
+            className="flex h-auto w-full items-center justify-start gap-2 p-2 text-left"
+            onClick={() => setCreditsOpen(true)}
+        >
+            <Sparkles className="h-4 w-4 shrink-0" />
+            <span className="group-data-[collapsible=icon]:hidden">Credits</span>
+        </Button>
         <UserMenu />
       </SidebarFooter>
     </Sidebar>
+    <CreditsDialog open={isCreditsOpen} onOpenChange={setCreditsOpen} />
+    </>
   );
 }
-
-    
