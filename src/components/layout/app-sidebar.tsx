@@ -38,24 +38,23 @@ import {
 import { EmojiBadgeLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/components/ui/sidebar';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser, useCollection } from '@/firebase';
 import { SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { useMockData } from '@/hooks/use-mock-data';
-import { useMemo } from 'react';
+import { getAuth } from 'firebase/auth';
+import { collection, query, where } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+
 
 function OwnedBadges() {
     const pathname = usePathname();
-    const { user } = useAuth();
-    const { badges, badgeOwners } = useMockData();
+    const { user } = useUser();
+    const firestore = useFirestore();
     const { isMobile, setOpenMobile } = useSidebar();
     
-    const ownedBadges = useMemo(() => {
-        if (!user) return [];
-        const myBadgeIds = badgeOwners.filter(bo => bo.userId === user.id).map(bo => bo.badgeId);
-        return badges.filter(b => myBadgeIds.includes(b.id));
-    }, [user, badges, badgeOwners]);
+    const userBadgesQuery = user ? query(collection(firestore, 'badges'), where('ownerIds', 'array-contains', user.uid)) : null;
+    const { data: ownedBadges } = useCollection(userBadgesQuery);
 
-    if (ownedBadges.length === 0) return null;
+    if (!ownedBadges || ownedBadges.length === 0) return null;
 
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -92,7 +91,8 @@ function OwnedBadges() {
 }
 
 function UserMenu() {
-    const { user, logout, loading } = useAuth();
+    const { user, loading } = useUser();
+    const auth = getAuth();
     
     if (loading) {
         return null;
@@ -127,11 +127,11 @@ function UserMenu() {
                 {user.emojiAvatar ? (
                   <span className="flex h-full w-full items-center justify-center text-xl">{user.emojiAvatar}</span>
                 ) : (
-                  <AvatarFallback>{user.name?.charAt(0) ?? '?'}</AvatarFallback>
+                  <AvatarFallback>{user.displayName?.charAt(0) ?? '?'}</AvatarFallback>
                 )}
               </Avatar>
               <div className="flex-grow truncate group-data-[collapsible=icon]:hidden">
-                <p className="text-sm font-medium">{user.name}</p>
+                <p className="text-sm font-medium">{user.displayName}</p>
                 <p className="text-xs text-muted-foreground">{user.email}</p>
               </div>
               <MoreHorizontal className="h-4 w-4 shrink-0 group-data-[collapsible=icon]:hidden" />
@@ -141,13 +141,13 @@ function UserMenu() {
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href={`/dashboard/profile/${user.id}`}>
+              <Link href={`/dashboard/profile/${user.uid}`}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </Link>
             </DropdownMenuItem>
              <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout}>
+            <DropdownMenuItem onClick={() => auth.signOut()}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logout</span>
             </DropdownMenuItem>
@@ -158,14 +158,13 @@ function UserMenu() {
 
 function InboxMenuLink() {
     const pathname = usePathname();
-    const { user } = useAuth();
-    const { notifications } = useMockData();
+    const { user } = useUser();
+    const firestore = useFirestore();
     const { isMobile, setOpenMobile } = useSidebar();
     
-    const unreadCount = useMemo(() => {
-        if (!user) return 0;
-        return notifications.filter(n => n.toUserId === user.id && !n.read).length;
-    }, [user, notifications]);
+    const notificationsQuery = user ? query(collection(firestore, `users/${user.uid}/notifications`), where('read', '==', false)) : null;
+    const { data: unreadNotifications } = useCollection(notificationsQuery);
+    const unreadCount = unreadNotifications?.length || 0;
 
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -201,7 +200,7 @@ function InboxMenuLink() {
 export function AppSidebar() {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
-  const { user } = useAuth();
+  const { user } = useUser();
 
   const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
 
@@ -274,7 +273,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
                 asChild
-                isActive={isActive(`/dashboard/profile/${user?.id}`)}
+                isActive={isActive(`/dashboard/profile/${user?.uid}`)}
                 tooltip="My Profile"
                 disabled={!user}
                 onClick={handleClick}

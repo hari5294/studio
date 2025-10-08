@@ -1,13 +1,16 @@
 
 'use client';
 
-import { useState } from 'react';
 import { AuthLayout } from '@/components/auth/auth-form';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser } from '@/firebase';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from 'firebase/auth';
+import { doc, setDoc, getFirestore } from 'firebase/firestore';
+
 
 // Simple SVG for Google icon
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -21,26 +24,28 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const { toast } = useToast();
-  const { login, loading } = useAuth();
+  const { user, loading } = useUser();
+  const auth = getAuth();
+  const db = getFirestore();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) {
-        toast({
-            title: 'Email is required',
-            description: 'Please enter your email to log in.',
-            variant: 'destructive'
-        });
-        return;
+  const handleGoogleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+
+        // Create user profile in Firestore if it doesn't exist
+        const userRef = doc(db, "users", user.uid);
+        await setDoc(userRef, {
+            name: user.displayName,
+            email: user.email,
+            emojiAvatar: '👋', // Default emoji
+            following: []
+        }, { merge: true }); // merge:true won't overwrite existing fields
+
+    } catch (error) {
+        console.error("Authentication error:", error);
     }
-    login(email);
-  };
-  
-  const handleGoogleLogin = () => {
-    // For now, we just log in the first mock user
-    login('alice@example.com');
   }
 
   return (
@@ -49,33 +54,7 @@ export default function LoginPage() {
       description="Sign in to create, share, and claim badges."
       isLoading={loading}
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-            />
-        </div>
-        <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
-        </Button>
-        <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                </span>
-            </div>
-        </div>
-        <Button 
+       <Button 
             variant="outline" 
             className="w-full"
             onClick={handleGoogleLogin}
@@ -84,9 +63,6 @@ export default function LoginPage() {
             <GoogleIcon className="mr-2 h-5 w-5" />
             Sign in with Google
         </Button>
-      </form>
     </AuthLayout>
   );
 }
-
-    

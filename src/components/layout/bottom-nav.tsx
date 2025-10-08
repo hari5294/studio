@@ -3,11 +3,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, User, Gift, Inbox, PlusCircle } from 'lucide-react';
+import { Home, Search, User, Inbox, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/use-auth';
-import { useMockData } from '@/hooks/use-mock-data';
-import { useMemo } from 'react';
+import { useUser, useCollection, useFirestore } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Home', exact: true },
@@ -19,19 +19,19 @@ const navItems = [
 
 export function BottomNavBar() {
   const pathname = usePathname();
-  const { user } = useAuth();
-  const { notifications } = useMockData();
-  
-  const unreadCount = useMemo(() => {
-    if (!user) return 0;
-    return notifications.filter(n => n.toUserId === user.id && !n.read).length;
-  }, [user, notifications]);
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const notificationsQuery = user ? query(collection(firestore, `users/${user.uid}/notifications`), where('read', '==', false)) : null;
+  const { data: unreadNotifications } = useCollection(notificationsQuery);
+  const unreadCount = unreadNotifications?.length || 0;
+
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t bg-card/95 backdrop-blur-sm z-40">
       <nav className="grid h-full grid-cols-5">
         {navItems.map((item) => {
-          const href = item.isProfile && user ? `/dashboard/profile/${user.id}` : item.href;
+          const href = item.isProfile && user ? `/dashboard/profile/${user.uid}` : item.href;
           const isActive = item.exact ? pathname === href : pathname.startsWith(item.href);
           
           return (

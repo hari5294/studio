@@ -16,13 +16,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Smile } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { getFirstEmoji, isOnlyEmojis } from '@/lib/utils';
-import type { User } from '@/hooks/use-auth';
+import { User } from 'firebase/auth';
 
 type EditProfileDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: User;
-  onUpdate: (updatedUser: Partial<User>) => void;
+  user: User & { emojiAvatar?: string }; // User from firebase/auth + custom field
+  onUpdate: (updatedUser: { emojiAvatar?: string }) => void;
 };
 
 export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditProfileDialogProps) {
@@ -40,36 +40,34 @@ export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditPr
         e.preventDefault();
         setIsLoading(true);
         
-        setTimeout(() => {
-            try {
-                if (emoji && !isOnlyEmojis(emoji)) {
-                     toast({
-                        title: 'Invalid Input',
-                        description: 'Please enter only an emoji to use as your avatar.',
-                        variant: 'destructive',
-                    });
-                    setIsLoading(false);
-                    return;
-                }
-                const cleanEmoji = getFirstEmoji(emoji);
-                
-                onUpdate({ emojiAvatar: cleanEmoji });
-
-                toast({
-                    title: "Avatar Updated!",
-                    description: `Your profile picture is now ${cleanEmoji}.`,
-                });
-                onOpenChange(false);
-            } catch (error: any) {
+        try {
+            if (emoji && !isOnlyEmojis(emoji)) {
                  toast({
-                    title: "Update Failed",
-                    description: error.message,
-                    variant: "destructive",
+                    title: 'Invalid Input',
+                    description: 'Please enter only an emoji to use as your avatar.',
+                    variant: 'destructive',
                 });
-            } finally {
                 setIsLoading(false);
+                return;
             }
-        }, 1000);
+            const cleanEmoji = getFirstEmoji(emoji);
+            
+            onUpdate({ emojiAvatar: cleanEmoji });
+
+            toast({
+                title: "Avatar Updated!",
+                description: `Your profile picture is now ${cleanEmoji}.`,
+            });
+            onOpenChange(false);
+        } catch (error: any) {
+             toast({
+                title: "Update Failed",
+                description: error.message,
+                variant: "destructive",
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
   return (
@@ -107,5 +105,3 @@ export function EditProfileDialog({ open, onOpenChange, user, onUpdate }: EditPr
     </Dialog>
   );
 }
-
-    
