@@ -4,7 +4,7 @@
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { BottomNavBar } from '@/components/layout/bottom-nav';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardLayout({
@@ -12,7 +12,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth({ required: true });
+  const { user, loading } = useUser({ required: true });
 
   if (loading || !user) {
     return (
@@ -43,5 +43,3 @@ export default function DashboardLayout({
     </SidebarProvider>
   );
 }
-
-    

@@ -1,10 +1,13 @@
 
+'use client';
+
 import Link from 'next/link';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { TrendingUp, Flame, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMockData } from '@/hooks/use-mock-data';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+import { useFirestore, useCollection } from '@/firebase';
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 
 function TrendingBadgeItem({ badge, index }: { badge: any, index: number }) {
     const badgesLeft = badge.tokens - (badge.owners?.length || 0);
@@ -46,16 +49,64 @@ function TrendingBadgeItem({ badge, index }: { badge: any, index: number }) {
 
 
 export function TrendingBadges() {
-    const { badges, getBadgeWithDetails } = useMockData();
+    const firestore = useFirestore();
+    const [trendingBadges, setTrendingBadges] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const trendingBadges = useMemo(() => {
-        return badges
-            .map(b => getBadgeWithDetails(b.id))
-            .filter(Boolean)
-            .sort((a,b) => (b.followers?.length || 0) - (a.followers?.length || 0))
-            .slice(0, 5);
-    }, [badges, getBadgeWithDetails]);
+    useEffect(() => {
+        const fetchTrendingBadges = async () => {
+            setLoading(true);
+            const badgesRef = collection(firestore, 'badges');
+            const badgesSnap = await getDocs(badgesRef);
+            
+            const badgesWithDetails = await Promise.all(
+                badgesSnap.docs.map(async (badgeDoc) => {
+                    const badgeData = { id: badgeDoc.id, ...badgeDoc.data() };
 
+                    const followersRef = collection(firestore, `badges/${badgeDoc.id}/followers`);
+                    const ownersRef = collection(firestore, `badges/${badgeDoc.id}/owners`);
+                    const creatorRef = doc(firestore, 'users', badgeData.creatorId);
+
+                    const [followersSnap, ownersSnap, creatorSnap] = await Promise.all([
+                        getDocs(followersRef),
+                        getDocs(ownersRef),
+                        getDoc(creatorRef)
+                    ]);
+
+                    return {
+                        ...badgeData,
+                        followers: followersSnap.docs.map(d => d.data()),
+                        owners: ownersSnap.docs.map(d => d.data()),
+                        creator: creatorSnap.exists() ? creatorSnap.data() : null,
+                    };
+                })
+            );
+
+            const sortedBadges = badgesWithDetails
+                .sort((a,b) => (b.followers?.length || 0) - (a.followers?.length || 0))
+                .slice(0, 5);
+
+            setTrendingBadges(sortedBadges);
+            setLoading(false);
+        };
+
+        fetchTrendingBadges();
+    }, [firestore]);
+
+
+  if (loading) {
+    return (
+         <div>
+            <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
+                <TrendingUp className="h-6 w-6" />
+                Trending Badges
+            </h2>
+            <div className="space-y-4">
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+            </div>
+        </div>
+    )
+  }
 
   return (
     <div>

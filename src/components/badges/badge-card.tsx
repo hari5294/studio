@@ -10,11 +10,16 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Users } from 'lucide-react';
-import type { Badge } from '@/lib/mock-data';
-import type { User } from '@/hooks/use-auth';
 
 type BadgeCardProps = {
-  badge: Badge & { owners: User[], followers: User[] };
+  badge: {
+    id: string;
+    emojis: string;
+    name: string;
+    tokens: number;
+    owners: any[];
+    followers: any[];
+  };
 };
 
 export function BadgeCard({ badge }: BadgeCardProps) {

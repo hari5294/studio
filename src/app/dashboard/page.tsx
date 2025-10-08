@@ -5,28 +5,66 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { BadgeCard } from '@/components/badges/badge-card';
 import { TrendingBadges } from '@/components/badges/trending-badges';
-import { useAuth } from '@/hooks/use-auth';
+import { useUser, useFirestore, useCollection } from '@/firebase';
 import { Badge as BadgeIcon, Gift } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMockData } from '@/hooks/use-mock-data';
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
 
 function MyBadges() {
-  const { user, loading: authLoading } = useAuth();
-  const { badges, badgeOwners, getBadgeWithDetails } = useMockData();
+  const { user, loading: authLoading } = useUser();
+  const firestore = useFirestore();
+  const [myBadges, setMyBadges] = useState<any[]>([]);
+  const [loadingBadges, setLoadingBadges] = useState(true);
 
-  const myBadges = useMemo(() => {
-    if (!user) return [];
-    const myBadgeIds = badgeOwners.filter(bo => bo.userId === user.id).map(bo => bo.badgeId);
-    return badges
-      .filter(b => myBadgeIds.includes(b.id))
-      .map(b => getBadgeWithDetails(b.id))
-      .filter(Boolean);
-  }, [user, badges, badgeOwners, getBadgeWithDetails]);
+  useEffect(() => {
+    if (user) {
+      const fetchMyBadges = async () => {
+        setLoadingBadges(true);
+        const ownersQuery = query(collection(firestore, 'badgeOwners'), where('userId', '==', user.uid));
+        const ownersSnapshot = await getDocs(ownersQuery);
+        const badgeIds = ownersSnapshot.docs.map(d => d.data().badgeId);
+
+        if (badgeIds.length > 0) {
+            const badgesData = await Promise.all(
+                badgeIds.map(async (badgeId) => {
+                    const badgeRef = doc(firestore, 'badges', badgeId);
+                    const badgeSnap = await getDoc(badgeRef);
+                    if (!badgeSnap.exists()) return null;
+                    const badgeData = { id: badgeSnap.id, ...badgeSnap.data() };
+
+                    const ownersRef = collection(firestore, `badges/${badgeId}/owners`);
+                    const followersRef = collection(firestore, `badges/${badgeId}/followers`);
+
+                    const [ownersSnap, followersSnap] = await Promise.all([
+                        getDocs(ownersRef),
+                        getDocs(followersRef)
+                    ]);
+
+                    return {
+                        ...badgeData,
+                        owners: ownersSnap.docs.map(d => d.data()),
+                        followers: followersSnap.docs.map(d => d.data()),
+                    };
+                })
+            );
+            setMyBadges(badgesData.filter(Boolean));
+        } else {
+            setMyBadges([]);
+        }
+        setLoadingBadges(false);
+      };
+      fetchMyBadges();
+    } else if (!authLoading) {
+      setMyBadges([]);
+      setLoadingBadges(false);
+    }
+  }, [user, firestore, authLoading]);
 
 
-  if (authLoading) {
+  if (authLoading || loadingBadges) {
     return (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
