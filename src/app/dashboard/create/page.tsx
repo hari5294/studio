@@ -17,6 +17,13 @@ import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
 import { collection, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
 
+// Regex to match emojis, including those with skin tones and zero-width joiners
+const EMOJI_REGEX = /\p{RI}\p{RI}|\p{Emoji}(\p{EMod}|\u{FE0F}\u{20E3}?|[\u{E0020}-\u{E007E}]+\u{E007F})?(\u{200D}\p{Emoji}(\p{EMod}|\u{FE0F}\u{20E3}?|[\u{E0020}-\u{E007E}]+\u{E007F})?)*|./gus;
+
+const countEmojis = (text: string) => {
+  return text.match(EMOJI_REGEX)?.length ?? 0;
+};
+
 export default function CreateBadgePage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -27,16 +34,14 @@ export default function CreateBadgePage() {
 
   const handleEmojiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    const emojiArray = [...value];
-    if (value === '' || (isOnlyEmojis(value) && emojiArray.length <= 3)) {
+    if (value === '' || (isOnlyEmojis(value) && countEmojis(value) <= 3)) {
       setEmojis(value);
     }
   };
 
   const onEmojiClick = (emojiData: EmojiClickData) => {
     setEmojis(prev => {
-        const currentEmojis = [...prev];
-        if (currentEmojis.length < 3) {
+        if (countEmojis(prev) < 3) {
             return prev + emojiData.emoji;
         }
         return prev;
@@ -58,7 +63,7 @@ export default function CreateBadgePage() {
     const submittedEmojis = formData.get('emojis') as string;
     const tokens = Number(formData.get('tokens'));
     
-    const emojiCount = [...submittedEmojis].length;
+    const emojiCount = countEmojis(submittedEmojis);
     if (emojiCount !== 3) {
         toast({
             title: 'Invalid Emoji Count',
