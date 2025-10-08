@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser, useDoc, firestore } from '@/firebase';
 import { EditProfileDialog } from '@/components/profile/edit-profile-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection, query, where, doc, getDocs, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, query, where, doc, getDocs, getDoc, updateDoc, arrayUnion, arrayRemove, collectionGroup } from 'firebase/firestore';
 import { AppUser } from '@/firebase/auth/use-user';
 import type { Badge as BadgeType } from '@/docs/backend-schema';
 
@@ -119,12 +119,16 @@ function OwnedBadges({ userId }: { userId: string }) {
     useEffect(() => {
         const fetchOwnedBadges = async () => {
             setLoading(true);
-            const badgeOwnersCollectionRef = collection(firestore, "badges");
-            const ownersSnapshot = await getDocs(query(collection(firestore, 'badgeOwners'), where('userId', '==', userId)));
+            // Correctly query the 'owners' collection group
+            const ownersQuery = query(collectionGroup(firestore, 'owners'), where('userId', '==', userId));
+            const ownersSnapshot = await getDocs(ownersQuery);
             const badgeIds = ownersSnapshot.docs.map(doc => doc.data().badgeId);
 
             if (badgeIds.length > 0) {
-                const badgeDocs = await Promise.all(badgeIds.map(id => getDoc(doc(firestore, 'badges', id))));
+                const badgeDocs = await Promise.all(
+                    // Deduplicate badge IDs
+                    [...new Set(badgeIds)].map(id => getDoc(doc(firestore, 'badges', id)))
+                );
                 
                 const badgesData = await Promise.all(badgeDocs.map(async (badgeSnap) => {
                     if (!badgeSnap.exists()) return null;
@@ -306,3 +310,5 @@ export default function UserProfilePage() {
     </>
   );
 }
+
+    

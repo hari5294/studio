@@ -5,31 +5,32 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { BadgeCard } from '@/components/badges/badge-card';
 import { TrendingBadges } from '@/components/badges/trending-badges';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { Badge as BadgeIcon, Gift } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, collectionGroup } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
+import type { Badge } from '@/docs/backend-schema';
+
 
 function MyBadges() {
   const { user, loading: authLoading } = useUser();
   const firestore = useFirestore();
-  const [myBadges, setMyBadges] = useState<any[]>([]);
+  const [myBadges, setMyBadges] = useState<(Badge & { id: string, owners: any[], followers: any[] })[]>([]);
   const [loadingBadges, setLoadingBadges] = useState(true);
 
   useEffect(() => {
     if (user) {
       const fetchMyBadges = async () => {
         setLoadingBadges(true);
-        const ownersQuery = query(collection(firestore, 'badgeOwners'), where('userId', '==', user.uid));
+        const ownersQuery = query(collectionGroup(firestore, 'owners'), where('userId', '==', user.uid));
         const ownersSnapshot = await getDocs(ownersQuery);
         const badgeIds = ownersSnapshot.docs.map(d => d.data().badgeId);
 
         if (badgeIds.length > 0) {
             const badgesData = await Promise.all(
-                badgeIds.map(async (badgeId) => {
+                [...new Set(badgeIds)].map(async (badgeId) => {
                     const badgeRef = doc(firestore, 'badges', badgeId);
                     const badgeSnap = await getDoc(badgeRef);
                     if (!badgeSnap.exists()) return null;
@@ -47,10 +48,10 @@ function MyBadges() {
                         ...badgeData,
                         owners: ownersSnap.docs.map(d => d.data()),
                         followers: followersSnap.docs.map(d => d.data()),
-                    };
+                    } as (Badge & { id: string, owners: any[], followers: any[] });
                 })
             );
-            setMyBadges(badgesData.filter(Boolean));
+            setMyBadges(badgesData.filter(Boolean) as (Badge & { id: string, owners: any[], followers: any[] })[]);
         } else {
             setMyBadges([]);
         }
@@ -114,3 +115,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    
