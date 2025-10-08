@@ -7,14 +7,16 @@ import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Mail, Gift, Inbox as InboxIcon, Check } from 'lucide-react';
+import { ArrowRight, Mail, Gift, Inbox as InboxIcon, Check, PartyPopper } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
 import { AppUser } from '@/firebase/auth/use-user';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection, query, orderBy, doc, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, writeBatch, serverTimestamp, runTransaction, getDoc } from 'firebase/firestore';
+import { EmojiBurst } from '@/components/effects/emoji-burst';
+
 
 type Notification = {
   id: string;
@@ -30,6 +32,7 @@ type Badge = {
   id: string;
   name: string;
   emojis: string;
+  tokens: number;
 };
 
 type EnrichedNotification = Notification & {
@@ -37,7 +40,7 @@ type EnrichedNotification = Notification & {
   badge?: Badge;
 };
 
-function NotificationItem({ notification, onSendCode }: { notification: EnrichedNotification; onSendCode: (badgeId: string, toUserId: string, toUserName: string) => Promise<void> }) {
+function NotificationItem({ notification, onSendCode, onNewBadgeReceived }: { notification: EnrichedNotification; onSendCode: (badgeId: string, toUserId: string, toUserName: string) => Promise<void>, onNewBadgeReceived: (emojis: string) => void }) {
   const firestore = useFirestore();
   const [isSending, setIsSending] = useState(false);
   const fromUserRef = notification.fromUserId ? doc(firestore, 'users', notification.fromUserId) : null;
@@ -45,6 +48,13 @@ function NotificationItem({ notification, onSendCode }: { notification: Enriched
 
   const badgeRef = notification.badgeId ? doc(firestore, 'badges', notification.badgeId) : null;
   const { data: badge, loading: loadingBadge } = useDoc<Badge>(badgeRef);
+  
+  useEffect(() => {
+    if (notification.type === 'BADGE_RECEIVED' && !notification.read && badge) {
+        onNewBadgeReceived(badge.emojis);
+    }
+  }, [notification, badge, onNewBadgeReceived]);
+
 
   if (loadingUser || loadingBadge) {
     return <Skeleton className="h-20 w-full" />;
@@ -71,7 +81,7 @@ function NotificationItem({ notification, onSendCode }: { notification: Enriched
       title: (
         <p>
           <Link href={`/dashboard/profile/${fromUser.id}`} className="font-bold hover:underline">{fromUser.name}</Link>
-          {' '} requested a code for your {' '}
+          {' '} requested your {' '}
           <Link href={`/dashboard/badge/${badge.id}`} className="font-bold hover:underline">{badge.name}</Link> badge.
         </p>
       ),
@@ -83,25 +93,25 @@ function NotificationItem({ notification, onSendCode }: { notification: Enriched
                 </>
             ) : (
                 <>
-                    Send Code <ArrowRight className="ml-2 h-4 w-4" />
+                    Send Badge <ArrowRight className="ml-2 h-4 w-4" />
                 </>
             )}
         </Button>
       )
     },
     'BADGE_RECEIVED': {
-      icon: <Gift className="h-6 w-6 text-accent" />,
+      icon: <PartyPopper className="h-6 w-6 text-accent" />,
       title: (
         <p>
-          <Link href={`/dashboard/profile/${fromUser.id}`} className="font-bold hover:underline">{fromUser.name}</Link>
-          {' '} sent you a code for the {' '}
-          <Link href={`/dashboard/badge/${badge.id}`} className="font-bold hover:underline">{badge.name}</Link> badge!
+          You received the {' '}
+          <Link href={`/dashboard/badge/${badge.id}`} className="font-bold hover:underline">{badge.name}</Link> badge from {' '}
+          <Link href={`/dashboard/profile/${fromUser.id}`} className="font-bold hover:underline">{fromUser.name}</Link>!
         </p>
       ),
       action: (
-        <Button size="sm" variant="secondary" asChild disabled={!notification.shareLinkId}>
-          <Link href={`/join/${notification.shareLinkId}`}>
-            Redeem Badge <ArrowRight className="ml-2 h-4 w-4" />
+        <Button size="sm" variant="secondary" asChild>
+          <Link href={`/dashboard/badge/${badge.id}`}>
+            View Badge <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       )
@@ -149,20 +159,30 @@ export default function InboxPage() {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
+
 
   const notificationsQuery = user ? query(collection(firestore, `users/${user.uid}/notifications`), orderBy('createdAt', 'desc')) : null;
   const { data: notifications, loading: notificationsLoading } = useCollection<Notification>(notificationsQuery);
   
+  const handleNewBadgeReceived = (emojis: string) => {
+    setBurstEmojis(emojis);
+    setTimeout(() => setBurstEmojis(null), 2000);
+  }
+
   useEffect(() => {
     if (user && notifications) {
       const unread = notifications.filter(n => !n.read);
       if (unread.length > 0) {
-        const batch = writeBatch(firestore);
-        unread.forEach(n => {
-          const notifRef = doc(firestore, `users/${user.uid}/notifications`, n.id);
-          batch.update(notifRef, { read: true });
-        });
-        batch.commit().catch(console.error);
+        // We delay marking as read slightly to allow the burst animation to trigger
+        setTimeout(() => {
+            const batch = writeBatch(firestore);
+            unread.forEach(n => {
+              const notifRef = doc(firestore, `users/${user.uid}/notifications`, n.id);
+              batch.update(notifRef, { read: true });
+            });
+            batch.commit().catch(console.error);
+        }, 2000);
       }
     }
   }, [user, notifications, firestore]);
@@ -171,38 +191,52 @@ export default function InboxPage() {
     if (!user) return;
 
     try {
-        const batch = writeBatch(firestore);
+        await runTransaction(firestore, async (transaction) => {
+            const badgeRef = doc(firestore, 'badges', badgeId);
+            const ownersRef = collection(firestore, `badges/${badgeId}/owners`);
 
-        // 1. Create a new share link
-        const shareLinkRef = doc(collection(firestore, 'shareLinks'));
-        batch.set(shareLinkRef, {
-            badgeId: badgeId,
-            ownerId: user.uid,
-            used: false,
-            claimedBy: null,
-            createdAt: serverTimestamp(),
+            const [badgeSnap, ownersSnap] = await Promise.all([
+                transaction.get(badgeRef),
+                getDocs(ownersRef)
+            ]);
+
+            if (!badgeSnap.exists()) {
+                throw new Error("Badge does not exist.");
+            }
+
+            const badgeData = badgeSnap.data();
+            const badgesLeft = badgeData.tokens - ownersSnap.size;
+
+            if (badgesLeft <= 0) {
+                throw new Error("No badges left to send.");
+            }
+
+            // Add new owner
+            const newOwnerRef = doc(firestore, `badges/${badgeId}/owners`, toUserId);
+            transaction.set(newOwnerRef, {
+                badgeId: badgeId,
+                userId: toUserId,
+                claimedAt: serverTimestamp()
+            });
+
+            // Send notification to recipient
+            const notificationRef = doc(collection(firestore, `users/${toUserId}/notifications`));
+            transaction.set(notificationRef, {
+                type: 'BADGE_RECEIVED',
+                fromUserId: user.uid,
+                badgeId: badgeId,
+                createdAt: serverTimestamp(),
+                read: false,
+            });
         });
-
-        // 2. Create a notification for the recipient
-        const notificationRef = doc(collection(firestore, `users/${toUserId}/notifications`));
-        batch.set(notificationRef, {
-            type: 'BADGE_RECEIVED',
-            fromUserId: user.uid,
-            badgeId: badgeId,
-            createdAt: serverTimestamp(),
-            read: false,
-            shareLinkId: shareLinkRef.id
-        });
-
-        await batch.commit();
         
         toast({
-            title: 'Code Sent!',
-            description: `A share code has been sent to ${toUserName}.`
+            title: 'Badge Sent!',
+            description: `You sent the badge to ${toUserName}.`
         });
-    } catch (error) {
-        console.error("Error sending code: ", error);
-        toast({ title: 'Could not send code', variant: 'destructive'});
+    } catch (error: any) {
+        console.error("Error sending badge: ", error);
+        toast({ title: 'Could not send badge', description: error.message, variant: 'destructive'});
         // re-throw to allow the component to handle UI state
         throw error;
     }
@@ -221,7 +255,8 @@ export default function InboxPage() {
   }
 
   const requests = notifications?.filter((n) => n.type === 'BADGE_REQUEST') || [];
-  const received = notifications?.filter((n) => n.type === 'BADGE_RECEIVED' || n.type === 'OWNERSHIP_TRANSFER') || [];
+  const received = notifications?.filter((n) => ['BADGE_RECEIVED', 'OWNERSHIP_TRANSFER'].includes(n.type)) || [];
+
 
   return (
     <>
@@ -245,7 +280,7 @@ export default function InboxPage() {
                 <CardContent>
                   {requests.length > 0 ? (
                     <div className="space-y-2">
-                      {requests.map(n => <NotificationItem key={n.id} notification={n} onSendCode={handleSendCode} />)}
+                      {requests.map(n => <NotificationItem key={n.id} notification={n} onSendCode={handleSendCode} onNewBadgeReceived={handleNewBadgeReceived} />)}
                     </div>
                   ) : <p className="text-center text-muted-foreground py-8">No badge requests yet.</p>}
                 </CardContent>
@@ -259,7 +294,7 @@ export default function InboxPage() {
                 <CardContent>
                   {received.length > 0 ? (
                     <div className="space-y-2">
-                      {received.map(n => <NotificationItem key={n.id} notification={n} onSendCode={handleSendCode} />)}
+                      {received.map(n => <NotificationItem key={n.id} notification={n} onSendCode={handleSendCode} onNewBadgeReceived={handleNewBadgeReceived} />)}
                     </div>
                   ) : <p className="text-center text-muted-foreground py-8">You haven't received any new badges.</p>}
                 </CardContent>
@@ -276,6 +311,7 @@ export default function InboxPage() {
           </div>
         )}
       </div>
+      {burstEmojis && <EmojiBurst emojis={burstEmojis} />}
     </>
   );
 }
