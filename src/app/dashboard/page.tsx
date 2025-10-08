@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { collection, query, where, getDocs, doc, getDoc, collectionGroup } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
 import type { Badge } from '@/docs/backend-schema';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal } from 'lucide-react';
 
 
 function MyBadges() {
@@ -19,43 +21,55 @@ function MyBadges() {
   const firestore = useFirestore();
   const [myBadges, setMyBadges] = useState<(Badge & { id: string, owners: any[], followers: any[] })[]>([]);
   const [loadingBadges, setLoadingBadges] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       const fetchMyBadges = async () => {
         setLoadingBadges(true);
-        const ownersQuery = query(collectionGroup(firestore, 'owners'), where('userId', '==', user.uid));
-        const ownersSnapshot = await getDocs(ownersQuery);
-        const badgeIds = ownersSnapshot.docs.map(d => d.data().badgeId);
+        setError(null);
+        try {
+            const ownersQuery = query(collectionGroup(firestore, 'owners'), where('userId', '==', user.uid));
+            const ownersSnapshot = await getDocs(ownersQuery);
+            const badgeIds = ownersSnapshot.docs.map(d => d.data().badgeId);
 
-        if (badgeIds.length > 0) {
-            const badgesData = await Promise.all(
-                [...new Set(badgeIds)].map(async (badgeId) => {
-                    const badgeRef = doc(firestore, 'badges', badgeId);
-                    const badgeSnap = await getDoc(badgeRef);
-                    if (!badgeSnap.exists()) return null;
-                    const badgeData = { id: badgeSnap.id, ...badgeSnap.data() };
+            if (badgeIds.length > 0) {
+                const badgesData = await Promise.all(
+                    [...new Set(badgeIds)].map(async (badgeId) => {
+                        const badgeRef = doc(firestore, 'badges', badgeId);
+                        const badgeSnap = await getDoc(badgeRef);
+                        if (!badgeSnap.exists()) return null;
+                        const badgeData = { id: badgeSnap.id, ...badgeSnap.data() };
 
-                    const ownersRef = collection(firestore, `badges/${badgeId}/owners`);
-                    const followersRef = collection(firestore, `badges/${badgeId}/followers`);
+                        const ownersRef = collection(firestore, `badges/${badgeId}/owners`);
+                        const followersRef = collection(firestore, `badges/${badgeId}/followers`);
 
-                    const [ownersSnap, followersSnap] = await Promise.all([
-                        getDocs(ownersRef),
-                        getDocs(followersRef)
-                    ]);
+                        const [ownersSnap, followersSnap] = await Promise.all([
+                            getDocs(ownersRef),
+                            getDocs(followersRef)
+                        ]);
 
-                    return {
-                        ...badgeData,
-                        owners: ownersSnap.docs.map(d => d.data()),
-                        followers: followersSnap.docs.map(d => d.data()),
-                    } as (Badge & { id: string, owners: any[], followers: any[] });
-                })
-            );
-            setMyBadges(badgesData.filter(Boolean) as (Badge & { id: string, owners: any[], followers: any[] })[]);
-        } else {
-            setMyBadges([]);
+                        return {
+                            ...badgeData,
+                            owners: ownersSnap.docs.map(d => d.data()),
+                            followers: followersSnap.docs.map(d => d.data()),
+                        } as (Badge & { id: string, owners: any[], followers: any[] });
+                    })
+                );
+                setMyBadges(badgesData.filter(Boolean) as (Badge & { id: string, owners: any[], followers: any[] })[]);
+            } else {
+                setMyBadges([]);
+            }
+        } catch(e: any) {
+            console.error(e);
+            if (e.code === 'failed-precondition') {
+                setError("The database is getting an upgrade. Your badges will appear here soon!");
+            } else {
+                setError("Could not load your badges at this time.");
+            }
+        } finally {
+            setLoadingBadges(false);
         }
-        setLoadingBadges(false);
       };
       fetchMyBadges();
     } else if (!authLoading) {
@@ -71,6 +85,18 @@ function MyBadges() {
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
         </div>
     );
+  }
+
+  if (error) {
+    return (
+      <Alert>
+        <Terminal className="h-4 w-4" />
+        <AlertTitle>Heads up!</AlertTitle>
+        <AlertDescription>
+          {error} Please try refreshing the page in a few minutes.
+        </AlertDescription>
+      </Alert>
+    )
   }
 
   return (
@@ -115,5 +141,3 @@ export default function DashboardPage() {
     </>
   );
 }
-
-    

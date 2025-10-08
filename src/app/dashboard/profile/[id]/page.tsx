@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/header';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { BadgeCard } from '@/components/badges/badge-card';
-import { Badge, User as UserIcon, Users, Edit } from 'lucide-react';
+import { Badge, User as UserIcon, Users, Edit, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { collection, query, where, doc, getDocs, getDoc, updateDoc, arrayUnion, arrayRemove, collectionGroup } from 'firebase/firestore';
 import { AppUser } from '@/firebase/auth/use-user';
 import type { Badge as BadgeType } from '@/docs/backend-schema';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 type EnrichedUser = AppUser & {
@@ -115,77 +116,96 @@ function ProfileHeaderCard({ profile, isCurrentUserProfile }: { profile: Enriche
 function OwnedBadges({ userId }: { userId: string }) {
     const [ownedBadges, setOwnedBadges] = useState<(BadgeType & { id: string, owners: any[], followers: any[] })[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchOwnedBadges = async () => {
             setLoading(true);
-            // Correctly query the 'owners' collection group
-            const ownersQuery = query(collectionGroup(firestore, 'owners'), where('userId', '==', userId));
-            const ownersSnapshot = await getDocs(ownersQuery);
-            const badgeIds = ownersSnapshot.docs.map(doc => doc.data().badgeId);
+            setError(null);
+            try {
+                const ownersQuery = query(collectionGroup(firestore, 'owners'), where('userId', '==', userId));
+                const ownersSnapshot = await getDocs(ownersQuery);
+                const badgeIds = ownersSnapshot.docs.map(doc => doc.data().badgeId);
 
-            if (badgeIds.length > 0) {
-                const badgeDocs = await Promise.all(
-                    // Deduplicate badge IDs
-                    [...new Set(badgeIds)].map(id => getDoc(doc(firestore, 'badges', id)))
-                );
-                
-                const badgesData = await Promise.all(badgeDocs.map(async (badgeSnap) => {
-                    if (!badgeSnap.exists()) return null;
-                    const badgeData = { id: badgeSnap.id, ...badgeSnap.data() } as BadgeType & { id: string };
+                if (badgeIds.length > 0) {
+                    const badgeDocs = await Promise.all(
+                        [...new Set(badgeIds)].map(id => getDoc(doc(firestore, 'badges', id)))
+                    );
+                    
+                    const badgesData = await Promise.all(badgeDocs.map(async (badgeSnap) => {
+                        if (!badgeSnap.exists()) return null;
+                        const badgeData = { id: badgeSnap.id, ...badgeSnap.data() } as BadgeType & { id: string };
 
-                    const ownersRef = collection(firestore, `badges/${badgeData.id}/owners`);
-                    const followersRef = collection(firestore, `badges/${badgeData.id}/followers`);
-                    const [ownersSnap, followersSnap] = await Promise.all([getDocs(ownersRef), getDocs(followersRef)]);
+                        const ownersRef = collection(firestore, `badges/${badgeData.id}/owners`);
+                        const followersRef = collection(firestore, `badges/${badgeData.id}/followers`);
+                        const [ownersSnap, followersSnap] = await Promise.all([getDocs(ownersRef), getDocs(followersRef)]);
 
-                    return {
-                        ...badgeData,
-                        owners: ownersSnap.docs.map(d => d.data()),
-                        followers: followersSnap.docs.map(d => d.data()),
-                    };
-                }));
+                        return {
+                            ...badgeData,
+                            owners: ownersSnap.docs.map(d => d.data()),
+                            followers: followersSnap.docs.map(d => d.data()),
+                        };
+                    }));
 
-                setOwnedBadges(badgesData.filter(Boolean) as (BadgeType & { id: string, owners: any[], followers: any[] })[]);
-            } else {
-                setOwnedBadges([]);
+                    setOwnedBadges(badgesData.filter(Boolean) as (BadgeType & { id: string, owners: any[], followers: any[] })[]);
+                } else {
+                    setOwnedBadges([]);
+                }
+            } catch(e: any) {
+                console.error(e);
+                if (e.code === 'failed-precondition') {
+                    setError("The database is getting an upgrade. This user's badges will appear here soon!");
+                } else {
+                    setError("Could not load this user's badges at this time.");
+                }
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         if (userId) {
             fetchOwnedBadges();
         }
     }, [userId]);
 
-    if (loading) {
-        return (
-            <div>
-                 <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
-                    <Badge className="h-6 w-6" />
-                    Owned Badges
-                </h2>
+    const renderContent = () => {
+        if (loading) {
+             return (
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     <Skeleton className="h-48 w-full" />
                     <Skeleton className="h-48 w-full" />
                 </div>
+            )
+        }
+        if (error) {
+            return (
+                <Alert variant="destructive">
+                    <Terminal className="h-4 w-4" />
+                    <AlertTitle>Could Not Load Badges</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            );
+        }
+        if (ownedBadges.length > 0) {
+            return (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {ownedBadges.map((badge) => <BadgeCard key={badge.id} badge={badge} />)}
+                </div>
+            );
+        }
+        return (
+            <div className="text-center py-12 border-2 border-dashed rounded-lg">
+            <p className="text-muted-foreground">This user hasn&apos;t created or claimed any badges yet.</p>
             </div>
-        )
+        );
     }
 
     return (
         <div>
             <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold font-headline">
                 <Badge className="h-6 w-6" />
-                Owned Badges ({ownedBadges.length})
+                Owned Badges ({loading ? '...' : ownedBadges.length})
             </h2>
-            {ownedBadges.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {ownedBadges.map((badge) => <BadgeCard key={badge.id} badge={badge} />)}
-                </div>
-            ) : (
-                <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                <p className="text-muted-foreground">This user hasn&apos;t created or claimed any badges yet.</p>
-                </div>
-            )}
+            {renderContent()}
         </div>
     )
 }
@@ -310,5 +330,3 @@ export default function UserProfilePage() {
     </>
   );
 }
-
-    
