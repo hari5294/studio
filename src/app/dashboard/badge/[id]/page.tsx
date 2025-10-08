@@ -386,8 +386,8 @@ function BadgeDetailContent() {
                    <Button 
                      variant={isFollowing ? 'secondary' : 'outline'} 
                      onClick={handleFollow}
-                     className={cn({ 'invisible': !currentUser || isOwner })}
-                     disabled={!currentUser || isOwner}
+                     className={cn({ 'invisible': !currentUser })}
+                     disabled={!currentUser}
                     >
                       {isFollowing ? 'Unfollow' : 'Follow'}
                    </Button>
