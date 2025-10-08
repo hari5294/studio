@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Mail, Gift, Inbox as InboxIcon } from 'lucide-react';
+import { ArrowRight, Mail, Gift, Inbox as InboxIcon, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
@@ -37,8 +37,9 @@ type EnrichedNotification = Notification & {
   badge?: Badge;
 };
 
-function NotificationItem({ notification, onSendCode }: { notification: EnrichedNotification; onSendCode: (badgeId: string, toUserId: string, toUserName: string) => void }) {
+function NotificationItem({ notification, onSendCode }: { notification: EnrichedNotification; onSendCode: (badgeId: string, toUserId: string, toUserName: string) => Promise<void> }) {
   const firestore = useFirestore();
+  const [isSending, setIsSending] = useState(false);
   const fromUserRef = notification.fromUserId ? doc(firestore, 'users', notification.fromUserId) : null;
   const { data: fromUser, loading: loadingUser } = useDoc<AppUser>(fromUserRef);
 
@@ -53,10 +54,15 @@ function NotificationItem({ notification, onSendCode }: { notification: Enriched
     return null; // Or some error state
   }
 
-  const handleSendCode = (e: React.MouseEvent) => {
+  const handleSendCode = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onSendCode(badge.id, fromUser.id!, fromUser.name || 'User');
+    setIsSending(true);
+    try {
+        await onSendCode(badge.id, fromUser.id!, fromUser.name || 'User');
+    } finally {
+        // We don't set isSending back to false, so the button remains disabled.
+    }
   };
 
   const itemContent = {
@@ -70,8 +76,16 @@ function NotificationItem({ notification, onSendCode }: { notification: Enriched
         </p>
       ),
       action: (
-        <Button size="sm" onClick={handleSendCode}>
-          Send Code <ArrowRight className="ml-2 h-4 w-4" />
+        <Button size="sm" onClick={handleSendCode} disabled={isSending}>
+            {isSending ? (
+                <>
+                    <Check className="mr-2 h-4 w-4" /> Sent
+                </>
+            ) : (
+                <>
+                    Send Code <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+            )}
         </Button>
       )
     },
@@ -189,6 +203,8 @@ export default function InboxPage() {
     } catch (error) {
         console.error("Error sending code: ", error);
         toast({ title: 'Could not send code', variant: 'destructive'});
+        // re-throw to allow the component to handle UI state
+        throw error;
     }
   };
 
@@ -263,5 +279,3 @@ export default function InboxPage() {
     </>
   );
 }
-
-    

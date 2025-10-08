@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser, firestore } from '@/firebase';
 import { Gift } from 'lucide-react';
 import { EmojiBurst } from '@/components/effects/emoji-burst';
-import { getDoc, doc, writeBatch, serverTimestamp, collection } from 'firebase/firestore';
+import { getDoc, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import type { Badge } from '@/docs/backend-schema';
 
 async function redeemShareLink(linkId: string, userId: string): Promise<{ badge: Badge & { id: string }}> {
@@ -98,7 +98,7 @@ export default function RedeemCodePage() {
         
         setBurstEmojis(badge.emojis);
 
-        setTimeout(() => handleRedeemComplete(badge.id), 2000);
+        setTimeout(() => handleRedeemComplete(badge.id), 1500);
 
     } catch (error: any) {
         toast({
@@ -140,7 +140,7 @@ export default function RedeemCodePage() {
                   className="font-mono"
                 />
               </div>
-              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !user}>
+              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !user || !!burstEmojis}>
                 {isLoading ? 'Redeeming...' : 'Redeem Badge'}
               </Button>
             </form>

@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/header';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, Users, Share2, ArrowRightLeft, Crown, Send } from 'lucide-react';
+import { ArrowLeft, Users, Share2, ArrowRightLeft, Crown, Send, Check } from 'lucide-react';
 import { ShareBadgeDialog } from '@/components/badges/share-badge-dialog';
 import { TransferBadgeDialog } from '@/components/badges/transfer-badge-dialog';
 import { cn } from '@/lib/utils';
@@ -198,6 +198,7 @@ function BadgeDetailContent() {
 
   const [isShareOpen, setShareOpen] = useState(searchParams.get('showShare') === 'true');
   const [isTransferOpen, setTransferOpen] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
 
   const isLoading = authLoading || badgeLoading || ownersLoading || followersLoading || creatorLoading;
 
@@ -257,6 +258,7 @@ function BadgeDetailContent() {
 
   const handleRequestCode = async () => {
      if (!currentUser || !badge.creatorId) return;
+     setIsRequesting(true);
      const notificationRef = collection(firestore, `users/${badge.creatorId}/notifications`);
      try {
         await addDoc(notificationRef, {
@@ -273,6 +275,7 @@ function BadgeDetailContent() {
      } catch(error) {
         console.error("Error requesting code: ", error);
         toast({ title: "Could not send request", variant: "destructive" });
+        setIsRequesting(false); // only reset on error
      }
   }
 
@@ -380,10 +383,19 @@ function BadgeDetailContent() {
                      variant='outline'
                      onClick={handleRequestCode}
                      className={cn({ 'invisible': !currentUser || !!isOwner })}
-                     disabled={!currentUser || !!isOwner}
+                     disabled={!currentUser || !!isOwner || isRequesting}
                     >
-                      <Send className="mr-2 h-4 w-4" />
-                      Request Code
+                      {isRequesting ? (
+                          <>
+                            <Check className="mr-2 h-4 w-4" />
+                            Request Sent
+                          </>
+                      ) : (
+                          <>
+                            <Send className="mr-2 h-4 w-4" />
+                            Request Code
+                          </>
+                      )}
                    </Button>
                 </div>
               </CardContent>
@@ -424,5 +436,3 @@ export default function BadgeDetailPage() {
       <BadgeDetailContent />
   );
 }
-
-    

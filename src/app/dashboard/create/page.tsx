@@ -93,24 +93,12 @@ export default function CreateBadgePage() {
       });
 
       // 2. Add the creator as the first owner
-      const ownerRef = doc(collection(firestore, `badges/${badgeRef.id}/owners`));
+      const ownerRef = doc(collection(firestore, `badges/${badgeRef.id}/owners`), user.uid);
       batch.set(ownerRef, {
         userId: user.uid,
         badgeId: badgeRef.id,
         claimedAt: serverTimestamp()
       });
-
-      // 3. Create 5 share links
-      for (let i = 0; i < 5; i++) {
-        const shareLinkRef = doc(collection(firestore, 'shareLinks'));
-        batch.set(shareLinkRef, {
-          badgeId: badgeRef.id,
-          ownerId: user.uid,
-          used: false,
-          claimedBy: null,
-          createdAt: serverTimestamp(),
-        });
-      }
       
       await batch.commit();
         
@@ -189,8 +177,8 @@ export default function CreateBadgePage() {
                   Initial amount of badges available to claim.
                 </p>
               </div>
-              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !user}>
-                {isLoading ? 'Creating...' : 'Create Badge'}
+              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || !user || !!burstEmojis}>
+                {isLoading || burstEmojis ? 'Creating...' : 'Create Badge'}
               </Button>
             </form>
           </CardContent>
