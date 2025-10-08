@@ -113,7 +113,12 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadge
           )}
         </div>
         <DialogFooter>
-            <Button variant="outline" onClick={handleCreateLinks} disabled={isCreating}>
+            <Button 
+                variant="outline" 
+                onClick={handleCreateLinks} 
+                disabled={isCreating || (availableLinks && availableLinks.length > 0)}
+                title={availableLinks && availableLinks.length > 0 ? "You must use your existing codes first." : "Generate 5 new codes"}
+            >
                 <PlusCircle className="mr-2 h-4 w-4" />
                 {isCreating ? "Generating..." : "Generate 5 More"}
             </Button>
