@@ -175,7 +175,7 @@ export default function InboxPage() {
       const unread = notifications.filter(n => !n.read);
       if (unread.length > 0) {
         // We delay marking as read slightly to allow the burst animation to trigger
-        setTimeout(() => {
+        const timer = setTimeout(() => {
             const batch = writeBatch(firestore);
             unread.forEach(n => {
               const notifRef = doc(firestore, `users/${user.uid}/notifications`, n.id);
@@ -183,6 +183,7 @@ export default function InboxPage() {
             });
             batch.commit().catch(console.error);
         }, 2000);
+        return () => clearTimeout(timer);
       }
     }
   }, [user, notifications, firestore]);
@@ -315,5 +316,3 @@ export default function InboxPage() {
     </>
   );
 }
-
-    
