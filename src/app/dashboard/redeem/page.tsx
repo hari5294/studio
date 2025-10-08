@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -57,11 +57,19 @@ async function redeemShareLink(linkId: string, userId: string): Promise<{ badge:
 
 export default function RedeemCodePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { user } = useUser();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [burstEmojis, setBurstEmojis] = useState<string | null>(null);
+
+  useEffect(() => {
+    const codeFromQuery = searchParams.get('code');
+    if (codeFromQuery) {
+        setCode(codeFromQuery);
+    }
+  }, [searchParams]);
 
   const handleRedeemComplete = (badgeId: string) => {
     router.push(`/dashboard/badge/${badgeId}`);
@@ -143,5 +151,3 @@ export default function RedeemCodePage() {
     </>
   );
 }
-
-    

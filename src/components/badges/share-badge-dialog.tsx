@@ -12,13 +12,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Copy, QrCode, PlusCircle } from 'lucide-react';
+import { Copy, PlusCircle, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import Image from 'next/image';
 import { Skeleton } from '../ui/skeleton';
 import { useCollection, firestore, useUser } from '@/firebase';
 import { AppUser } from '@/firebase/auth/use-user';
-import { collection, query, where, addDoc, serverTimestamp, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, where, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
 
 
 type Badge = { id: string; name: string; };
@@ -68,20 +67,9 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadge
         }
     }
 
-    const getFullUrl = (linkId: string) => {
-        if (typeof window === 'undefined') return `.../join/${linkId}`;
-        return `${window.location.origin}/join/${linkId}`;
-    }
-
-    const copyToClipboard = (linkId: string) => {
-        const fullUrl = getFullUrl(linkId);
-        navigator.clipboard.writeText(fullUrl);
-        toast({ title: "Copied link to clipboard!" });
-    }
-
-    const qrCodeUrl = (linkId: string) => {
-        const data = encodeURIComponent(getFullUrl(linkId));
-        return `https://api.qrserver.com/v1/create-qr-code/?size=40x40&data=${data}`;
+    const copyToClipboard = (code: string) => {
+        navigator.clipboard.writeText(code);
+        toast({ title: "Copied code to clipboard!" });
     }
     
   return (
@@ -89,11 +77,11 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadge
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="font-headline flex items-center gap-2">
-            <QrCode className="h-6 w-6 text-primary" />
+            <Share2 className="h-6 w-6 text-primary" />
             Share "{badge.name}"
           </DialogTitle>
           <DialogDescription>
-            Share these permanent, one-time use codes to invite others to claim this badge.
+            Share these one-time use codes to invite others to claim this badge.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4 min-h-[150px]">
@@ -108,16 +96,7 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadge
               <div className="space-y-3">
                 {availableLinks.map(link => (
                     <div key={link.id} className="flex items-center gap-2 w-full">
-                       <Image
-                          src={qrCodeUrl(link.id)}
-                          alt="QR Code"
-                          width={40}
-                          height={40}
-                          className="rounded-md"
-                          data-ai-hint="qr code"
-                          unoptimized // for external images
-                        />
-                      <Input readOnly value={getFullUrl(link.id)} className="bg-muted font-mono text-xs" />
+                      <Input readOnly value={link.id} className="bg-muted font-mono text-xs" />
                       <Button variant="ghost" size="icon" onClick={() => copyToClipboard(link.id)}>
                           <Copy className="h-4 w-4"/>
                       </Button>
@@ -143,5 +122,3 @@ export function ShareBadgeDialog({ open, onOpenChange, badge, user }: ShareBadge
     </Dialog>
   );
 }
-
-    
