@@ -14,7 +14,7 @@ import { useUser, useFirestore, useCollection, useDoc } from '@/firebase';
 import { AppUser } from '@/firebase/auth/use-user';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection, query, where, orderBy, doc, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 
 type Notification = {
   id: string;
@@ -263,3 +263,5 @@ export default function InboxPage() {
     </>
   );
 }
+
+    

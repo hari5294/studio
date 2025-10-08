@@ -256,7 +256,7 @@ function BadgeDetailContent() {
   }
 
   const handleRequestCode = async () => {
-     if (!currentUser) return;
+     if (!currentUser || !badge.creatorId) return;
      const notificationRef = collection(firestore, `users/${badge.creatorId}/notifications`);
      try {
         await addDoc(notificationRef, {
